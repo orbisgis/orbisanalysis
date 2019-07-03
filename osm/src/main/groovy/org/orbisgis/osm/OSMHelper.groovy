@@ -13,5 +13,7 @@ abstract class OSMHelper extends Script {
 
     public static  Loader = new Loader()
 
+    public static  Transform = new Transform()
+
 
 }

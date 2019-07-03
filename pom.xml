@@ -8,13 +8,12 @@
     <parent>
         <groupId>org.orbisgis</groupId>
         <artifactId>orbisparent</artifactId>
-        <version>1.0.1</version>
+        <version>1.0.3-SNAPSHOT</version>
     </parent>
     <artifactId>orbisanalysis</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <modules>
-        <module>osm</module>
         <module>osm</module>
     </modules>
 
@@ -27,22 +26,6 @@
         <maven.compiler.source>8</maven.compiler.source>
         <site.basedir>${project.basedir}</site.basedir>
     </properties>
-
-    <!-- Dependencies -->
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.orbisgis</groupId>
-                <artifactId>data-manager</artifactId>
-                <version>1.0-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>org.orbisgis</groupId>
-                <artifactId>process-manager</artifactId>
-                <version>1.0-SNAPSHOT</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <!-- Build Settings -->
     <build>

@@ -61,4 +61,48 @@ class OSMHelperTests {
         def h2GIS = H2GIS.open('./target/osmhelper')
     }
 
+
+    @Test
+    void loadTransformTest() {
+        def h2GIS = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
+        def load = OSMHelper.Loader.load()
+        def prefix = "OSM_FILE"
+        assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
+                osmFilePath : new File("/home/ebocher/Autres/codes/OSMHelper/src/test/resources/org/orbisgis/osmFileForTest.osm").getAbsolutePath())
+
+        def transform = OSMHelper.Transform.toPolygons()
+        transform.execute( datasource:h2GIS, osmTablesPrefix:prefix,
+                epsgCode :2154)
+    }
+
+    @Test
+    void extractLoadTransformBuildingTest() {
+        def h2GIS = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
+        def extract = OSMHelper.Loader.extract()
+        assertTrue extract.execute(overpassQuery: "[bbox:47.641682554548815,-2.104182243347168,47.660502734818216,-2.0664596557617188];((node[building=yes];way[building=yes];relation[building=yes];);>;);out;");
+
+        def load = OSMHelper.Loader.load()
+        def prefix = "OSM_FILE"
+        assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix, osmFilePath : extract.results.outputFilePath)
+
+        def transform = OSMHelper.Transform.toPolygons()
+        assertTrue transform.execute( datasource:h2GIS, osmTablesPrefix:prefix,epsgCode :2154)
+    }
+
+    @Test
+    void extractLoadTransformLandcoverTest() {
+        def h2GIS = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
+        def extract = OSMHelper.Loader.extract()
+        assertTrue extract.execute(overpassQuery: "[bbox:48.78537820754818,2.195892333984375,48.93242424920101,2.4976730346679688];" +
+                "(((node[landuse];node[leisure];);(way[landuse];way[leisure];);(relation[landuse];relation[leisure];););>;);out;");
+
+        def load = OSMHelper.Loader.load()
+        def prefix = "OSM_FILE"
+        assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix, osmFilePath : extract.results.outputFilePath)
+
+        def transform = OSMHelper.Transform.toPolygons()
+        assertTrue transform.execute( datasource:h2GIS, osmTablesPrefix:prefix,epsgCode :2154)
+
+    }
+
 }

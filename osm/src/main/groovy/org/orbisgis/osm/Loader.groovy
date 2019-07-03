@@ -60,7 +60,6 @@ static IProcess load() {
                     File osmFile = new File(osmFilePath)
                     if (osmFile.exists()) {
                         datasource.load(osmFile.absolutePath, osmTablesPrefix, true)
-                        datasource.execute createIndexesOnOSMTables(osmTablesPrefix)
                         logger.info('The input OSM file has been loaded in the database')
                     } else {
                         logger.info('The input OSM file does not exist')
@@ -102,29 +101,4 @@ static boolean executeOverPassQuery(def query, def outputOSMFile) {
         logger.error  "Cannot execute the query"
         return false
     }
-}
-
-
-/**
- ** Function to prepare the script to index the tables from OSM
- * @param prefix prefix of the OSM tables
- **/
-static def createIndexesOnOSMTables(def prefix){
-    def script = """
-            CREATE INDEX IF NOT EXISTS ${prefix}_node_index on ${prefix}_node(id_node);
-            CREATE INDEX IF NOT EXISTS ${prefix}_way_node_index on ${prefix}_way_node(id_node);
-            CREATE INDEX IF NOT EXISTS ${prefix}_way_node_index2 on ${prefix}_way_node(node_order);
-            CREATE INDEX IF NOT EXISTS ${prefix}_way_node_index3 ON ${prefix}_way_node(id_way);
-            CREATE INDEX IF NOT EXISTS ${prefix}_way_index on ${prefix}_way(id_way);
-            CREATE INDEX IF NOT EXISTS ${prefix}_way_tag_id_index on ${prefix}_way_tag(id_tag);
-            CREATE INDEX IF NOT EXISTS ${prefix}_way_tag_va_index on ${prefix}_way_tag(id_way);
-            CREATE INDEX IF NOT EXISTS ${prefix}_tag_id_index on ${prefix}_tag(id_tag);
-            CREATE INDEX IF NOT EXISTS ${prefix}_tag_key_index on ${prefix}_tag(tag_key);
-            CREATE INDEX IF NOT EXISTS ${prefix}_relation_tag_tag_index ON ${prefix}_relation_tag(id_tag);
-            CREATE INDEX IF NOT EXISTS ${prefix}_relation_tag_tag_index2 ON ${prefix}_relation_tag(id_relation);
-            CREATE INDEX IF NOT EXISTS ${prefix}_relation_tag_tag_index ON ${prefix}_relation_tag(tag_value);
-            CREATE INDEX IF NOT EXISTS ${prefix}_relation_tag_rel_index ON ${prefix}_relation(id_relation);
-            CREATE INDEX IF NOT EXISTS ${prefix}_way_member_index ON ${prefix}_way_member(id_relation);
-            """
-    return script
 }

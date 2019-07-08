@@ -1,5 +1,6 @@
 package org.orbisgis.osm
 
+import org.orbisgis.datamanagerapi.dataset.ITable
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -73,6 +74,8 @@ class OSMHelperTests {
         def transform = OSMHelper.Transform.toPolygons()
         transform.execute( datasource:h2GIS, osmTablesPrefix:prefix,
                 epsgCode :2154)
+
+        h2GIS.save(transform.results.outputTableName,"/tmp/osm_polygons.shp")
     }
 
     @Test
@@ -102,6 +105,19 @@ class OSMHelperTests {
 
         def transform = OSMHelper.Transform.toPolygons()
         assertTrue transform.execute( datasource:h2GIS, osmTablesPrefix:prefix,epsgCode :2154)
+
+
+        h2GIS.save(transform.results.outputTableName,"/tmp/osm_polygons.shp")
+
+    }
+
+    @Test
+    void extractBuilding() {
+        def h2GIS = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
+
+        //OSMTemplate.dataSource=""
+        //OSMTemplate.BUILDING(place : , bbox:"", area:"", adminLevel:"", inseecode:"").save()
+        // voir osmnix
 
     }
 

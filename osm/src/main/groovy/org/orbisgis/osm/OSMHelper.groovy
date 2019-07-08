@@ -15,5 +15,10 @@ abstract class OSMHelper extends Script {
 
     public static  Transform = new Transform()
 
+    static def uuid(){UUID.randomUUID().toString().replaceAll("-", "_")}
+
+
+
+
 
 }

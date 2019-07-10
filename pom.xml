@@ -85,6 +85,13 @@
             <organizationUrl>Lab-STICC - CNRS UMR 6285</organizationUrl>
         </developer>
         <developer>
+            <name>Elisabeth Lesaux</name>
+            <id>ELSW56</id>
+            <url>https://github.com/ELSW56</url>
+            <organization>Lab-STICC - CNRS UMR 6285</organization>
+            <organizationUrl>Lab-STICC - CNRS UMR 6285</organizationUrl>
+        </developer>
+        <developer>
             <name>Sylvain Palominos</name>
             <id>SPalominos</id>
             <url>https://github.com/spalominos</url>

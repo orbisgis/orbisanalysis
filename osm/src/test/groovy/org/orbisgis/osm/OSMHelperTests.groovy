@@ -64,7 +64,7 @@ class OSMHelperTests {
 
 
     @Test
-    void loadTransformTest() {
+    void loadTransformPolygonsTest() {
         def h2GIS = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
         def load = OSMHelper.Loader.load()
         def prefix = "OSM_FILE"
@@ -76,6 +76,35 @@ class OSMHelperTests {
                 epsgCode :2154)
 
         h2GIS.save(transform.results.outputTableName,"/tmp/osm_polygons.shp")
+    }
+
+    @Test
+    void loadTransformLinesTest() {
+        def h2GIS = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
+        def load = OSMHelper.Loader.load()
+        def prefix = "OSM_FILE"
+        assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
+                osmFilePath : new File("/home/ebocher/Autres/codes/OSMHelper/src/test/resources/org/orbisgis/osmFileForTest.osm").getAbsolutePath())
+
+        def transform = OSMHelper.Transform.toLines()
+        transform.execute( datasource:h2GIS, osmTablesPrefix:prefix,
+                epsgCode :2154)
+        h2GIS.save(transform.results.outputTableName,"/tmp/osm_lines.shp")
+    }
+
+    @Test
+    void loadTransformPointsTest() {
+        def h2GIS = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
+        def load = OSMHelper.Loader.load()
+        def prefix = "OSM_FILE"
+        assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
+                osmFilePath : new File("/home/ebocher/Autres/codes/OSMHelper/src/test/resources/org/orbisgis/osmFileForTest.osm").getAbsolutePath())
+
+        def transform = OSMHelper.Transform.toPoints()
+        transform.execute( datasource:h2GIS, osmTablesPrefix:prefix,
+                epsgCode :2154)
+
+        h2GIS.save(transform.results.outputTableName,"/tmp/osm_points.shp")
     }
 
     @Test
@@ -113,9 +142,9 @@ class OSMHelperTests {
 
     @Test
     void extractBuilding() {
-        def h2GIS = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
+        OSMTemplate osmTemplate = new OSMTemplate();
+        //osmTemplate.BUILDING {place:"name", bbox:""}.save();
 
-        //OSMTemplate.dataSource=""
         //OSMTemplate.BUILDING(place : , bbox:"", area:"", adminLevel:"", inseecode:"").save()
         // voir osmnix
 

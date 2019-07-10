@@ -11,6 +11,9 @@ import org.orbisgis.processmanagerapi.IProcess
 /**
  * This process extracts OSM data as an XML file using the Overpass API
  * @param overpassQuery The overpass api to be executed
+ *
+ * @author Erwan Bocher CNRS LAB-STICC
+ * @author Elisabeth Lesaux UBS LAB-STICC
  */
 static IProcess extract() {
     return processFactory.create(
@@ -45,6 +48,8 @@ static IProcess extract() {
  * @param osmTablesPrefix A prefix to identify the 10 OSM tables
  * @param omsFilePath The path where the OSM file is
  * @return datasource The connection to the database
+ * @author Erwan Bocher CNRS LAB-STICC
+ * @author Elisabeth Lesaux UBS LAB-STICC
  */
 static IProcess load() {
     return processFactory.create(
@@ -66,7 +71,7 @@ static IProcess load() {
                     }
                 }
                 else{
-                    logger.info('Please set a valid database connection')
+                    logger.error('Please set a valid database connection')
                 }
                 [ datasource : datasource]
             }
@@ -79,6 +84,8 @@ static IProcess load() {
  * @param query the Overpass query
  * @param outputOSMFile the output file
  * @return
+ * @author Erwan Bocher CNRS LAB-STICC
+ * @author Elisabeth Lesaux UBS LAB-STICC
  */
 static boolean executeOverPassQuery(def query, def outputOSMFile) {
     if (outputOSMFile.exists()) {

@@ -1,6 +1,8 @@
 package org.orbisgis.osm
 
+import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanagerapi.dataset.ITable
+import org.orbisgis.processmanagerapi.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -142,8 +144,14 @@ class OSMHelperTests {
 
     @Test
     void extractBuilding() {
-        OSMTemplate osmTemplate = new OSMTemplate();
-        //osmTemplate.BUILDING {place:"name", bbox:""}.save();
+        JdbcDataSource dataSource = H2GIS.open(File.createTempFile("osmhelper",".db"))
+
+        IProcess process = OSMHelper.osmTemplate.BUILDING();
+
+        process.execute(bbox : """""")
+
+
+
 
         //OSMTemplate.BUILDING(place : , bbox:"", area:"", adminLevel:"", inseecode:"").save()
         // voir osmnix

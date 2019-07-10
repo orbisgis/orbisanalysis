@@ -67,7 +67,7 @@ static IProcess load() {
                         datasource.load(osmFile.absolutePath, osmTablesPrefix, true)
                         logger.info('The input OSM file has been loaded in the database')
                     } else {
-                        logger.info('The input OSM file does not exist')
+                        logger.error('The input OSM file does not exist')
                     }
                 }
                 else{

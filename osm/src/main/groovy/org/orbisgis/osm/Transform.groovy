@@ -89,6 +89,8 @@ static IProcess toLines() {
     )
 }
 
+
+
 /**
  * This script if used to extract all polygons from the OSM tables
  * @param datasource a connection to a database
@@ -103,19 +105,20 @@ static IProcess toPolygons() {
             "Transform all OSM features as polygons",
             [datasource: JdbcDataSource,
              osmTablesPrefix: String,
-             epsgCode: int
+             epsgCode: int,
+             tag_keys : []
             ],
             [outputTableName : String],
-            { datasource, osmTablesPrefix, epsgCode ->
+            { datasource, osmTablesPrefix, epsgCode, tag_keys ->
                 String outputTableName = "OSM_POLYGONS_${uuid()}"
                 if (datasource != null) {
                     logger.info('Start polygon transformation')
                     logger.info("Indexing osm tables...")
                     buildIndexes(datasource,osmTablesPrefix)
                     String ouputWayPolygons = "WAYS_POLYGONS_${uuid()}"
-                    boolean polygonWays = extractWaysAsPolygons(datasource,osmTablesPrefix, epsgCode, ouputWayPolygons)
+                    boolean polygonWays = extractWaysAsPolygons(datasource,osmTablesPrefix, epsgCode, ouputWayPolygons,tag_keys )
                     String ouputRelationPolygons ="RELATION_POLYGONS_${uuid()}"
-                    boolean polygonRelations = extractRelationsAsPolygons(datasource,osmTablesPrefix,epsgCode,ouputRelationPolygons)
+                    boolean polygonRelations = extractRelationsAsPolygons(datasource,osmTablesPrefix,epsgCode,ouputRelationPolygons,tag_keys)
                     if(polygonWays && polygonRelations){
                         //Merge ways and relations
                         def columnsWays = datasource.getTable(ouputWayPolygons).columnNames
@@ -124,39 +127,33 @@ static IProcess toPolygons() {
                         allColumns.addAll(columnsWays)
                         allColumns.removeAll(columnsRelations)
                         allColumns.addAll(columnsRelations)
-                        def createTable = "CREATE TABLE ${outputTableName} (id SERIAL,"
+                        allColumns.sort()
                         def leftSelect = '';
                         def rigthSelect = '';
                         allColumns.each {it ->
                             if(columnsWays.contains(it)){
-                                leftSelect+="\"${it}\","
-                            }
+                                    leftSelect += "\"${it}\","
+                             }
                             else{
                                 leftSelect+= "null as \"${it}\","
                             }
 
                             if(columnsRelations.contains(it)){
-                                rigthSelect+="\"${it}\","
+                                    rigthSelect += "\"${it}\","
+
                             }
                             else{
                                 rigthSelect+= "null as \"${it}\","
                             }
-                            if(it.equalsIgnoreCase("the_geom")){
-                                createTable += "${it} GEOMETRY(GEOMETRY),"
-                            }
-                            else if(!it.equalsIgnoreCase("id")) {
-                                createTable += "\"${it}\" VARCHAR,"
-                            }
                         }
                         leftSelect = leftSelect[0..-2]
                         rigthSelect=rigthSelect[0..-2]
-                        createTable=createTable[0..-2]
-                        createTable+=")"
+
                         datasource.execute """DROP TABLE IF EXISTS ${outputTableName};
-                        ${createTable} AS 
-                        SELECT null as id, ${leftSelect} from ${ouputWayPolygons} 
+                        CREATE TABLE ${outputTableName} AS 
+                        SELECT  ${leftSelect} from ${ouputWayPolygons} 
                         union all 
-                        select null as id, ${rigthSelect} from ${ouputRelationPolygons};
+                        select  ${rigthSelect} from ${ouputRelationPolygons};
                         DROP TABLE IF EXISTS ${ouputWayPolygons}, ${ouputRelationPolygons};"""
                         logger.info('The polygons haven been builded.')
                     }
@@ -189,37 +186,70 @@ static IProcess toPolygons() {
  * @param osmTablesPrefix prefix name for OSM tables
  * @param epsgCode epsg code to reproject the geometries
  * @param ouputWayPolygons the name of the way polygons table
+ * @param tag_keys list ok keys to be filtered
  * @return true if some polygons have been build
  * @author Erwan Bocher CNRS LAB-STICC
  * @author Elisabeth Lesaux UBS LAB-STICC
  */
-static boolean extractWaysAsPolygons(JdbcDataSource dataSource, String osmTablesPrefix, int epsgCode, String ouputWayPolygons){
-    def rows = dataSource.firstRow("""select count(*) as count from ${osmTablesPrefix}_way_tag""")
+static boolean extractWaysAsPolygons(JdbcDataSource dataSource, String osmTablesPrefix, int epsgCode, String ouputWayPolygons, def tag_keys){
+    def countTagKeysQuery = "select count(*) as count from ${osmTablesPrefix}_way_tag"
+    boolean filterByKeys = false
+    def whereKeysFilter
+    if(tag_keys!=null || !tag_keys.isEmpty()){
+        whereKeysFilter = "tag_key in ('${tag_keys.join("','")}')"
+        countTagKeysQuery+= " where ${whereKeysFilter}"
+        filterByKeys=true
+    }
+    def rows = dataSource.firstRow(countTagKeysQuery)
     if(rows.count>0) {
         logger.info("Build way polygons")
         String WAYS_POLYGONS_TMP = "WAYS_POLYGONS_TMP${uuid()}"
         dataSource.execute "DROP TABLE IF EXISTS ${WAYS_POLYGONS_TMP};"
         //Create polygons from ways
-        dataSource.execute """CREATE TABLE ${WAYS_POLYGONS_TMP} AS 
+        if(filterByKeys){
+            dataSource.execute """CREATE TABLE ${WAYS_POLYGONS_TMP} AS 
            SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKEPOLYGON(ST_MAKELINE(the_geom)), 4326), ${epsgCode}) as the_geom, id_way
            FROM  (SELECT (SELECT ST_ACCUM(the_geom) as the_geom FROM  
            (SELECT n.id_node, n.the_geom, wn.id_way idway FROM ${osmTablesPrefix}_node n, ${osmTablesPrefix}_way_node wn WHERE n.id_node = wn.id_node ORDER BY wn.node_order)
             WHERE  idway = w.id_way) the_geom ,w.id_way  
-            FROM ${osmTablesPrefix}_way w) geom_table 
-            WHERE ST_GEOMETRYN(the_geom, 1) = ST_GEOMETRYN(the_geom, ST_NUMGEOMETRIES(the_geom)) AND ST_NUMGEOMETRIES(the_geom) > 3;"""
-
-        dataSource.execute "CREATE INDEX ON ${WAYS_POLYGONS_TMP}(ID_WAY);"
-
-        def rowskeys = dataSource.rows("""select distinct a.tag_key as tag_key from ${osmTablesPrefix}_way_tag as a, ${WAYS_POLYGONS_TMP} as b
-            where a.id_way=b.id_way """)
+            FROM ${osmTablesPrefix}_way w, (SELECT DISTINCT id_way 
+            FROM ${osmTablesPrefix}_way_tag wt
+            WHERE ${whereKeysFilter}) b 
+            WHERE w.id_way = b.id_way) geom_table
+            WHERE ST_GEOMETRYN(the_geom, 1) = ST_GEOMETRYN(the_geom, ST_NUMGEOMETRIES(the_geom)) AND ST_NUMGEOMETRIES(the_geom) > 3
+             """
+            dataSource.save(WAYS_POLYGONS_TMP, "/tmp/polygons.shp")
+        }
+        else{
+            dataSource.execute """CREATE TABLE ${WAYS_POLYGONS_TMP} AS 
+           SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKEPOLYGON(ST_MAKELINE(the_geom)), 4326), ${epsgCode}) as the_geom, id_way
+           FROM  (SELECT (SELECT ST_ACCUM(the_geom) as the_geom FROM  
+           (SELECT n.id_node, n.the_geom, wn.id_way idway FROM ${osmTablesPrefix}_node n, ${osmTablesPrefix}_way_node wn WHERE n.id_node = wn.id_node ORDER BY wn.node_order)
+            WHERE  idway = w.id_way) the_geom ,w.id_way  
+            FROM ${osmTablesPrefix}_way w) geom_table
+            WHERE ST_GEOMETRYN(the_geom, 1) = ST_GEOMETRYN(the_geom, ST_NUMGEOMETRIES(the_geom)) AND ST_NUMGEOMETRIES(the_geom) > 3
+         """
+        }
+        def caseWhenFilter = """select distinct a.tag_key as tag_key from ${osmTablesPrefix}_way_tag as a, ${WAYS_POLYGONS_TMP} as b
+            where a.id_way=b.id_way """
+        if(filterByKeys){
+            caseWhenFilter+= "and ${whereKeysFilter}"
+        }
+        def rowskeys = dataSource.rows(caseWhenFilter)
 
         def list = []
         rowskeys.tag_key.each { it ->
             list << "MAX(CASE WHEN b.tag_key = '${it}' then b.tag_value END) as \"${it}\""
         }
-        dataSource.execute """drop table if exists ${ouputWayPolygons}; 
-        CREATE TABLE ${ouputWayPolygons} AS SELECT a.id_way as id, a.the_geom, ${list.join(",")} from ${WAYS_POLYGONS_TMP} as a, ${osmTablesPrefix}_way_tag  b where a.id_way=b.id_way group by a.id_way;"""
-
+        if(list.isEmpty()){
+            dataSource.execute """drop table if exists ${ouputWayPolygons}; 
+        CREATE TABLE ${ouputWayPolygons} AS SELECT 'w'||a.id_way as id, a.the_geom from 
+        ${WAYS_POLYGONS_TMP} as a, ${osmTablesPrefix}_way_tag  b where a.id_way=b.id_way group by a.id_way;"""
+        }else {
+            dataSource.execute """drop table if exists ${ouputWayPolygons}; 
+        CREATE TABLE ${ouputWayPolygons} AS SELECT 'w'||a.id_way as id, a.the_geom, ${list.join(",")} from 
+        ${WAYS_POLYGONS_TMP} as a, ${osmTablesPrefix}_way_tag  b where a.id_way=b.id_way group by a.id_way;"""
+        }
         dataSource.execute("""DROP TABLE IF EXISTS ${WAYS_POLYGONS_TMP};""")
         return true
     }
@@ -236,16 +266,51 @@ static boolean extractWaysAsPolygons(JdbcDataSource dataSource, String osmTables
  * @param osmTablesPrefix prefix name for OSM tables
  * @param epsgCode epsg code to reproject the geometries
  * @param ouputRelationPolygons the name of the relation polygons table
+ * @param tag_keys list ok keys to be filtered
  * @return true if some polygons have been build
  * @author Erwan Bocher CNRS LAB-STICC
  * @author Elisabeth Lesaux UBS LAB-STICC
  */
-static  boolean extractRelationsAsPolygons(JdbcDataSource dataSource, String osmTablesPrefix, int epsgCode, String ouputRelationPolygons){
-    def rows = dataSource.rows("select distinct TAG_KEY from ${osmTablesPrefix}_relation_tag")
+static  boolean extractRelationsAsPolygons(JdbcDataSource dataSource, String osmTablesPrefix, int epsgCode, String ouputRelationPolygons, def tag_keys){
+
+    def countTagKeysQuery = "select count(*) as count from ${osmTablesPrefix}_relation_tag"
+    boolean filterByKeys = false
+    def whereKeysFilter
+    if(tag_keys!=null || !tag_keys.isEmpty()){
+        whereKeysFilter = "tag_key in ('${tag_keys.join("','")}')"
+        countTagKeysQuery+= " where tag_key in ('${tag_keys.join("','")}')"
+        filterByKeys=true
+    }
+    def rows = dataSource.firstRow(countTagKeysQuery)
     if(rows.size()>0){
         logger.info("Build outer polygons")
         String RELATIONS_POLYGONS_OUTER = "RELATIONS_POLYGONS_OUTER_${uuid()}"
-        dataSource.execute """DROP TABLE IF EXISTS ${RELATIONS_POLYGONS_OUTER};
+        String RELATION_FILTERED_KEYS = "RELATION_FILTERED_KEYS_${uuid()}"
+        if(filterByKeys){
+            dataSource.execute """ DROP TABLE IF EXISTS ${RELATION_FILTERED_KEYS};
+                     CREATE TABLE ${RELATION_FILTERED_KEYS} as SELECT DISTINCT id_relation  FROM ${osmTablesPrefix}_relation_tag wt 
+                          WHERE ${whereKeysFilter};
+                CREATE INDEX ON ${RELATION_FILTERED_KEYS}(id_relation);"""
+            dataSource.execute """DROP TABLE IF EXISTS ${RELATIONS_POLYGONS_OUTER};
+        CREATE TABLE ${RELATIONS_POLYGONS_OUTER} AS 
+                SELECT ST_LINEMERGE(st_union(ST_ACCUM(the_geom))) the_geom, id_relation 
+                   FROM 
+                      (SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(the_geom), 4326), ${epsgCode}) the_geom, id_relation, role, id_way 
+                     FROM      
+                        (SELECT 
+                           (SELECT ST_ACCUM(the_geom) the_geom 
+                          FROM 
+                             (SELECT n.id_node, n.the_geom, wn.id_way idway 
+                            FROM ${osmTablesPrefix}_node n, ${osmTablesPrefix}_way_node wn 
+                           WHERE n.id_node = wn.id_node ORDER BY wn.node_order) 
+                      WHERE  idway = w.id_way) the_geom, w.id_way, br.id_relation, br.role 
+                 FROM ${osmTablesPrefix}_way w, ${osmTablesPrefix}_way_member br, 
+                ${RELATION_FILTERED_KEYS} g
+                WHERE w.id_way = br.id_way and br.role='outer' and br.id_relation=g.id_relation) geom_table
+                 where st_numgeometries(the_geom)>=2) 
+                 GROUP BY id_relation;"""
+        }else {
+            dataSource.execute """DROP TABLE IF EXISTS ${RELATIONS_POLYGONS_OUTER};
         CREATE TABLE ${RELATIONS_POLYGONS_OUTER} AS 
                 SELECT ST_LINEMERGE(st_union(ST_ACCUM(the_geom))) the_geom, id_relation 
                    FROM 
@@ -261,10 +326,29 @@ static  boolean extractRelationsAsPolygons(JdbcDataSource dataSource, String osm
                  FROM ${osmTablesPrefix}_way w, ${osmTablesPrefix}_way_member br 
                 WHERE w.id_way = br.id_way and br.role='outer') geom_table where st_numgeometries(the_geom)>=2) 
                  GROUP BY id_relation;"""
-
+        }
         logger.info("Build inner polygons")
         String RELATIONS_POLYGONS_INNER = "RELATIONS_POLYGONS_INNER_${uuid()}"
-        dataSource.execute """DROP TABLE IF EXISTS ${RELATIONS_POLYGONS_INNER};
+        if(filterByKeys){
+            dataSource.execute """DROP TABLE IF EXISTS ${RELATIONS_POLYGONS_INNER};
+        CREATE TABLE ${RELATIONS_POLYGONS_INNER} AS 
+                SELECT ST_LINEMERGE(st_union(ST_ACCUM(the_geom))) the_geom, id_relation 
+                   FROM 
+                      (SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(the_geom), 4326), ${epsgCode}) the_geom, id_relation, role, id_way 
+                     FROM      
+                        (SELECT 
+                           (SELECT ST_ACCUM(the_geom) the_geom 
+                          FROM 
+                             (SELECT n.id_node, n.the_geom, wn.id_way idway 
+                            FROM ${osmTablesPrefix}_node n, ${osmTablesPrefix}_way_node wn 
+                           WHERE n.id_node = wn.id_node ORDER BY wn.node_order) 
+                      WHERE  idway = w.id_way) the_geom, w.id_way, br.id_relation, br.role 
+                 FROM ${osmTablesPrefix}_way w, ${osmTablesPrefix}_way_member br, ${RELATION_FILTERED_KEYS} g
+                WHERE w.id_way = br.id_way and br.role='inner' and br.id_relation=g.id_relation) geom_table where st_numgeometries(the_geom)>=2) 
+                 GROUP BY id_relation;"""
+        }
+        else {
+            dataSource.execute """DROP TABLE IF EXISTS ${RELATIONS_POLYGONS_INNER};
         CREATE TABLE ${RELATIONS_POLYGONS_INNER} AS 
                 SELECT ST_LINEMERGE(st_union(ST_ACCUM(the_geom))) the_geom, id_relation 
                    FROM 
@@ -280,6 +364,7 @@ static  boolean extractRelationsAsPolygons(JdbcDataSource dataSource, String osm
                  FROM ${osmTablesPrefix}_way w, ${osmTablesPrefix}_way_member br 
                 WHERE w.id_way = br.id_way and br.role='inner') geom_table where st_numgeometries(the_geom)>=2) 
                  GROUP BY id_relation;"""
+        }
 
         logger.info("Explode outer polygons")
         String RELATIONS_POLYGONS_OUTER_EXPLODED = "RELATIONS_POLYGONS_OUTER_EXPLODED_${uuid()}"
@@ -309,18 +394,29 @@ static  boolean extractRelationsAsPolygons(JdbcDataSource dataSource, String osm
         (select a.the_geom, a.ID_RELATION from ${RELATIONS_POLYGONS_OUTER_EXPLODED} as a left JOIN  ${RELATIONS_POLYGONS_INNER_EXPLODED} as b 
         on a.id_relation=b.id_relation WHERE b.id_relation IS NULL);"""
 
-        def rowskeys = dataSource.rows("""select distinct a.tag_key as tag_key from ${osmTablesPrefix}_relation_tag as a, ${RELATIONS_MP_HOLES} as b
-            where a.id_relation=b.id_relation """)
+        def caseWhenQuery ="""select distinct a.tag_key as tag_key from ${osmTablesPrefix}_relation_tag as a, ${RELATIONS_MP_HOLES} as b 
+                 where a.id_relation=b.id_relation """
+
+        if(filterByKeys){
+            caseWhenQuery+=" and ${whereKeysFilter}"
+        }
+
+        def rowskeys = dataSource.rows(caseWhenQuery)
 
         def list = []
         rowskeys.tag_key.each { it ->
             list << "MAX(CASE WHEN b.tag_key = '${it}' then b.tag_value END) as \"${it}\""
         }
-        dataSource.execute """drop table if exists ${ouputRelationPolygons}; 
-        CREATE TABLE ${ouputRelationPolygons} AS SELECT a.id_relation as id, a.the_geom, ${list.join(",")} from ${RELATIONS_MP_HOLES} as a, ${osmTablesPrefix}_relation_tag  b where a.id_relation=b.id_relation group by a.the_geom;"""
-
-        dataSource.execute"""DROP TABLE IF EXISTS ${RELATIONS_POLYGONS_OUTER}, ${RELATIONS_POLYGONS_INNER}, 
-            ${RELATIONS_POLYGONS_OUTER_EXPLODED}, ${RELATIONS_POLYGONS_INNER_EXPLODED}, ${RELATIONS_MP_HOLES};"""
+        if(list.isEmpty()){
+            dataSource.execute """drop table if exists ${ouputRelationPolygons};     
+            CREATE TABLE ${ouputRelationPolygons} AS SELECT 'r'||a.id_relation as id, a.the_geom from ${RELATIONS_MP_HOLES} as a, ${osmTablesPrefix}_relation_tag  b where a.id_relation=b.id_relation group by a.the_geom;"""
+        }
+        else{
+        dataSource.execute """drop table if exists ${ouputRelationPolygons};     
+        CREATE TABLE ${ouputRelationPolygons} AS SELECT 'r'||a.id_relation as id, a.the_geom, ${list.join(",")} from ${RELATIONS_MP_HOLES} as a, ${osmTablesPrefix}_relation_tag  b where a.id_relation=b.id_relation group by a.the_geom;"""
+        }
+        dataSource.execute"""DROP TABLE IF EXISTS ${RELATIONS_POLYGONS_OUTER}, ${RELATIONS_POLYGONS_INNER},
+           ${RELATIONS_POLYGONS_OUTER_EXPLODED}, ${RELATIONS_POLYGONS_INNER_EXPLODED}, ${RELATIONS_MP_HOLES};"""
 
         return true
     }

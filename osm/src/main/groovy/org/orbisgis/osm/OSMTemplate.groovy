@@ -17,13 +17,17 @@ import org.orbisgis.processmanagerapi.IProcess
     public IProcess BUILDING() {
         return processFactory.create({
             title ""
-
-            def extract = OSMHelper.Loader.extract()
-            if (extract.execute(overpassQuery: query)) {
-                def load = OSMHelper.Loader.load()
-                def prefix = "OSM_FILE_${uuid()}"
-                assertTrue load.execute(datasource: h2GIS, osmTablesPrefix: prefix, osmFilePath: extract.results.outputFilePath)
+            inputs bbox : String, admin_level : String, place : String
+            outputs outputTableName : String
+            closure { bbox, area ->
+                def extract = OSMHelper.Loader.extract()
+                if (extract.execute(overpassQuery: query)) {
+                    def load = OSMHelper.Loader.load()
+                    def prefix = "OSM_FILE_${uuid()}"
+                    assertTrue load.execute(datasource: h2GIS, osmTablesPrefix: prefix, osmFilePath: extract.results.outputFilePath)
+                }
             }
+
         })
 
     }

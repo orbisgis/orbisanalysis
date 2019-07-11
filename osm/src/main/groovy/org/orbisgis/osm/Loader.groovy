@@ -3,6 +3,9 @@ package org.orbisgis.osm
 import groovy.transform.BaseScript
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanagerapi.IProcess
+import groovy.json.JsonSlurper
+
+import java.security.InvalidParameterException
 
 
 @BaseScript OSMHelper osmHelper
@@ -87,7 +90,7 @@ static IProcess load() {
  * @author Erwan Bocher CNRS LAB-STICC
  * @author Elisabeth Lesaux UBS LAB-STICC
  */
-static boolean executeOverPassQuery(def query, def outputOSMFile) {
+static boolean executeOverPassQuery( def query,  def outputOSMFile) {
     if (outputOSMFile.exists()) {
         outputOSMFile.delete()
     }
@@ -105,7 +108,8 @@ static boolean executeOverPassQuery(def query, def outputOSMFile) {
         outputOSMFile << connection.inputStream
         return true
     } else {
-        logger.error  "Cannot execute the query"
+        logger.error "Cannot execute the query"
         return false
     }
 }
+

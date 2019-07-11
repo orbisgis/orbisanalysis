@@ -116,16 +116,18 @@ class OSMHelperTests {
     @Test
     void extractLoadTransformBuildingTest() {
         def h2GIS = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
+        def prefix = "OSM_FILE"
         def extract = OSMHelper.Loader.extract()
-        assertTrue extract.execute(overpassQuery: "[bbox:47.641682554548815,-2.104182243347168,47.660502734818216,-2.0664596557617188];((node[building=yes];way[building=yes];relation[building=yes];);>;);out;");
+        assertTrue extract.execute(overpassQuery: "[bbox:47.7283551128961,-3.115396499633789,47.76592619322962,-3.03995132446289];((node[building];way[building];relation[building];);>;);out;");
 
         def load = OSMHelper.Loader.load()
-        def prefix = "OSM_FILE"
-        assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix, osmFilePath : extract.results.outputFilePath)
+        
+        assertTrue load.execute(datasource: h2GIS, osmTablesPrefix: prefix, osmFilePath: extract.results.outputFilePath)
 
         def transform = OSMHelper.Transform.toPolygons()
-        assertTrue transform.execute( datasource:h2GIS, osmTablesPrefix:prefix,epsgCode :2154,tag_keys:["building"])
+        assertTrue transform.execute(datasource: h2GIS, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: ["building"])
         h2GIS.save(transform.results.outputTableName, "/tmp/filtered_osm.shp")
+
     }
 
 

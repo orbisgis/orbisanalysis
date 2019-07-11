@@ -390,9 +390,10 @@ static  boolean extractRelationsAsPolygons(JdbcDataSource dataSource, String osm
        DROP TABLE IF EXISTS ${RELATIONS_MP_HOLES};
        CREATE TABLE ${RELATIONS_MP_HOLES} AS (SELECT ST_MAKEPOLYGON(ST_EXTERIORRING(a.the_geom), ST_ACCUM(b.the_geom)) AS the_geom, a.ID_RELATION FROM
         ${RELATIONS_POLYGONS_OUTER_EXPLODED} AS a LEFT JOIN ${RELATIONS_POLYGONS_INNER_EXPLODED} AS b on (a.the_geom && b.the_geom AND 
-        st_contains(a.the_geom, b.THE_GEOM) AND a.ID_RELATION=b.ID_RELATION) GROUP BY a.the_geom) union  
+        st_contains(a.the_geom, b.THE_GEOM) AND a.ID_RELATION=b.ID_RELATION) GROUP BY a.the_geom, a.id_relation) union  
         (select a.the_geom, a.ID_RELATION from ${RELATIONS_POLYGONS_OUTER_EXPLODED} as a left JOIN  ${RELATIONS_POLYGONS_INNER_EXPLODED} as b 
         on a.id_relation=b.id_relation WHERE b.id_relation IS NULL);"""
+
 
         def caseWhenQuery ="""select distinct a.tag_key as tag_key from ${osmTablesPrefix}_relation_tag as a, ${RELATIONS_MP_HOLES} as b 
                  where a.id_relation=b.id_relation """
@@ -409,11 +410,11 @@ static  boolean extractRelationsAsPolygons(JdbcDataSource dataSource, String osm
         }
         if(list.isEmpty()){
             dataSource.execute """drop table if exists ${ouputRelationPolygons};     
-            CREATE TABLE ${ouputRelationPolygons} AS SELECT 'r'||a.id_relation as id, a.the_geom from ${RELATIONS_MP_HOLES} as a, ${osmTablesPrefix}_relation_tag  b where a.id_relation=b.id_relation group by a.the_geom;"""
+            CREATE TABLE ${ouputRelationPolygons} AS SELECT 'r'||a.id_relation as id, a.the_geom from ${RELATIONS_MP_HOLES} as a, ${osmTablesPrefix}_relation_tag  b where a.id_relation=b.id_relation group by a.the_geom, a.id_relation;"""
         }
         else{
         dataSource.execute """drop table if exists ${ouputRelationPolygons};     
-        CREATE TABLE ${ouputRelationPolygons} AS SELECT 'r'||a.id_relation as id, a.the_geom, ${list.join(",")} from ${RELATIONS_MP_HOLES} as a, ${osmTablesPrefix}_relation_tag  b where a.id_relation=b.id_relation group by a.the_geom;"""
+        CREATE TABLE ${ouputRelationPolygons} AS SELECT 'r'||a.id_relation as id, a.the_geom, ${list.join(",")} from ${RELATIONS_MP_HOLES} as a, ${osmTablesPrefix}_relation_tag  b where a.id_relation=b.id_relation group by a.the_geom, a.id_relation;"""
         }
         dataSource.execute"""DROP TABLE IF EXISTS ${RELATIONS_POLYGONS_OUTER}, ${RELATIONS_POLYGONS_INNER},
            ${RELATIONS_POLYGONS_OUTER_EXPLODED}, ${RELATIONS_POLYGONS_INNER_EXPLODED}, ${RELATIONS_MP_HOLES};"""

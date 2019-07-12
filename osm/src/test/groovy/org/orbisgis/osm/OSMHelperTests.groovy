@@ -123,7 +123,7 @@ class OSMHelperTests {
         assertTrue extract.execute(overpassQuery: "[bbox:47.7283551128961,-3.115396499633789,47.76592619322962,-3.03995132446289];((node[building];way[building];relation[building];);>;);out;");
 
         def load = OSMHelper.Loader.load()
-        
+
         assertTrue load.execute(datasource: h2GIS, osmTablesPrefix: prefix, osmFilePath: extract.results.outputFilePath)
 
         def transform = OSMHelper.Transform.toPolygons()
@@ -134,13 +134,33 @@ class OSMHelperTests {
 
 
     @Test
-    void extractBuilding() {
-        JdbcDataSource dataSource = H2GIS.open(File.createTempFile("osmhelper",".db"))
+    void extractLandUseTest() {
+        File dbFile = File.createTempFile("osmhelper", ".db")
+        JdbcDataSource dataSource = H2GIS.open(dbFile.path)
+        assertNotNull(dataSource)
+        logger.info("DataSource : "+dbFile.path)
+        IProcess process = OSMHelper.OSMTemplate.LANDCOVER()
 
-        //IProcess process = OSMHelper.osmTemplate.BUILDING();
+        process.execute(bbox: "45.1431837,5.6428528,45.2249744,5.7877350",datasource:null)
+        // process.execute(bbox: "47.7411704,-3.1272411,47.7606760,-3.0910206", datasource: dataSource)
+        assertNotNull(process.results.datasource.getTable(process.results.outputTableName))
+        File dbFile2 = File.createTempFile("osmhelperlandcover", ".shp")
 
-        //process.execute(bbox : """""")
+        process.results.datasource.save(process.results.outputTableName, dbFile2.path)
+    }
 
+        @Test
+    void extractBuildingTest() {
+            File dbFile = File.createTempFile("osmhelper", ".db")
+            JdbcDataSource dataSource = H2GIS.open(dbFile.path)
+            assertNotNull(dataSource)
+            logger.info("DataSource : "+dbFile.path)
+            IProcess process = OSMHelper.OSMTemplate.BUILDING()
+
+            process.execute(bbox: "45.1431837,5.6428528,45.2249744,5.7877350", datasource: null)
+            assertNotNull(process.results.datasource.getTable(process.results.outputTableName))
+            File dbFile2 = File.createTempFile("osmhelperbuilding", ".shp")
+            process.results.datasource.save(process.results.outputTableName, dbFile2.path)
         //OSMTemplate.BUILDING(place : , bbox:"", area:"", adminLevel:"", inseecode:"").save()
         // voir osmnix
 

@@ -1,16 +1,15 @@
 package org.orbisgis.osm
 
-import jdk.nashorn.internal.ir.annotations.Ignore
+
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Disabled
 import org.orbisgis.datamanager.JdbcDataSource
-import org.orbisgis.datamanagerapi.dataset.ITable
+import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.processmanagerapi.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Test
-import org.orbisgis.datamanager.h2gis.H2GIS
-
 
 class OSMHelperTests {
 
@@ -32,7 +31,7 @@ class OSMHelperTests {
         assertFalse extract.execute(overpassQuery: "building =yes");
     }
 
-
+    @Disabled
     @Test
     void loadTest() {
         def h2GIS = H2GIS.open('./target/osmhelper')
@@ -134,7 +133,7 @@ class OSMHelperTests {
         process.results.datasource.save(process.results.outputTableName, dbFile2.path)
     }
 
-        @Test
+    @Test
     void extractBuildingTest() {
             File dbFile = File.createTempFile("osmhelper", ".db")
             JdbcDataSource dataSource = H2GIS.open(dbFile.path)

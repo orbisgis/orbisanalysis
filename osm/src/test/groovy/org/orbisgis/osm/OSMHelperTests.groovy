@@ -113,8 +113,47 @@ class OSMHelperTests {
         def transform = OSMHelper.Transform.toPoints()
         transform.execute( datasource:h2GIS, osmTablesPrefix:prefix,
                 epsgCode :2154, tag_keys:["place"])
-        assertEquals 3, h2GIS.getTable(transform.results.outputTableName).rowCount    
+        assertEquals 3, h2GIS.getTable(transform.results.outputTableName).rowCount
 
+    }
+
+
+    @Test
+    void extractLandUseTest() {
+        File dbFile = File.createTempFile("osmhelper", ".db")
+        JdbcDataSource dataSource = H2GIS.open(dbFile.path)
+        assertNotNull(dataSource)
+        logger.info("DataSource : "+dbFile.path)
+        IProcess process = OSMHelper.OSMTemplate.LANDCOVER()
+
+        process.execute(bbox: "45.1431837,5.6428528,45.2249744,5.7877350",datasource:null)
+        // process.execute(bbox: "47.7411704,-3.1272411,47.7606760,-3.0910206", datasource: dataSource)
+        assertNotNull(process.results.datasource.getTable(process.results.outputTableName))
+        File dbFile2 = File.createTempFile("osmhelperlandcover", ".shp")
+
+        process.results.datasource.save(process.results.outputTableName, dbFile2.path)
+    }
+
+        @Test
+    void extractBuildingTest() {
+            File dbFile = File.createTempFile("osmhelper", ".db")
+            JdbcDataSource dataSource = H2GIS.open(dbFile.path)
+            assertNotNull(dataSource)
+            logger.info("DataSource : "+dbFile.path)
+            IProcess process = OSMHelper.OSMTemplate.BUILDING()
+
+            process.execute(bbox: "45.1431837,5.6428528,45.2249744,5.7877350", datasource: null)
+            assertNotNull(process.results.datasource.getTable(process.results.outputTableName))
+            File dbFile2 = File.createTempFile("osmhelperbuilding", ".shp")
+            process.results.datasource.save(process.results.outputTableName, dbFile2.path)
+        //OSMTemplate.BUILDING(place : , bbox:"", area:"", adminLevel:"", inseecode:"").save()
+        // voir osmnix
+
+    }
+
+    @Test
+    void extractPlace() {
+        //OSMHelper.Utilities.getArea("vannes");
     }
 
 }

@@ -3,9 +3,6 @@ package org.orbisgis.osm
 import groovy.transform.BaseScript
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanagerapi.IProcess
-import groovy.json.JsonSlurper
-
-import java.security.InvalidParameterException
 
 
 @BaseScript OSMHelper osmHelper
@@ -16,28 +13,26 @@ import java.security.InvalidParameterException
  * @param overpassQuery The overpass api to be executed
  *
  * @author Erwan Bocher CNRS LAB-STICC
- * @author Elisabeth Lesaux UBS LAB-STICC
+ * @author Elisabeth Le Saux UBS LAB-STICC
  */
 static IProcess extract() {
     return processFactory.create(
-            "Extract the OSM data using the overpass api and save the result in an XML file",
-            [
-             overpassQuery :String
-            ],
-            [outputFilePath : String],
+        "Extract the OSM data using the overpass api and save the result in an XML file",
+        [ overpassQuery :String],
+        [outputFilePath : String],
             { overpassQuery  ->
-                        logger.info('Extract the OSM data')
-                        def tmpOSMFile = File.createTempFile("extract_osm", ".osm")
-                        def osmFilePath =  tmpOSMFile.absolutePath
-                        if(executeOverPassQuery(overpassQuery, tmpOSMFile)){
-                            logger.info("The OSM file has been downloaded at ${osmFilePath}.")
-                        }
-                        else{
-                            logger.error("Cannot extract the OSM data for the query $overpassQuery")
-                            return
-                        }
-                [outputFilePath : osmFilePath]
+            logger.info('Extract the OSM data')
+            def tmpOSMFile = File.createTempFile("extract_osm", ".osm")
+            def osmFilePath =  tmpOSMFile.absolutePath
+            if(executeOverPassQuery(overpassQuery, tmpOSMFile)){
+                logger.info("The OSM file has been downloaded at ${osmFilePath}.")
             }
+            else{
+                logger.error("Cannot extract the OSM data for the query $overpassQuery")
+                return
+            }
+            [outputFilePath : osmFilePath]
+        }
     )
 }
 
@@ -52,32 +47,29 @@ static IProcess extract() {
  * @param omsFilePath The path where the OSM file is
  * @return datasource The connection to the database
  * @author Erwan Bocher CNRS LAB-STICC
- * @author Elisabeth Lesaux UBS LAB-STICC
+ * @author Elisabeth Le Saux UBS LAB-STICC
  */
 static IProcess load() {
     return processFactory.create(
-            "Load an OSM file to the current database",
-            [datasource: JdbcDataSource,
-             osmTablesPrefix: String,
-             osmFilePath :String
-            ],
-            [datasource : JdbcDataSource],
-            { datasource, osmTablesPrefix, osmFilePath  ->
-                if (datasource != null) {
-                    logger.info('Load the OSM file in the database')
-                    File osmFile = new File(osmFilePath)
-                    if (osmFile.exists()) {
-                        datasource.load(osmFile.absolutePath, osmTablesPrefix, true)
-                        logger.info('The input OSM file has been loaded in the database')
-                    } else {
-                        logger.error('The input OSM file does not exist')
-                    }
+         "Load an OSM file to the current database",
+        [datasource: JdbcDataSource, osmTablesPrefix: String, osmFilePath :String],
+        [ datasource : JdbcDataSource],
+         { datasource, osmTablesPrefix, osmFilePath  ->
+            if (datasource != null) {
+                logger.info('Load the OSM file in the database')
+                File osmFile = new File(osmFilePath)
+                if (osmFile.exists()) {
+                    datasource.load(osmFile.absolutePath, osmTablesPrefix, true)
+                    logger.info('The input OSM file has been loaded in the database')
+                } else {
+                    logger.error('The input OSM file does not exist')
                 }
-                else{
-                    logger.error('Please set a valid database connection')
-                }
-                [ datasource : datasource]
             }
+            else{
+                logger.error('Please set a valid database connection')
+            }
+            [ datasource : datasource]
+        }
     )
 }
 

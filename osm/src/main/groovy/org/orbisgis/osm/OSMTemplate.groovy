@@ -19,7 +19,7 @@ import org.orbisgis.processmanagerapi.IProcess
             title ""
             inputs bbox : String, admin_level : String, place : String
             outputs outputTableName : String
-            closure { bbox, area ->
+            run { bbox, area ->
                 def extract = OSMHelper.Loader.extract()
                 if (extract.execute(overpassQuery: query)) {
                     def load = OSMHelper.Loader.load()
@@ -39,7 +39,7 @@ import org.orbisgis.processmanagerapi.IProcess
      * @return
      * @author Erwan Bocher
      */
-    public IProcess LANDCOVER(Closure closure) {
+    public IProcess LANDCOVER() {
         // keys = 'landcover', 'natural', 'landuse', 'water', 'waterway', 'leisure', 'aeroway', 'amenity'
 
     }

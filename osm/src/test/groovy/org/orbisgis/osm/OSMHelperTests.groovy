@@ -66,10 +66,10 @@ class OSMHelperTests {
         def prefix = "OSM_FILE"
         assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
                 osmFilePath : new File(this.class.getResource("osmFileForTest.osm").toURI()).getAbsolutePath())
-
         def transform = OSMHelper.Transform.toPolygons()
         transform.execute( datasource:h2GIS, osmTablesPrefix:prefix,
                 epsgCode :2154)
+        assertEquals 126, h2GIS.getTable(transform.results.outputTableName).rowCount
     }
 
     @Test
@@ -84,7 +84,7 @@ class OSMHelperTests {
         transform.execute( datasource:h2GIS, osmTablesPrefix:prefix,
                 epsgCode :2154,
                 tag_keys:["building"])
-        h2GIS.save(transform.results.outputTableName, "/tmp/filtered_osm.shp")
+        assertEquals 125, h2GIS.getTable(transform.results.outputTableName).rowCount
     }
 
     @Test
@@ -93,11 +93,13 @@ class OSMHelperTests {
         def load = OSMHelper.Loader.load()
         def prefix = "OSM_FILE"
         assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
-                osmFilePath : new File(new File(this.class.getResource("osmFileForTest.osm").toURI()).getAbsolutePath()))
-
+                osmFilePath : new File(this.class.getResource("osmFileForTest.osm").toURI()).getAbsolutePath())
         def transform = OSMHelper.Transform.toLines()
         transform.execute( datasource:h2GIS, osmTablesPrefix:prefix,
                 epsgCode :2154)
+        h2GIS.save(transform.results.outputTableName, "/tmp/osm.shp")
+
+        assertEquals 126, h2GIS.getTable(transform.results.outputTableName).rowCount
     }
 
     @Test

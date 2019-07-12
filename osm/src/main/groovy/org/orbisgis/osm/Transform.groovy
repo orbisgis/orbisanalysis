@@ -19,12 +19,12 @@ import org.orbisgis.processmanagerapi.IProcess
  * @author Erwan Bocher CNRS LAB-STICC
  * @author Elisabeth Lesaux UBS LAB-STICC
  */
-static IProcess toPoints() {
-    return processFactory.create(
-        "Transform all OSM features as points",
-        [datasource     : JdbcDataSource, osmTablesPrefix: String, epsgCode  : int, tag_keys : []],
-        [ outputTableName: String],
-         { datasource, osmTablesPrefix, epsgCode, tag_keys ->
+IProcess toPoints() {
+    return create({
+        title "Transform all OSM features as points"
+        inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: int, tag_keys: []
+        outputs outputTableName: String
+        run { datasource, osmTablesPrefix, epsgCode, tag_keys ->
             String outputTableName = "OSM_POINTS_${uuid()}"
             if (datasource != null) {
                 logger.info('Start points transformation')
@@ -42,7 +42,7 @@ static IProcess toPoints() {
             }
             [outputTableName: outputTableName]
         }
-    )
+    })
 }
 
 /**
@@ -55,32 +55,30 @@ static IProcess toPoints() {
  * @author Erwan Bocher CNRS LAB-STICC
  * @author Elisabeth Le Saux UBS LAB-STICC
  */
-static IProcess toLines() {
-    return processFactory.create(
-             "Transform all OSM features as lines",
-            [ datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: int,tag_keys : []],
-            [ outputTableName : String],
-             { datasource, osmTablesPrefix, epsgCode,tag_keys ->
-                String outputTableName = "OSM_LINES_${uuid()}"
-                if (datasource != null) {
-                    logger.info('Start lines transformation')
-                    logger.info("Indexing osm tables...")
-                    buildIndexes(datasource,osmTablesPrefix)
-                    boolean lineWays = extractWaysAsLines(datasource,osmTablesPrefix, epsgCode, outputTableName, tag_keys)
-                    if(lineWays){
-                        logger.info('The lines have been built.')
-                    }
-                    else{
-                        logger.info('Cannot extract any lines.')
-                        return
-                    }
+IProcess toLines() {
+    return create({
+        title "Transform all OSM features as lines"
+        inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: int, tag_keys: []
+        outputs outputTableName: String
+        run { datasource, osmTablesPrefix, epsgCode, tag_keys ->
+            String outputTableName = "OSM_LINES_${uuid()}"
+            if (datasource != null) {
+                logger.info('Start lines transformation')
+                logger.info("Indexing osm tables...")
+                buildIndexes(datasource, osmTablesPrefix)
+                boolean lineWays = extractWaysAsLines(datasource, osmTablesPrefix, epsgCode, outputTableName, tag_keys)
+                if (lineWays) {
+                    logger.info('The lines have been built.')
+                } else {
+                    logger.info('Cannot extract any lines.')
+                    return
                 }
-                else{
-                    logger.error('Please set a valid database connection')
-                }
-                [ outputTableName : outputTableName]
+            } else {
+                logger.error('Please set a valid database connection')
             }
-    )
+            [outputTableName: outputTableName]
+        }
+    })
 }
 
 
@@ -95,12 +93,12 @@ static IProcess toLines() {
  * @author Erwan Bocher CNRS LAB-STICC
  * @author Elisabeth Le Saux UBS LAB-STICC
  */
-static IProcess toPolygons() {
-    return processFactory.create(
-         "Transform all OSM features as polygons",
-        [datasource : JdbcDataSource, osmTablesPrefix: String, epsgCode : int, tag_keys : []],
-        [ outputTableName: String],
-         { datasource, osmTablesPrefix, epsgCode, tag_keys ->
+IProcess toPolygons() {
+    return create({
+        title "Transform all OSM features as polygons"
+        inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: int, tag_keys: []
+        outputs outputTableName: String
+        run { datasource, osmTablesPrefix, epsgCode, tag_keys ->
             String outputTableName = "OSM_POLYGONS_${uuid()}"
             if (datasource != null) {
                 logger.info('Start polygon transformation')
@@ -160,7 +158,7 @@ static IProcess toPolygons() {
             }
             [outputTableName: outputTableName]
         }
-    )
+    })
 
 }
 
@@ -176,7 +174,7 @@ static IProcess toPolygons() {
  * @author Erwan Bocher CNRS LAB-STICC
  * @author Elisabeth Le Saux UBS LAB-STICC
  */
-static boolean extractWaysAsPolygons(JdbcDataSource dataSource, String osmTablesPrefix, int epsgCode, String ouputWayPolygons, def tag_keys){
+boolean extractWaysAsPolygons(JdbcDataSource dataSource, String osmTablesPrefix, int epsgCode, String ouputWayPolygons, def tag_keys){
     def countTagKeysQuery = "select count(*) as count from ${osmTablesPrefix}_way_tag"
     boolean filterByKeys = false
     def whereKeysFilter
@@ -255,7 +253,7 @@ static boolean extractWaysAsPolygons(JdbcDataSource dataSource, String osmTables
  * @author Erwan Bocher CNRS LAB-STICC
  * @author Elisabeth Le Saux UBS LAB-STICC
  */
-static  boolean extractRelationsAsPolygons(JdbcDataSource dataSource, String osmTablesPrefix, int epsgCode, String ouputRelationPolygons, def tag_keys){
+boolean extractRelationsAsPolygons(JdbcDataSource dataSource, String osmTablesPrefix, int epsgCode, String ouputRelationPolygons, def tag_keys){
 
     def countTagKeysQuery = "select count(*) as count from ${osmTablesPrefix}_relation_tag"
     boolean filterByKeys = false
@@ -424,7 +422,7 @@ static  boolean extractRelationsAsPolygons(JdbcDataSource dataSource, String osm
  * @author Erwan Bocher CNRS LAB-STICC
  * @author Elisabeth Lesaux UBS LAB-STICC
  */
-static boolean extractWaysAsLines(JdbcDataSource dataSource, String osmTablesPrefix, int epsgCode, String outputWaysLines, def tag_keys) {
+boolean extractWaysAsLines(JdbcDataSource dataSource, String osmTablesPrefix, int epsgCode, String outputWaysLines, def tag_keys) {
     def countTagKeysQuery = "select count(*) as count from ${osmTablesPrefix}_way_tag"
     boolean filterByKeys = false
     def whereKeysFilter
@@ -508,7 +506,7 @@ static boolean extractWaysAsLines(JdbcDataSource dataSource, String osmTablesPre
  * @author Erwan Bocher CNRS LAB-STICC
  * @author Elisabeth Lesaux UBS LAB-STICC
  */
-static boolean extractNodesAsPoints(JdbcDataSource dataSource, String osmTablesPrefix, int epsgCode, String ouputNodesPoints, def tag_keys) {
+boolean extractNodesAsPoints(JdbcDataSource dataSource, String osmTablesPrefix, int epsgCode, String ouputNodesPoints, def tag_keys) {
     def rows = dataSource.firstRow("""select count(*) as count from ${osmTablesPrefix}_node_tag""")
     if(rows.count>0) {
         logger.info("Build nodes as points")
@@ -537,7 +535,7 @@ static boolean extractNodesAsPoints(JdbcDataSource dataSource, String osmTablesP
  * @author Erwan Bocher CNRS LAB-STICC
  * @author Elisabeth Lesaux UBS LAB-STICC
  */
-static def buildIndexes(JdbcDataSource dataSource, String osmTablesPrefix){
+def buildIndexes(JdbcDataSource dataSource, String osmTablesPrefix){
     dataSource.execute "CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_node_index on ${osmTablesPrefix}_node(id_node);"+
             "CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_way_node_id_node_index on ${osmTablesPrefix}_way_node(id_node);"+
             "CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_way_node_order_index on ${osmTablesPrefix}_way_node(node_order);"+

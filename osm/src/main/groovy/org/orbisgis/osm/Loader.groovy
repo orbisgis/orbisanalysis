@@ -15,25 +15,24 @@ import org.orbisgis.processmanagerapi.IProcess
  * @author Erwan Bocher CNRS LAB-STICC
  * @author Elisabeth Le Saux UBS LAB-STICC
  */
-static IProcess extract() {
-    return processFactory.create(
-        "Extract the OSM data using the overpass api and save the result in an XML file",
-        [ overpassQuery :String],
-        [outputFilePath : String],
-            { overpassQuery  ->
+IProcess extract() {
+    return create({
+        title "Extract the OSM data using the overpass api and save the result in an XML file"
+        inputs overpassQuery: String
+        outputs outputFilePath: String
+        run { overpassQuery ->
             logger.info('Extract the OSM data')
             def tmpOSMFile = File.createTempFile("extract_osm", ".osm")
-            def osmFilePath =  tmpOSMFile.absolutePath
-            if(executeOverPassQuery(overpassQuery, tmpOSMFile)){
+            def osmFilePath = tmpOSMFile.absolutePath
+            if (executeOverPassQuery(overpassQuery, tmpOSMFile)) {
                 logger.info("The OSM file has been downloaded at ${osmFilePath}.")
-            }
-            else{
+            } else {
                 logger.error("Cannot extract the OSM data for the query $overpassQuery")
                 return
             }
-            [outputFilePath : osmFilePath]
+            [outputFilePath: osmFilePath]
         }
-    )
+    })
 }
 
 
@@ -49,12 +48,12 @@ static IProcess extract() {
  * @author Erwan Bocher CNRS LAB-STICC
  * @author Elisabeth Le Saux UBS LAB-STICC
  */
-static IProcess load() {
-    return processFactory.create(
-         "Load an OSM file to the current database",
-        [datasource: JdbcDataSource, osmTablesPrefix: String, osmFilePath :String],
-        [ datasource : JdbcDataSource],
-         { datasource, osmTablesPrefix, osmFilePath  ->
+IProcess load() {
+    return create({
+        title "Load an OSM file to the current database"
+        inputs datasource: JdbcDataSource, osmTablesPrefix: String, osmFilePath: String
+        outputs datasource: JdbcDataSource
+        run { datasource, osmTablesPrefix, osmFilePath ->
             if (datasource != null) {
                 logger.info('Load the OSM file in the database')
                 File osmFile = new File(osmFilePath)
@@ -64,13 +63,12 @@ static IProcess load() {
                 } else {
                     logger.error('The input OSM file does not exist')
                 }
-            }
-            else{
+            } else {
                 logger.error('Please set a valid database connection')
             }
-            [ datasource : datasource]
+            [datasource: datasource]
         }
-    )
+    })
 }
 
 
@@ -82,7 +80,7 @@ static IProcess load() {
  * @author Erwan Bocher CNRS LAB-STICC
  * @author Elisabeth Lesaux UBS LAB-STICC
  */
-static boolean executeOverPassQuery( def query,  def outputOSMFile) {
+boolean executeOverPassQuery( def query,  def outputOSMFile) {
     if (outputOSMFile.exists()) {
         outputOSMFile.delete()
     }

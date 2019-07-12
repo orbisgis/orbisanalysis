@@ -15,7 +15,7 @@ import org.locationtech.jts.geom.GeometryFactory
  * @param query
  * @return
  */
-static Geometry getArea(def query) {
+Geometry getArea(def query) {
     def outputOSMFile = File.createTempFile("nominatim_osm", ".geojson")
     if(executeNominatimQuery(query, outputOSMFile)) {
         def jsonSlurper = new JsonSlurper()
@@ -41,7 +41,7 @@ static Geometry getArea(def query) {
 
     }
 
-    return null;
+    return null
 }
 
 
@@ -56,7 +56,7 @@ static Geometry getArea(def query) {
  * @author Erwan Bocher CNRS LAB-STICC
  * @author Elisabeth Le Saux UBS LAB-STICC
  */
-static boolean executeNominatimQuery(def query, def outputOSMFile) {
+boolean executeNominatimQuery(def query, def outputOSMFile) {
     def apiUrl = " https://nominatim.openstreetmap.org/search?q="
     query+= "+is_in+${query}&format=geojson&polygon_geojson=1"
 

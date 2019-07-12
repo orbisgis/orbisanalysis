@@ -14,8 +14,8 @@ import org.orbisgis.processmanagerapi.IProcess
      * @return
      * @author Erwan Bocher
      */
-    public IProcess BUILDING() {
-        return processFactory.create({
+    IProcess BUILDING() {
+        return create({
             title ""
             inputs bbox : String, admin_level : String, place : String
             outputs outputTableName : String
@@ -39,7 +39,7 @@ import org.orbisgis.processmanagerapi.IProcess
      * @return
      * @author Erwan Bocher
      */
-    public IProcess LANDCOVER() {
+    IProcess LANDCOVER() {
         // keys = 'landcover', 'natural', 'landuse', 'water', 'waterway', 'leisure', 'aeroway', 'amenity'
 
     }
@@ -51,6 +51,6 @@ import org.orbisgis.processmanagerapi.IProcess
      * @return
      * @author Erwan Bocher
      */
-    public IProcess WATER(Closure closure) {
+    IProcess WATER(Closure closure) {
         // keys =  'water', 'waterway', 'amenity'
     }

@@ -15,6 +15,7 @@ import org.orbisgis.processmanagerapi.IProcess
      * With zindex
      * @return
      * @author Erwan Bocher
+     * @author Elisabeth Le Saux
      */
     IProcess BUILDING() {
         return create({
@@ -63,6 +64,7 @@ import org.orbisgis.processmanagerapi.IProcess
      * @param closure
      * @return
      * @author Erwan Bocher
+     * @author Elisabeth Le Saux
      */
 public IProcess LANDCOVER() {
     return create({
@@ -104,6 +106,7 @@ public IProcess LANDCOVER() {
      * @param closure
      * @return
      * @author Erwan Bocher
+     * @author Elisabeth Le Saux
      */
 public IProcess WATER() {
     return create({
@@ -148,8 +151,10 @@ public IProcess WATER() {
 
 /**
  * Compute the area on which to make the query
- * @param closure the different parameters on which the area should be computed
+ * @param bbox the bbox on which the area should be computed
+ * @param poly the polygon on which the area should be computed
  * @return query the begin of the overpass query, corresponding to the defined area
+ * @author Elisabeth Le Saux
  */
 
 static String defineQueryArea(String bbox, String poly) {

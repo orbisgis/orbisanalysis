@@ -84,7 +84,7 @@ boolean executeOverPassQuery( def query,  def outputOSMFile) {
     if (outputOSMFile.exists()) {
         outputOSMFile.delete()
     }
-    def apiUrl = "https://lz4.overpass-api.de/api/interpreter?data="
+    def apiUrl = "https://overpass-api.de/api/interpreter?data="
     def connection = new URL(apiUrl + URLEncoder.encode(query, java.nio.charset.StandardCharsets.UTF_8.toString())).openConnection() as HttpURLConnection
 
     logger.info apiUrl + URLEncoder.encode(query, java.nio.charset.StandardCharsets.UTF_8.toString())

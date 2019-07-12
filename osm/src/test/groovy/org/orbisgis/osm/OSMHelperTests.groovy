@@ -1,5 +1,6 @@
 package org.orbisgis.osm
 
+import jdk.nashorn.internal.ir.annotations.Ignore
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanagerapi.dataset.ITable
 import org.orbisgis.processmanagerapi.IProcess
@@ -39,7 +40,7 @@ class OSMHelperTests {
         def prefix = "OSM_FILE"
         assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix, osmFilePath : new File(this.class.getResource("osmFileForTest.osm").toURI()).getAbsolutePath())
         //Check tables
-        assertEquals 11, h2GIS.getTableNames().count{
+        assertEquals 10, h2GIS.getTableNames().count{
             it =~ /^OSMHELPER.PUBLIC.${prefix}.*/
         }
         //Count nodes
@@ -95,8 +96,7 @@ class OSMHelperTests {
         assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
                 osmFilePath : new File(this.class.getResource("osmFileForTest.osm").toURI()).getAbsolutePath())
         def transform = OSMHelper.Transform.toLines()
-        transform.execute( datasource:h2GIS, osmTablesPrefix:prefix,
-                epsgCode :2154)
+        transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154)
         h2GIS.save(transform.results.outputTableName, "/tmp/osm.shp")
 
         assertEquals 126, h2GIS.getTable(transform.results.outputTableName).rowCount
@@ -137,9 +137,9 @@ class OSMHelperTests {
     void extractBuilding() {
         JdbcDataSource dataSource = H2GIS.open(File.createTempFile("osmhelper",".db"))
 
-        IProcess process = OSMHelper.osmTemplate.BUILDING();
+        //IProcess process = OSMHelper.osmTemplate.BUILDING();
 
-        process.execute(bbox : """""")
+        //process.execute(bbox : """""")
 
         //OSMTemplate.BUILDING(place : , bbox:"", area:"", adminLevel:"", inseecode:"").save()
         // voir osmnix
@@ -148,8 +148,7 @@ class OSMHelperTests {
 
     @Test
     void extractPlace() {
-        OSMHelper.Utilities.getArea("vannes");
-
+        //OSMHelper.Utilities.getArea("vannes");
     }
 
 }

@@ -480,7 +480,7 @@ boolean extractWaysAsLines(JdbcDataSource dataSource, String osmTablesPrefix, in
             ${osmTablesPrefix}_way_tag  b where a.id_way=b.id_way group by a.id_way;"""
         }
         else {
-            dataSource.execute """""drop table if exists ${outputWaysLines};
+            dataSource.execute """drop table if exists ${outputWaysLines};
             CREATE TABLE ${outputWaysLines} AS SELECT 'w'||a.id_way as id, a.the_geom, ${list.join(",")} from ${WAYS_LINES_TMP} as a, 
         ${osmTablesPrefix}_way_tag  b where a.id_way=b.id_way group by a.id_way;"""
         }
@@ -506,24 +506,58 @@ boolean extractWaysAsLines(JdbcDataSource dataSource, String osmTablesPrefix, in
  * @author Erwan Bocher CNRS LAB-STICC
  * @author Elisabeth Lesaux UBS LAB-STICC
  */
-boolean extractNodesAsPoints(JdbcDataSource dataSource, String osmTablesPrefix, int epsgCode, String ouputNodesPoints, def tag_keys) {
-    def rows = dataSource.firstRow("""select count(*) as count from ${osmTablesPrefix}_node_tag""")
+static boolean extractNodesAsPoints(JdbcDataSource dataSource, String osmTablesPrefix, int epsgCode, String ouputNodesPoints, def tag_keys) {
+    def countTagKeysQuery = "select count(*) as count from ${osmTablesPrefix}_node_tag"
+    boolean filterByKeys = false
+    def whereKeysFilter
+    if(tag_keys!=null && !tag_keys.isEmpty()){
+        whereKeysFilter = "tag_key in ('${tag_keys.join("','")}')"
+        countTagKeysQuery+= " where ${whereKeysFilter}"
+        filterByKeys=true
+    }
+    def rows = dataSource.firstRow(countTagKeysQuery)
     if(rows.count>0) {
         logger.info("Build nodes as points")
-        def rowskeys = dataSource.rows("""select distinct tag_key as tag_key from ${osmTablesPrefix}_node_tag""")
+
+        def caseWhenFilter = """select distinct tag_key as tag_key from ${osmTablesPrefix}_node_tag """
+        if(filterByKeys){
+            caseWhenFilter+= "where ${whereKeysFilter}"
+        }
+        def rowskeys = dataSource.rows(caseWhenFilter)
+
         def list = []
         rowskeys.tag_key.each { it ->
             list << "MAX(CASE WHEN b.tag_key = '${it}' then b.tag_value END) as \"${it}\""
         }
-        dataSource.execute """drop table if exists ${ouputNodesPoints}; 
+        if(list.isEmpty()){
+            if(filterByKeys){
+                dataSource.execute """drop table if exists ${ouputNodesPoints}; 
+        CREATE TABLE ${ouputNodesPoints} AS SELECT a.id_node,ST_TRANSFORM(ST_SETSRID(a.THE_GEOM, 4326), 
+        ${epsgCode}) as the_geom, ${list.join(",")} from ${osmTablesPrefix}_node as a, ${osmTablesPrefix}_node_tag  b where a.id_node=b.id_node and b.${whereKeysFilter} group by a.id_node;"""
+            }
+            else {
+                dataSource.execute """drop table if exists ${ouputNodesPoints}; 
         CREATE TABLE ${ouputNodesPoints} AS SELECT a.id_node,ST_TRANSFORM(ST_SETSRID(a.THE_GEOM, 4326), 
         ${epsgCode}) as the_geom, ${list.join(",")} from ${osmTablesPrefix}_node as a, ${osmTablesPrefix}_node_tag  b where a.id_node=b.id_node group by a.id_node;"""
+            }
+        }
+        else{
+            if(filterByKeys){
+                dataSource.execute """drop table if exists ${ouputNodesPoints}; 
+            CREATE TABLE ${ouputNodesPoints} AS SELECT a.id_node,ST_TRANSFORM(ST_SETSRID(a.THE_GEOM, 4326), 
+            ${epsgCode}) as the_geom, ${list.join(",")} from ${osmTablesPrefix}_node as a, ${osmTablesPrefix}_node_tag  b where a.id_node=b.id_node and b.${whereKeysFilter} group by a.id_node;"""
+
+            }else {
+                dataSource.execute """drop table if exists ${ouputNodesPoints}; 
+            CREATE TABLE ${ouputNodesPoints} AS SELECT a.id_node,ST_TRANSFORM(ST_SETSRID(a.THE_GEOM, 4326), 
+            ${epsgCode}) as the_geom, ${list.join(",")} from ${osmTablesPrefix}_node as a, ${osmTablesPrefix}_node_tag  b where a.id_node=b.id_node group by a.id_node;"""
+            }
+        }
 
         return true
     }else{
         logger.error("No keys or values founded in the nodes")
         return false
-
     }
 }
 

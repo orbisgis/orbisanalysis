@@ -2,7 +2,6 @@ package org.orbisgis.osm
 
 
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Disabled
 import org.locationtech.jts.geom.Geometry
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanager.h2gis.H2GIS
@@ -143,7 +142,6 @@ class OSMHelperTests {
         assertNotNull(dataSource.getTable(process.results.outputPolygonsTableName))
         assertEquals 1, dataSource.getTable(process.results.outputPolygonsTableName).rowCount
     }
-
 
     @Test
     void extractPlace() {

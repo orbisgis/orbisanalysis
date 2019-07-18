@@ -20,35 +20,57 @@ import org.orbisgis.processmanagerapi.IProcess
     IProcess BUILDING() {
         return create({
             title "Building extraction for a specified place/area"
-            inputs bbox: '', poly: '', datasource: JdbcDataSource,
-                    tags: ['height','building:height','roof:height','building:roof:height',
-                           'building:levels','roof:levels','building:roof:levels','building',
-                           'amenity','layer','aeroway','historic','leisure','monument',
-                           'place_of_worship','military','railway','public_transport',
-                           'barrier','government','historic:building','grandstand',
-                           'apartments','ruins','agricultural','barn', 'healthcare',
-                           'education','restaurant','sustenance','office']
-            outputs datasource: JdbcDataSource, outputTableName: String
-            run { bbox, poly, datasource, tags ->
+            inputs filterArea:Map, datasource: JdbcDataSource,dataDim : [2]
+            outputs datasource: JdbcDataSource, outputPolygonsTableName: String, outputPointsTableName :String, outputLinesTableName: String
+            run { filterArea, datasource,dataDim ->
                 if (datasource == null) {
                     datasource = H2GIS.open(File.createTempFile("osm","db").path)
                 }
-                def extract = OSMHelper.Loader.extract()
-                String query = defineQueryArea(bbox, poly)
+                if(filterArea!=null|| dataDim!=null){
+                    String query = OSMHelper.Utilities.defineFilterArea(filterArea)
+                    def tags = ['building',
+                                'amenity','layer','aeroway','historic','leisure','monument',
+                                'place_of_worship','military','railway','public_transport',
+                                'barrier','government','historic:building','grandstand',
+                                'apartments','ruins','agricultural','barn', 'healthcare',
+                                'education','restaurant','sustenance','office']
+                    def extract = OSMHelper.Loader.extract()
                 if (query != '') {
-                    query += "((node;way;relation;);>;);out;"
+                    query += ";"+OSMHelper.Utilities.defineKeysFilter(tags, OSMElement.NODE,OSMElement.WAY,OSMElement.RELATION)
                     if (extract.execute(overpassQuery: query)) {
                         def load = OSMHelper.Loader.load()
                         def uuid = UUID.randomUUID().toString().replaceAll("-", "_")
                         def prefix = "OSM_FILE_$uuid"
                         logger.info("Loading")
                         if (load.execute(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: extract.results.outputFilePath)) {
-                            def transform = OSMHelper.Transform.toPolygons()
-                            logger.info("Transforming")
-                            assert transform.execute(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tags)
-                            [datasource: datasource, outputTableName: transform.results.outputTableName]
+                            def outputPointsTableName=null
+                            def outputPolygonsTableName=null
+                            def outputLinesTableName=null
+                            if(dataDim.contains(0)){
+                                def transform = OSMHelper.Transform.toPoints()
+                                logger.info("Transforming points")
+                                assert transform.execute(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tags)
+                                outputPointsTableName = transform.results.outputTableName
+                            }
+                            if(dataDim.contains(1)){
+                                def transform = OSMHelper.Transform.toLines()
+                                logger.info("Transforming lines")
+                                assert transform.execute(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tags)
+                                outputLinesTableName = transform.results.outputTableName
+                            }
+                            if(dataDim.contains(2)){
+                                def transform = OSMHelper.Transform.toPolygons()
+                                logger.info("Transforming polygons")
+                                assert transform.execute(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tags)
+                                outputPolygonsTableName = transform.results.outputTableName
+                            }
+                            [datasource: datasource,
+                             outputPolygonsTableName: outputPolygonsTableName,
+                             outputPointsTableName:outputPointsTableName,
+                             outputLinesTableName :outputLinesTableName]
                         }
                     }
+                }
                 } else {
                     logger.error('Query area not defined')
                 }
@@ -60,7 +82,6 @@ import org.orbisgis.processmanagerapi.IProcess
 
     /**
      * Extract landcover as polygons
-     * With zindex
      * @param closure
      * @return
      * @author Erwan Bocher
@@ -71,28 +92,52 @@ public IProcess LANDCOVER() {
         title "Landcover extraction for a specified place/area"
         description "Process to extract the landcover of a given bbox, area or zone defined with a code and an admin level"
         keywords "landcover", "osm to gis"
-        inputs bbox: '', poly: '', datasource: JdbcDataSource, tags: ['landcover', 'natural', 'landuse', 'water', 'waterway', 'leisure', 'aeroway', 'amenity']
-        outputs datasource: JdbcDataSource, outputTableName: String
-        run { bbox, poly, datasource, tags ->
+        inputs filterArea:Map, datasource: JdbcDataSource, dataDim : [2]
+        outputs datasource: JdbcDataSource, outputPolygonsTableName: String, outputPointsTableName :String, outputLinesTableName: String
+        run { filterArea, datasource,dataDim ->
             if (datasource == null) {
                 datasource = H2GIS.open(File.createTempFile("osm","db").path)
             }
-            def extract = OSMHelper.Loader.extract()
-            String query = defineQueryArea(bbox, poly)
+            if(filterArea!=null|| dataDim!=null){
+                String query = OSMHelper.Utilities.defineFilterArea(filterArea)
+                def tags = ['landcover', 'natural', 'landuse', 'water', 'waterway', 'leisure', 'aeroway', 'amenity']
+                def extract = OSMHelper.Loader.extract()
             if (query != '') {
-                query += "((node;way;relation;);>;);out;"
+                query += ";"+OSMHelper.Utilities.defineKeysFilter(tags, OSMElement.NODE,OSMElement.WAY,OSMElement.RELATION)
                 if (extract.execute(overpassQuery: query)) {
                     def load = OSMHelper.Loader.load()
                     def uuid = UUID.randomUUID().toString().replaceAll("-", "_")
                     def prefix = "OSM_FILE_$uuid"
                     logger.info("Loading")
                     if (load.execute(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: extract.results.outputFilePath)) {
-                        def transform = OSMHelper.Transform.toPolygons()
-                        logger.info("Transforming")
-                        assert transform.execute(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tags)
-                        [datasource: datasource, outputTableName: transform.results.outputTableName]
+                        def outputPointsTableName=null
+                        def outputPolygonsTableName=null
+                        def outputLinesTableName=null
+                        if(dataDim.contains(0)){
+                            def transform = OSMHelper.Transform.toPoints()
+                            logger.info("Transforming points")
+                            assert transform.execute(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tags)
+                            outputPointsTableName = transform.results.outputTableName
+                        }
+                        if(dataDim.contains(1)){
+                            def transform = OSMHelper.Transform.toLines()
+                            logger.info("Transforming lines")
+                            assert transform.execute(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tags)
+                            outputLinesTableName = transform.results.outputTableName
+                        }
+                        if(dataDim.contains(2)){
+                            def transform = OSMHelper.Transform.toPolygons()
+                            logger.info("Transforming polygons")
+                            assert transform.execute(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tags)
+                            outputPolygonsTableName = transform.results.outputTableName
+                          }
+                         [datasource: datasource,
+                          outputPolygonsTableName: outputPolygonsTableName,
+                          outputPointsTableName:outputPointsTableName,
+                          outputLinesTableName :outputLinesTableName]
                     }
                 }
+            }
             } else {
                 logger.error('Query area not defined')
             }
@@ -102,8 +147,7 @@ public IProcess LANDCOVER() {
 
     /**
      * Extract water as polygons
-     * With zindex
-     * @param closure
+     * @param
      * @return
      * @author Erwan Bocher
      * @author Elisabeth Le Saux
@@ -113,56 +157,56 @@ public IProcess WATER() {
         title "Water extraction for a specified place/area"
         description "Process to extract the water of a given bbox, area or zone defined with a code and an admin level"
         keywords "water", "osm to gis"
-        inputs bbox: '', poly: '', datasource: JdbcDataSource, tags: ['water', 'waterway', 'amenity']
-        outputs datasource: JdbcDataSource, outputPolygonsTableName: String, outputLinesTableName: String
-        run { bbox, poly, datasource, tags ->
+        inputs filterArea: Map, datasource: JdbcDataSource, dataDim : [2]
+        outputs datasource: JdbcDataSource, outputPolygonsTableName: String, outputLinesTableName: String, outputPointsTableName: String
+        run { filterArea, datasource,dataDim ->
             if (datasource == null) {
                 datasource = H2GIS.open(File.createTempFile("osm","db").path)
             }
-            def extract = OSMHelper.Loader.extract()
-            String query = defineQueryArea(bbox, poly)
+            if(filterArea!=null || dataDim!=null){
+                String query = OSMHelper.Utilities.defineFilterArea(filterArea)
+                def tags =  ['water', 'waterway','amenity']
+                def extract = OSMHelper.Loader.extract()
             if (query != '') {
-                query += "((node;way;relation;);>;);out;"
+                query += ";"+OSMHelper.Utilities.defineKeysFilter(tags, OSMElement.NODE,OSMElement.WAY,OSMElement.RELATION)
                 if (extract.execute(overpassQuery: query)) {
                     def load = OSMHelper.Loader.load()
                     def uuid = UUID.randomUUID().toString().replaceAll("-", "_")
                     def prefix = "OSM_FILE_$uuid"
                     logger.info("Loading")
                     if (load.execute(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: extract.results.outputFilePath)) {
-                        def transformL = OSMHelper.Transform.toLines()
-                        logger.info("Transforming lines")
-                        assert transformL.execute(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tags)
-                        def transformP = OSMHelper.Transform.toPolygons()
-                        logger.info("Transforming polygons")
-                        assert transformP.execute(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tags)
+                        def outputPointsTableName=null
+                        def outputPolygonsTableName=null
+                        def outputLinesTableName=null
+                        if(dataDim.contains(0)){
+                        def transformPT = OSMHelper.Transform.toPoints()
+                        logger.info("Transforming points")
+                        assert transformPT.execute(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tags)
+                            outputPointsTableName =transformPT.results.outputTableName
+                        }
+                        if(dataDim.contains(1)) {
+                            def transformL = OSMHelper.Transform.toLines()
+                            logger.info("Transforming lines")
+                            assert transformL.execute(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tags)
+                            outputLinesTableName =transformL.results.outputTableName
+                        }
+                        if(dataDim.contains(2)) {
+                            def transformP = OSMHelper.Transform.toPolygons()
+                            logger.info("Transforming polygons")
+                            assert transformP.execute(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tags)
+                            outputPolygonsTableName=transformP.results.outputTableName
+                        }
                         [datasource: datasource,
-                         outputPolygonsTableName: transformP.results.outputTableName,
-                         outputLinesTableName: transformL.results.outputTableName
+                         outputPolygonsTableName: outputPolygonsTableName,
+                         outputLinesTableName:outputLinesTableName,
+                         outputPointsTableName: outputPointsTableName
                         ]
                     }
                 }
+            }
             } else {
                 logger.error('Query area not defined')
             }
         }
     })
-}
-
-
-/**
- * Compute the area on which to make the query
- * @param bbox the bbox on which the area should be computed
- * @param poly the polygon on which the area should be computed
- * @return query the begin of the overpass query, corresponding to the defined area
- * @author Elisabeth Le Saux
- */
-
-static String defineQueryArea(String bbox, String poly) {
-    def query = ""
-    if (bbox != "" && poly != "") {
-        logger.error ('You should provide bbox or poly, not both !')
-    } else {
-        query = (bbox != "")?"[bbox:$bbox];":"[poly:$poly];"
-    }
-    return query
 }

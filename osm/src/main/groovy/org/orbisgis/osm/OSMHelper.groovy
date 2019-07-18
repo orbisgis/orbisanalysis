@@ -20,7 +20,6 @@ abstract class OSMHelper extends GroovyProcessFactory {
     public static  Transform = new Transform()
     public static  OSMTemplate = new OSMTemplate()
     public static  Utilities = new Utilities()
-
     //Utility methods
     static def uuid = {UUID.randomUUID().toString().replaceAll("-", "_")}
     static def Input = {Input.call()}

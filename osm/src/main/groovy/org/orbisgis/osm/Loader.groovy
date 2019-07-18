@@ -94,7 +94,7 @@ boolean executeOverPassQuery( def query,  def outputOSMFile) {
     logger.info "Executing query... $query"
     //Save the result in a file
     if (connection.responseCode == 200) {
-        logger.info "Downloading the OSM data from overpass api"
+        logger.info "Downloading the OSM data from overpass api at ${outputOSMFile.getAbsolutePath()}"
         outputOSMFile << connection.inputStream
         return true
     } else {

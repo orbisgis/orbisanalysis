@@ -1,6 +1,8 @@
 package org.orbisgis.osm
 
 import groovy.transform.BaseScript
+import org.locationtech.jts.geom.Envelope
+import org.locationtech.jts.geom.Polygon
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.processmanagerapi.IProcess
@@ -13,7 +15,7 @@ import static org.orbisgis.osm.OSMElement.*
  * Perform the extraction.
  *
  * @param datasource Data source to use for the extraction, if null a new H2GIS data source is created.
- * @param filterArea Area to extract.
+ * @param filterArea Area to extract. Must be specificied
  * @param dataDim Dimension of the data to extract. It should be an array with the value 0, 1, 2.
  * @param tags Array of tags to extract.
  *
@@ -29,10 +31,19 @@ private static def extraction(datasource, filterArea, dataDim, tags) {
         datasource = H2GIS.open(File.createTempFile("osm", "db"))
     }
     if (filterArea != null || dataDim != null) {
-        String query = OSMHelper.Utilities.defineFilterArea(filterArea)
+        def query =""
+        if(filterArea instanceof Envelope ) {
+            query = OSMHelper.Utilities.buildOSMQuery(filterArea, tags, NODE, WAY, RELATION)
+        }
+        else if( filterArea instanceof Polygon ) {
+            query = OSMHelper.Utilities.buildOSMQuery(filterArea, tags, NODE, WAY, RELATION)
+        }
+        else {
+            error "The filter area must a JTS Envelope or a Polygon"
+        }
+
         def extract = OSMHelper.Loader.extract()
         if (!query.isEmpty()) {
-            query += ";" + OSMHelper.Utilities.defineKeysFilter(tags, NODE, WAY, RELATION)
             if (extract.execute(overpassQuery: query)) {
                 def prefix = "OSM_FILE_$uuid"
                 def load = OSMHelper.Loader.load()
@@ -67,7 +78,7 @@ private static def extraction(datasource, filterArea, dataDim, tags) {
             }
         }
     } else {
-        error "Query area not defined"
+        error "Filter area not defined"
     }
     return null
 }
@@ -83,7 +94,7 @@ private static def extraction(datasource, filterArea, dataDim, tags) {
 IProcess BUILDING() {
     return create({
         title "Building extraction for a specified place/area"
-        inputs filterArea: Map, datasource: JdbcDataSource, dataDim: [2]
+        inputs filterArea: Object, datasource: JdbcDataSource, dataDim: [2]
         outputs datasource: JdbcDataSource, outputPolygonsTableName: String, outputPointsTableName: String, outputLinesTableName: String
         run { filterArea, datasource, dataDim ->
             def tags = ['building', 'amenity', 'layer', 'aeroway', 'historic', 'leisure', 'monument', 'place_of_worship',
@@ -92,7 +103,6 @@ IProcess BUILDING() {
                         'sustenance', 'office']
             extraction(datasource, filterArea, dataDim, tags)
         }
-
     })
 
 }
@@ -112,7 +122,7 @@ IProcess LANDCOVER() {
         title "Landcover extraction for a specified place/area"
         description "Process to extract the landcover of a given bbox, area or zone defined with a code and an admin level"
         keywords "landcover", "osm to gis"
-        inputs filterArea: Map, datasource: JdbcDataSource, dataDim: [2]
+        inputs filterArea: Object, datasource: JdbcDataSource, dataDim: [2]
         outputs datasource: JdbcDataSource, outputPolygonsTableName: String, outputPointsTableName: String, outputLinesTableName: String
         run { filterArea, datasource, dataDim ->
             def tags = ['landcover', 'natural', 'landuse', 'water', 'waterway', 'leisure', 'aeroway', 'amenity']
@@ -136,7 +146,7 @@ IProcess WATER() {
         title "Water extraction for a specified place/area"
         description "Process to extract the water of a given bbox, area or zone defined with a code and an admin level"
         keywords "water", "osm to gis"
-        inputs filterArea: Map, datasource: JdbcDataSource, dataDim: [2]
+        inputs filterArea: Object, datasource: JdbcDataSource, dataDim: [2]
         outputs datasource: JdbcDataSource, outputPolygonsTableName: String, outputLinesTableName: String, outputPointsTableName: String
         run { filterArea, datasource, dataDim ->
             def tags = ['water', 'waterway', 'amenity']

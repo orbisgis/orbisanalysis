@@ -2,7 +2,9 @@ package org.orbisgis.osm
 
 
 import org.junit.jupiter.api.Test
+import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.io.WKTReader
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.processmanagerapi.IProcess
@@ -118,17 +120,17 @@ class OSMHelperTests {
         JdbcDataSource dataSource = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
         assertNotNull(dataSource)
         IProcess process = OSMHelper.OSMTemplate.LANDCOVER()
-        process.execute(filterArea: [bbox:"48.73787306084071,-3.1153294444084167,48.73910952775334,-3.112971782684326"],datasource:dataSource)
+        process.execute(filterArea: new Envelope(-3.1153294444084167 , -3.112971782684326, 48.73787306084071 , 48.73910952775334),datasource:dataSource)
         assertNotNull(process.results.datasource.getTable(process.results.outputPolygonsTableName))
         assertEquals 3, dataSource.getTable(process.results.outputPolygonsTableName).rowCount
-   }
+    }
 
     @Test
     void extractBuildingTest() {
         JdbcDataSource dataSource = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
         assertNotNull(dataSource)
         IProcess process = OSMHelper.OSMTemplate.BUILDING()
-        process.execute(filterArea: [bbox:"-31.899314836854924,26.87346652150154,-31.898518974220607,26.874645352363586"], datasource: dataSource)
+        process.execute(filterArea: new Envelope(26.87346652150154 , 26.874645352363586, -31.899314836854924 , -31.898518974220607), datasource: dataSource)
         assertNotNull(process.results.datasource.getTable(process.results.outputPolygonsTableName))
         assertEquals 1, dataSource.getTable(process.results.outputPolygonsTableName).rowCount
     }
@@ -138,7 +140,7 @@ class OSMHelperTests {
         JdbcDataSource dataSource = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
         assertNotNull(dataSource)
         IProcess process = OSMHelper.OSMTemplate.WATER()
-        process.execute(filterArea: [bbox:"48.25956997946164,-3.143248558044433,48.269554636080265,-3.124387264251709"], datasource: dataSource)
+        process.execute(filterArea: new Envelope(-3.143248558044433 , -3.124387264251709, 48.25956997946164 , 48.269554636080265), datasource: dataSource)
         assertNotNull(dataSource.getTable(process.results.outputPolygonsTableName))
         assertEquals 1, dataSource.getTable(process.results.outputPolygonsTableName).rowCount
     }
@@ -156,30 +158,57 @@ class OSMHelperTests {
     }
 
     @Test
-    void buildOSMQueryFromKeys() {
-        assertEquals "(node[\"water\"];node[\"building\"];relation[\"water\"];relation[\"building\"];way[\"water\"];way[\"building\"];);(._;>;);out;" , OSMHelper.Utilities.defineKeysFilter(["WATER", "BUILDING"], OSMElement.NODE, OSMElement.RELATION,OSMElement.WAY)
-        assertEquals "(node[\"water\"];relation[\"water\"];);(._;>;);out;", OSMHelper.Utilities.defineKeysFilter(["WATER"], OSMElement.NODE, OSMElement.RELATION)
+    void buildOSMQuery() {
+        WKTReader  wktReader = new WKTReader()
+        Geometry p = wktReader.read("POLYGON ((4 2, 10 20, 30 20, 30 0, 4 2))")
+        assertEquals "[bbox:0.0,4.0,20.0, 30.0];\n" +
+                "(\n" +
+                "\tnode[\"water\"];\n" +
+                "\tnode[\"building\"];\n" +
+                "\trelation[\"water\"];\n" +
+                "\trelation[\"building\"];\n" +
+                "\tway[\"water\"];\n" +
+                "\tway[\"building\"];\n" +
+                ");\n" +
+                "(._;>;);\n" +
+                "out;" ,
+                OSMHelper.Utilities.buildOSMQuery(p.getEnvelopeInternal(), ["WATER", "BUILDING"], OSMElement.NODE, OSMElement.RELATION,OSMElement.WAY)
+        assertEquals "[bbox:0.0,4.0,20.0, 30.0];\n" +
+                "(\n" +
+                "\tnode[\"water\"](poly:\"2.0 4.0 20.0 10.0 20.0 30.0 0.0 30.0\");\n" +
+                "\trelation[\"water\"](poly:\"2.0 4.0 20.0 10.0 20.0 30.0 0.0 30.0\");\n" +
+                ");\n" +
+                "(._;>;);\n" +
+                "out;", OSMHelper.Utilities.buildOSMQuery(p,["WATER"], OSMElement.NODE, OSMElement.RELATION)
     }
 
     @Test
-    void buildOSMQueryFilter() {
-        assertEquals "[bbox:45.1431837,5.6428528,45.2249744,5.7877350]", OSMHelper.Utilities.defineFilterArea(bbox:"45.1431837,5.6428528,45.2249744,5.7877350")
-        assertEquals "[poly:45.1431837,5.6428528,45.2249744,5.7877350]" ,OSMHelper.Utilities.defineFilterArea(poly:"45.1431837,5.6428528,45.2249744,5.7877350")
-        assertEquals "[bbox:45.1431837,5.6428528,45.2249744,5.7877350]" ,OSMHelper.Utilities.defineFilterArea(BboX:"45.1431837,5.6428528,45.2249744,5.7877350")
-    }
-
-    @Test
-    void extractPlaceloadTransformPolygonsFilteredTest() {
+    void extractPlaceLoadTransformPolygonsFilteredBboxTest() {
         JdbcDataSource dataSource = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
         assertNotNull(dataSource)
-        Geometry geom = OSMHelper.Utilities.getAreaFromPlace("léhon");
+        Geometry geom = OSMHelper.Utilities.getAreaFromPlace("Cliscouët, vannes");
         IProcess process = OSMHelper.OSMTemplate.BUILDING()
-        process.execute(filterArea: [ bbox: "${OSMHelper.Utilities.toBBox(geom)}".toString()],datasource:dataSource)
-        File output = new File("./target/osm_building.shp")
+        process.execute(filterArea: geom.getEnvelopeInternal(),datasource:dataSource)
+        File output = new File("./target/osm_building_bbox_from_place.shp")
         if(output.exists()){
             output.delete()
         }
-        assertTrue process.results.datasource.save(process.results.outputPolygonsTableName, './target/osm_building_from_place.shp')
+        assertTrue process.results.datasource.save(process.results.outputPolygonsTableName, './target/osm_building_bbox_from_place.shp')
+    }
+
+
+    //@Test doesn't work here... POST method must be used
+    void extractPlaceLoadTransformPolygonsFilteredPolyTest() {
+        JdbcDataSource dataSource = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
+        assertNotNull(dataSource)
+        Geometry geom = OSMHelper.Utilities.getAreaFromPlace("Cliscouët, vannes")
+        IProcess process = OSMHelper.OSMTemplate.BUILDING()
+        process.execute(filterArea: geom,datasource:dataSource)
+        File output = new File("./target/osm_building_poly_from_place.shp")
+        if(output.exists()){
+            output.delete()
+        }
+        assertTrue process.results.datasource.save(process.results.outputPolygonsTableName, './target/osm_building_poly_from_place.shp')
     }
 
 }

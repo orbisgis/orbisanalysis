@@ -53,7 +53,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
-            </plugin>            
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
@@ -128,7 +128,7 @@
             <id>orbisgis-snapshot</id>
             <url>http://nexus-ng.orbisgis.org/repository/orbisgis-snapshot</url>
             <snapshots>
-                <enabled>true</enabled>                
+                <enabled>true</enabled>
                 <updatePolicy>always</updatePolicy>
             </snapshots>
             <releases>

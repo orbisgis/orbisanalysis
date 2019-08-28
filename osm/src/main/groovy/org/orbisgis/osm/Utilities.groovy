@@ -13,6 +13,13 @@ import org.locationtech.jts.geom.Polygon
 
 @BaseScript OSMHelper osmHelper
 
+/*
+* Utilities for OSM data
+* @author Erwan Bocher (CNRS LAB-STICC)
+* @author Elisabeth Le Saux (UBS LAB-STICC)
+ */
+
+
 /**
  * List of OSM elements
  */
@@ -24,21 +31,21 @@ enum OSMElement{
 /**
  * Return the area of a city name as a geometry
  *
- * @param query the nominatim request
+ * @param placeName the nominatim place name
  *
- * @return
+ * @return a new geometry
  */
-Geometry getAreaFromPlace(def query) {
+Geometry getAreaFromPlace(def placeName) {
     def outputOSMFile = File.createTempFile("nominatim_osm", ".geojson")
     def area
-    if (executeNominatimQuery(query, outputOSMFile)) {
+    if (executeNominatimQuery(placeName, outputOSMFile)) {
         def jsonSlurper = new JsonSlurper()
         def jsonRoot = jsonSlurper.parse(outputOSMFile)
         if (jsonRoot == null) {
-            throw new Exception("No OSM file")
+            throw new Exception("Cannot find any data from the place $placeName")
         }
-
-        jsonRoot.features.size() == 1 ? info("ok") : error("Please ...")
+        jsonRoot.features.size() == 1 ? info("Building place geometry") :
+                error("Cannot find any data from the place $placeName")
 
         GeometryFactory geometryFactory = new GeometryFactory()
 
@@ -60,11 +67,12 @@ Geometry getAreaFromPlace(def query) {
 
 
 /**
- * Parser coordinates to create a polygon
+ * Parser geojson coordinates to create a polygon
  *
  * @param coordinates
+ * @param geometryFactory
  *
- * @return
+ * @return a polygon
  */
 Polygon parsePolygon(def coordinates, GeometryFactory geometryFactory) {
     def ring = geometryFactory.createLinearRing(
@@ -107,16 +115,14 @@ Polygon parsePolygon(def coordinates, GeometryFactory geometryFactory) {
  * @param query the Nominatim query
  * @param outputNominatimFile the output file
  *
- * @return
+ * @return true if the file has been downloaded
  *
- * @author Erwan Bocher (CNRS LAB-STICC)
- * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
 static boolean executeNominatimQuery(def query, def outputOSMFile) {
     def apiUrl = " https://nominatim.openstreetmap.org/search?q="
     def request = "&limit=1&format=geojson&polygon_geojson=1"
 
-    URL url = new URL(apiUrl + query + request)
+    URL url = new URL(apiUrl + utf8ToUrl(query) + request)
     def connection = url.openConnection()
 
     info url
@@ -130,14 +136,14 @@ static boolean executeNominatimQuery(def query, def outputOSMFile) {
         outputOSMFile << connection.inputStream
         return true
     } else {
-        error  "Cannot execute the query"
+        error  "Cannot execute the Nominatim query"
         return false
     }
 }
 
 /**
  * Extract the OSM bbox signature from a Geometry
- *
+ * e.g. (bbox:"50.7 7.1 50.7 7.12 50.71 7.11")
  * @param geometry input geometry
  *
  * @return osm bbox
@@ -145,50 +151,80 @@ static boolean executeNominatimQuery(def query, def outputOSMFile) {
 static String toBBox(Geometry geometry) {
     if (geometry != null) {
         Envelope env = geometry.getEnvelopeInternal()
-        return "${env.getMinY()},${env.getMinX()},${env.getMaxY()}, ${env.getMaxX()}".toString()
+        return "(bbox:${env.getMinY()},${env.getMinX()},${env.getMaxY()}, ${env.getMaxX()})".toString()
     }
-    error "Cannot convert to an OSM bounding box"
-}
-
-
-
-/**
- * OSM query builder
- *
- * @param keys
- *
- * @return
- */
-static String defineKeysFilter(def keys, OSMElement... osmElement) {
-    def query = "("
-    osmElement.each { i ->
-        keys.each {
-            query += "${i.toString().toLowerCase()}[\"${it.toLowerCase()}\"];"
-        }
-    }
-    query += ");(._;>;);out;"
-    return query
+    error "Cannot convert to an overpass bounding box"
 }
 
 /**
- * Define the area on which to make the query
+ * Extract the OSM poly signature from a Geometry
+ * e.g. (poly:"50.7 7.1 50.7 7.12 50.71 7.11")
+ * @param geometry input geometry
  *
- * @param bbox the bbox on which the area should be computed
- * @param poly the polygon on which the area should be computed
- *
- * @return query the begin of the overpass query, corresponding to the defined area
- *
- * @author Erwan Bocher (CNRS LAB-STICC)
- * @author Elisabeth Le Saux (UBS LAB-STICC)
+ * @return osm poly
  */
-static String defineFilterArea(def filterArea) {
-    if (filterArea != null && !filterArea.isEmpty()) {
-        def elementFilter = filterArea.keySet()[0]
-        if (elementFilter.equalsIgnoreCase("bbox") || elementFilter.equalsIgnoreCase("poly")) {
-            def filterValue = filterArea.get(elementFilter)
-            return "[${elementFilter.toLowerCase()}:${filterValue}]"
+static String toPoly(Geometry geometry) {
+    if (geometry != null) {
+        if (geometry instanceof Polygon) {
+            Coordinate[] coordinates = ((Polygon) geometry).getExteriorRing().getCoordinates()
+            def poly = "(poly:\""
+            for (i in 0.. coordinates.size()-3) {
+                Coordinate coord = coordinates[i]
+                poly += "${coord.getY()} ${coord.getX()} "
+            }
+            Coordinate coord = coordinates[coordinates.size()-2]
+            poly += "${coord.getY()} ${coord.getX()}"
+            return poly + "\")"
         }
-        error "Cannot build the OSM filter"
+        error "The input geometry must be polygon"
     }
+    error "Cannot convert to an overpass poly filter"
 }
 
+/**
+ * Method to build a valid OSM query with a bbox
+ *
+ * @param envelope the envelope to filter
+ * @param keys a list of OSM keys
+ * @param osmElement a list of OSM elements to build the query (node, way, relation)
+ *
+ * @return a string representation of the OSM query
+ */
+static String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElement) {
+    if (envelope != null) {
+        def query = "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()}, ${envelope.getMaxX()}];\n(\n"
+        osmElement.each { i ->
+            keys.each {
+                query += "\t${i.toString().toLowerCase()}[\"${it.toLowerCase()}\"];\n"
+            }
+        }
+        query += ");\n(._;>;);\nout;"
+        return query
+    }
+    error "Cannot create the overpass query from the bbox $envelope"
+}
+
+/**
+ * Method to build a valid and optimized OSM query
+ *
+ * @param polygon the polygon to filter
+ * @param keys a list of OSM keys
+ * @param osmElement a list of OSM elements to build the query (node, way, relation)
+ *
+ * @return a string representation of the OSM query
+ */
+static String buildOSMQuery(Polygon polygon, def keys, OSMElement... osmElement) {
+    if (polygon != null) {
+        Envelope envelope = polygon.getEnvelopeInternal()
+        def query = "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()}, ${envelope.getMaxX()}];\n(\n"
+        String filterArea =  toPoly(polygon)
+        osmElement.each { i ->
+            keys.each {
+                query += "\t${i.toString().toLowerCase()}[\"${it.toLowerCase()}\"]$filterArea;\n"
+            }
+        }
+        query += ");\n(._;>;);\nout;"
+        return query
+    }
+    error "Cannot create the overpass query from the bbox $polygon"
+}

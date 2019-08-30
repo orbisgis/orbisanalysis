@@ -66,7 +66,7 @@ IProcess toLines() {
         title "Transform all OSM features as lines"
         inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: int, tagKeys: []
         outputs outputTableName: String
-        run { datasource, osmTablesPrefix, epsgCode, tag_keys ->
+        run { datasource, osmTablesPrefix, epsgCode, tagKeys ->
             String outputTableName = "OSM_LINES_$uuid"
             if (datasource != null) {
                 info "Start lines transformation"
@@ -508,7 +508,7 @@ static boolean extractNodesAsPoints(JdbcDataSource dataSource, String osmTablesP
 
         dataSource.execute """drop table if exists ${outputNodesPoints}; 
                     CREATE TABLE ${outputNodesPoints} AS SELECT a.id_node,ST_TRANSFORM(ST_SETSRID(a.THE_GEOM, 4326), 
-                    ${epsgCode}) as the_geom, ${tagList} from ${osmTablesPrefix}_node as a, 
+                    ${epsgCode}) as the_geom ${tagList} from ${osmTablesPrefix}_node as a, 
                     ${osmTablesPrefix}_node_tag  b where a.id_node=b.id_node ${filter} group by a.id_node;"""
         return true
     } else {

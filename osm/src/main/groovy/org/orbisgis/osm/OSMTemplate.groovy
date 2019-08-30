@@ -58,19 +58,19 @@ private static def extraction(datasource, filterArea, dataDim, tags) {
                 if (dataDim.contains(0)) {
                     def transform = OSMHelper.Transform.toPoints()
                     info "Transforming points"
-                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tags)
+                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tagKeys: tags)
                     outputPointsTableName = transform.results.outputTableName
                 }
                 if (dataDim.contains(1)) {
                     def transform = OSMHelper.Transform.toLines()
                     logger.info "Transforming lines"
-                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tags)
+                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tagKeys: tags)
                     outputLinesTableName = transform.results.outputTableName
                 }
                 if (dataDim.contains(2)) {
                     def transform = OSMHelper.Transform.toPolygons()
                     logger.info "Transforming polygons"
-                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tags)
+                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tagKeys: tags)
                     outputPolygonsTableName = transform.results.outputTableName
                 }
                 return [datasource             : datasource,

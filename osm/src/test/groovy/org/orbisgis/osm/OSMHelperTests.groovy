@@ -82,7 +82,7 @@ class OSMHelperTests {
         transform.execute( datasource:h2GIS, osmTablesPrefix:prefix,
                 epsgCode :2154,
                 tag_keys:["building"])
-        assertEquals 125, h2GIS.getTable(transform.results.outputTableName).rowCount
+        assertEquals 126, h2GIS.getTable(transform.results.outputTableName).rowCount
     }
 
     @Test
@@ -110,7 +110,7 @@ class OSMHelperTests {
         def transform = OSMHelper.Transform.toPoints()
         transform.execute( datasource:h2GIS, osmTablesPrefix:prefix,
                 epsgCode :2154, tag_keys:["place"])
-        assertEquals 3, h2GIS.getTable(transform.results.outputTableName).rowCount
+        assertEquals 4, h2GIS.getTable(transform.results.outputTableName).rowCount
 
     }
 

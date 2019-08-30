@@ -200,7 +200,7 @@ class OSMHelperTests {
     }
 
 
-    //@Test doesn't work here... POST method must be used
+/*    //@Test doesn't work here... POST method must be used
     @Test
     void extractPlaceLoadTransformPolygonsFilteredPolyTest() {
         JdbcDataSource dataSource = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
@@ -213,6 +213,6 @@ class OSMHelperTests {
             output.delete()
         }
         assertTrue process.results.datasource.save(process.results.outputPolygonsTableName, './target/osm_building_poly_from_place.shp')
-    }
+    }*/
 
 }

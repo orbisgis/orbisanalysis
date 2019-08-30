@@ -15,9 +15,9 @@ import static org.orbisgis.osm.OSMElement.*
  * Perform the extraction.
  *
  * @param datasource Data source to use for the extraction, if null a new H2GIS data source is created.
- * @param filterArea Area to extract. Must be specificied
+ * @param filterArea Area to extract. Must be specified
  * @param dataDim Dimension of the data to extract. It should be an array with the value 0, 1, 2.
- * @param tags Array of tags to extract.
+ * @param tags list of tags to be filtered.
  *
  * @return Map containing the datasource with the key 'datasource', the name of the output polygon table with the key
  * 'outputPolygonsTableName', the name of the output line table with the key 'outputLinesTableName', the name of the
@@ -30,55 +30,55 @@ private static def extraction(datasource, filterArea, dataDim, tags) {
     if (datasource == null) {
         datasource = H2GIS.open(File.createTempFile("osm", "db"))
     }
-    if (filterArea != null || dataDim != null) {
-        def query =""
-        if(filterArea instanceof Envelope ) {
-            query = OSMHelper.Utilities.buildOSMQuery(filterArea, tags, NODE, WAY, RELATION)
-        }
-        else if( filterArea instanceof Polygon ) {
-            query = OSMHelper.Utilities.buildOSMQuery(filterArea, tags, NODE, WAY, RELATION)
-        }
-        else {
-            error "The filter area must a JTS Envelope or a Polygon"
-        }
+    if (filterArea == null) {
+        error "Filter area not defined"
+    }
+    if (dataDim == null) {
+        dataDim = [0,1,2]
+    }
 
-        def extract = OSMHelper.Loader.extract()
-        if (!query.isEmpty()) {
-            if (extract.execute(overpassQuery: query)) {
-                def prefix = "OSM_FILE_$uuid"
-                def load = OSMHelper.Loader.load()
-                info "Loading"
-                if (load(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: extract.results.outputFilePath)) {
-                    def outputPointsTableName = null
-                    def outputPolygonsTableName = null
-                    def outputLinesTableName = null
-                    if (dataDim.contains(0)) {
-                        def transform = OSMHelper.Transform.toPoints()
-                        info "Transforming points"
-                        assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tags)
-                        outputPointsTableName = transform.results.outputTableName
-                    }
-                    if (dataDim.contains(1)) {
-                        def transform = OSMHelper.Transform.toLines()
-                        logger.info "Transforming lines"
-                        assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tags)
-                        outputLinesTableName = transform.results.outputTableName
-                    }
-                    if (dataDim.contains(2)) {
-                        def transform = OSMHelper.Transform.toPolygons()
-                        logger.info "Transforming polygons"
-                        assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tags)
-                        outputPolygonsTableName = transform.results.outputTableName
-                    }
-                    return [datasource             : datasource,
-                            outputPolygonsTableName: outputPolygonsTableName,
-                            outputPointsTableName  : outputPointsTableName,
-                            outputLinesTableName   : outputLinesTableName]
+    def query =""
+    if(filterArea instanceof Envelope || filterArea instanceof Polygon ) {
+        query = OSMHelper.Utilities.buildOSMQuery(filterArea, tags, NODE, WAY, RELATION)
+    }
+    else {
+        error "The filter area must be a JTS Envelope or a Polygon"
+    }
+
+    def extract = OSMHelper.Loader.extract()
+    if (!query.isEmpty()) {
+        if (extract(overpassQuery: query)) {
+            def prefix = "OSM_FILE_$uuid"
+            def load = OSMHelper.Loader.load()
+            info "Loading"
+            if (load(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: extract.results.outputFilePath)) {
+                def outputPointsTableName = null
+                def outputPolygonsTableName = null
+                def outputLinesTableName = null
+                if (dataDim.contains(0)) {
+                    def transform = OSMHelper.Transform.toPoints()
+                    info "Transforming points"
+                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tagKeys: tags)
+                    outputPointsTableName = transform.results.outputTableName
                 }
+                if (dataDim.contains(1)) {
+                    def transform = OSMHelper.Transform.toLines()
+                    logger.info "Transforming lines"
+                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tagKeys: tags)
+                    outputLinesTableName = transform.results.outputTableName
+                }
+                if (dataDim.contains(2)) {
+                    def transform = OSMHelper.Transform.toPolygons()
+                    logger.info "Transforming polygons"
+                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tagKeys: tags)
+                    outputPolygonsTableName = transform.results.outputTableName
+                }
+                return [datasource             : datasource,
+                        outputPolygonsTableName: outputPolygonsTableName,
+                        outputPointsTableName  : outputPointsTableName,
+                        outputLinesTableName   : outputLinesTableName]
             }
         }
-    } else {
-        error "Filter area not defined"
     }
     return null
 }

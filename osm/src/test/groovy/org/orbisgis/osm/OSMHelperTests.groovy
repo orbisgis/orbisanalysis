@@ -22,7 +22,7 @@ class OSMHelperTests {
         def extract = OSMHelper.Loader.extract()
         assertTrue extract.execute(overpassQuery: "(node[\"building\"](48.73254476110234,-3.0790257453918457,48.73565477358819,-3.0733662843704224); " +
                 "way[\"building\"](48.73254476110234,-3.0790257453918457,48.73565477358819,-3.0733662843704224); " +
-                "relation[\"building\"](48.73254476110234,-3.0790257453918457,48.73565477358819,-3.0733662843704224); );");
+                "relation[\"building\"](48.73254476110234,-3.0790257453918457,48.73565477358819,-3.0733662843704224); );")
         assertTrue new File(extract.results.outputFilePath).exists()
         assertTrue new File(extract.results.outputFilePath).length() > 0
     }
@@ -30,7 +30,7 @@ class OSMHelperTests {
     @Test
     void extractTestWrongQuery() {
         def extract = OSMHelper.Loader.extract()
-        assertFalse extract.execute(overpassQuery: "building =yes");
+        assertFalse extract.execute(overpassQuery: "building =yes")
     }
 
     @Test
@@ -82,7 +82,7 @@ class OSMHelperTests {
         transform.execute( datasource:h2GIS, osmTablesPrefix:prefix,
                 epsgCode :2154,
                 tag_keys:["building"])
-        assertEquals 125, h2GIS.getTable(transform.results.outputTableName).rowCount
+        assertEquals 126, h2GIS.getTable(transform.results.outputTableName).rowCount
     }
 
     @Test
@@ -110,7 +110,7 @@ class OSMHelperTests {
         def transform = OSMHelper.Transform.toPoints()
         transform.execute( datasource:h2GIS, osmTablesPrefix:prefix,
                 epsgCode :2154, tag_keys:["place"])
-        assertEquals 3, h2GIS.getTable(transform.results.outputTableName).rowCount
+        assertEquals 4, h2GIS.getTable(transform.results.outputTableName).rowCount
 
     }
 
@@ -132,6 +132,8 @@ class OSMHelperTests {
         IProcess process = OSMHelper.OSMTemplate.BUILDING()
         process.execute(filterArea: new Envelope(26.87346652150154 , 26.874645352363586, -31.899314836854924 , -31.898518974220607), datasource: dataSource)
         assertNotNull(process.results.datasource.getTable(process.results.outputPolygonsTableName))
+        assertNull(process.results.outputLinesTableName)
+        assertNull(process.results.outputPointsTableName)
         assertEquals 1, dataSource.getTable(process.results.outputPolygonsTableName).rowCount
     }
 
@@ -147,13 +149,13 @@ class OSMHelperTests {
 
     @Test
     void extractPlace() {
-        assertNotNull OSMHelper.Utilities.getAreaFromPlace("vannes");
-        assertNotNull OSMHelper.Utilities.getAreaFromPlace("lyon");
-        Geometry geom = OSMHelper.Utilities.getAreaFromPlace("Baarle-Nassau");
+        assertNotNull OSMHelper.Utilities.getAreaFromPlace("vannes")
+        assertNotNull OSMHelper.Utilities.getAreaFromPlace("lyon")
+        Geometry geom = OSMHelper.Utilities.getAreaFromPlace("Baarle-Nassau")
         assertEquals(9,geom.getNumGeometries())
-        geom = OSMHelper.Utilities.getAreaFromPlace("Baerle-Duc");
+        geom = OSMHelper.Utilities.getAreaFromPlace("Baerle-Duc")
         assertEquals(24,geom.getNumGeometries())
-        geom = OSMHelper.Utilities.getAreaFromPlace("séné");
+        geom = OSMHelper.Utilities.getAreaFromPlace("séné")
         assertEquals(6,geom.getNumGeometries())
     }
 
@@ -180,13 +182,14 @@ class OSMHelperTests {
                 ");\n" +
                 "(._;>;);\n" +
                 "out;", OSMHelper.Utilities.buildOSMQuery(p,["WATER"], OSMElement.NODE, OSMElement.RELATION)
+        print OSMHelper.Utilities.buildOSMQuery(p.getEnvelopeInternal(), ["WATER", "BUILDING"], OSMElement.NODE, OSMElement.RELATION,OSMElement.WAY)
     }
 
     @Test
     void extractPlaceLoadTransformPolygonsFilteredBboxTest() {
         JdbcDataSource dataSource = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
         assertNotNull(dataSource)
-        Geometry geom = OSMHelper.Utilities.getAreaFromPlace("Cliscouët, vannes");
+        Geometry geom = OSMHelper.Utilities.getAreaFromPlace("Cliscouët, vannes")
         IProcess process = OSMHelper.OSMTemplate.BUILDING()
         process.execute(filterArea: geom.getEnvelopeInternal(),datasource:dataSource)
         File output = new File("./target/osm_building_bbox_from_place.shp")
@@ -197,7 +200,8 @@ class OSMHelperTests {
     }
 
 
-    //@Test doesn't work here... POST method must be used
+/*    //@Test doesn't work here... POST method must be used
+    @Test
     void extractPlaceLoadTransformPolygonsFilteredPolyTest() {
         JdbcDataSource dataSource = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
         assertNotNull(dataSource)
@@ -209,6 +213,6 @@ class OSMHelperTests {
             output.delete()
         }
         assertTrue process.results.datasource.save(process.results.outputPolygonsTableName, './target/osm_building_poly_from_place.shp')
-    }
+    }*/
 
 }

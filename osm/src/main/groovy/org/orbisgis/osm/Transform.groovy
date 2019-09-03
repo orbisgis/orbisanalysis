@@ -1,4 +1,3 @@
-
 package org.orbisgis.osm
 
 import groovy.transform.BaseScript
@@ -525,7 +524,7 @@ static boolean extractWaysAsLines(JdbcDataSource dataSource, String osmTablesPre
  * @author Elisabeth Lesaux (UBS LAB-STICC)
  */
 static boolean extractRelationsAsLines(JdbcDataSource dataSource, String osmTablesPrefix, int epsgCode,
-                                  String outputRelationsLines, def tagKeys) {
+                                       String outputRelationsLines, def tagKeys) {
 
     def counttagKeysQuery = "select count(*) as count from ${osmTablesPrefix}_relation_tag"
     def filterByKeys = false

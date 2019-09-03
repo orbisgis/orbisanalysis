@@ -43,56 +43,56 @@ private static def extraction(datasource, filterArea, epsg, dataDim, tagsKeys) {
     }
 
     def query =""
-        Coordinate interiorPoint
-        if(filterArea instanceof Envelope ) {
-            query = OSMHelper.Utilities.buildOSMQuery(filterArea, tagsKeys, NODE, WAY, RELATION)
-            interiorPoint = filterArea.centre()
-            epsg = SFSUtilities.getSRID(datasource.getConnection(), interiorPoint.y as float, interiorPoint.x as float)
-        }
-        else if( filterArea instanceof Polygon ) {
-            query = OSMHelper.Utilities.buildOSMQuery(filterArea, tagsKeys, NODE, WAY, RELATION)
-            interiorPoint= filterArea.getCentroid().getCoordinate()
-            epsg = SFSUtilities.getSRID(datasource.getConnection(), interiorPoint.y as float, interiorPoint.x as float)
-        }
-        else {
-            error "The filter area must a JTS Envelope or a Polygon"
-        }
+    Coordinate interiorPoint
+    if(filterArea instanceof Envelope ) {
+        query = OSMHelper.Utilities.buildOSMQuery(filterArea, tagsKeys, NODE, WAY, RELATION)
+        interiorPoint = filterArea.centre()
+        epsg = SFSUtilities.getSRID(datasource.getConnection(), interiorPoint.y as float, interiorPoint.x as float)
+    }
+    else if( filterArea instanceof Polygon ) {
+        query = OSMHelper.Utilities.buildOSMQuery(filterArea, tagsKeys, NODE, WAY, RELATION)
+        interiorPoint= filterArea.getCentroid().getCoordinate()
+        epsg = SFSUtilities.getSRID(datasource.getConnection(), interiorPoint.y as float, interiorPoint.x as float)
+    }
+    else {
+        error "The filter area must a JTS Envelope or a Polygon"
+    }
 
-        def extract = OSMHelper.Loader.extract()
-        if (!query.isEmpty()) {
-            if (extract.execute(overpassQuery: query)) {
-                def prefix = "OSM_FILE_$uuid"
-                def load = OSMHelper.Loader.load()
-                info "Loading"
-                if (load(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: extract.results.outputFilePath)) {
-                    def outputPointsTableName = null
-                    def outputPolygonsTableName = null
-                    def outputLinesTableName = null
-                    if (dataDim.contains(0)) {
-                        def transform = OSMHelper.Transform.toPoints()
-                        info "Transforming points"
-                        assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tagsKeys)
-                        outputPointsTableName = transform.results.outputTableName
-                    }
-                    if (dataDim.contains(1)) {
-                        def transform = OSMHelper.Transform.toLines()
-                        info "Transforming lines"
-                        assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tagsKeys)
-                        outputLinesTableName = transform.results.outputTableName
-                    }
-                    if (dataDim.contains(2)) {
-                        def transform = OSMHelper.Transform.toPolygons()
-                        info "Transforming polygons"
-                        assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tagsKeys)
-                        outputPolygonsTableName = transform.results.outputTableName
-                    }
-                    return [datasource             : datasource,
-                            outputPolygonsTableName: outputPolygonsTableName,
-                            outputPointsTableName  : outputPointsTableName,
-                            outputLinesTableName   : outputLinesTableName]
+    def extract = OSMHelper.Loader.extract()
+    if (!query.isEmpty()) {
+        if (extract.execute(overpassQuery: query)) {
+            def prefix = "OSM_FILE_$uuid"
+            def load = OSMHelper.Loader.load()
+            info "Loading"
+            if (load(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: extract.results.outputFilePath)) {
+                def outputPointsTableName = null
+                def outputPolygonsTableName = null
+                def outputLinesTableName = null
+                if (dataDim.contains(0)) {
+                    def transform = OSMHelper.Transform.toPoints()
+                    info "Transforming points"
+                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tagsKeys)
+                    outputPointsTableName = transform.results.outputTableName
                 }
+                if (dataDim.contains(1)) {
+                    def transform = OSMHelper.Transform.toLines()
+                    info "Transforming lines"
+                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tagsKeys)
+                    outputLinesTableName = transform.results.outputTableName
+                }
+                if (dataDim.contains(2)) {
+                    def transform = OSMHelper.Transform.toPolygons()
+                    info "Transforming polygons"
+                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tag_keys: tagsKeys)
+                    outputPolygonsTableName = transform.results.outputTableName
+                }
+                return [datasource             : datasource,
+                        outputPolygonsTableName: outputPolygonsTableName,
+                        outputPointsTableName  : outputPointsTableName,
+                        outputLinesTableName   : outputLinesTableName]
             }
         }
+    }
     return null
 }
 
@@ -123,9 +123,9 @@ IProcess BUILDING() {
         outputs datasource: JdbcDataSource, outputPolygonsTableName: String, outputPointsTableName: String, outputLinesTableName: String
         run { filterArea, epsg, datasource, dataDim ->
             def tagsKeys = ['building', 'amenity', 'layer', 'aeroway', 'historic', 'leisure', 'monument', 'place_of_worship',
-                        'military', 'railway', 'public_transport', 'barrier', 'government', 'historic:building',
-                        'grandstand', 'apartments', 'ruins', 'agricultural', 'barn', 'healthcare', 'education', 'restaurant',
-                        'sustenance', 'office']
+                            'military', 'railway', 'public_transport', 'barrier', 'government', 'historic:building',
+                            'grandstand', 'apartments', 'ruins', 'agricultural', 'barn', 'healthcare', 'education', 'restaurant',
+                            'sustenance', 'office']
             extraction(datasource, filterArea, epsg, dataDim, tagsKeys)
         }
     })

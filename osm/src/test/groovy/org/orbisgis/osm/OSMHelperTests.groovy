@@ -20,9 +20,11 @@ class OSMHelperTests {
     @Test
     void extractTest() {
         def extract = OSMHelper.Loader.extract()
-        assertTrue extract.execute(overpassQuery: "(node[\"building\"](48.73254476110234,-3.0790257453918457,48.73565477358819,-3.0733662843704224); " +
-                "way[\"building\"](48.73254476110234,-3.0790257453918457,48.73565477358819,-3.0733662843704224); " +
-                "relation[\"building\"](48.73254476110234,-3.0790257453918457,48.73565477358819,-3.0733662843704224); );");
+        assertTrue extract.execute(overpassQuery: "(node(48.780889172043,-3.0626213550568,48.783356423929,-3.0579113960266); " +
+                "way(48.780889172043,-3.0626213550568,48.783356423929,-3.0579113960266); " +
+                "relation(48.780889172043,-3.0626213550568,48.783356423929,-3.0579113960266); );\n" +
+                "out;\n" +
+                ">;");
         assertTrue new File(extract.results.outputFilePath).exists()
         assertTrue new File(extract.results.outputFilePath).length() > 0
     }
@@ -81,7 +83,7 @@ class OSMHelperTests {
         def transform = OSMHelper.Transform.toPolygons()
         transform.execute( datasource:h2GIS, osmTablesPrefix:prefix,
                 epsgCode :2154,
-                tag_keys:["building"])
+                tagKeys:["building"])
         assertEquals 125, h2GIS.getTable(transform.results.outputTableName).rowCount
     }
 
@@ -109,7 +111,7 @@ class OSMHelperTests {
 
         def transform = OSMHelper.Transform.toPoints()
         transform.execute( datasource:h2GIS, osmTablesPrefix:prefix,
-                epsgCode :2154, tag_keys:["place"])
+                epsgCode :2154, tagKeys:["place"])
         assertEquals 3, h2GIS.getTable(transform.results.outputTableName).rowCount
 
     }
@@ -209,6 +211,18 @@ class OSMHelperTests {
             output.delete()
         }
         assertTrue process.results.datasource.save(process.results.outputPolygonsTableName, './target/osm_building_poly_from_place.shp')
+    }
+
+    @Test
+    void extractLoadTransformRelationTest() {
+        def h2GIS = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
+        def load = OSMHelper.Loader.load()
+        def prefix = "OSM_FILE"
+        assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
+                osmFilePath : new File(this.class.getResource("osm_one_relation.osm").toURI()).getAbsolutePath())
+        def transform = OSMHelper.Transform.extractRelationsAsLines(h2GIS,prefix, 2154, "relations_tests", ["building"])
+
+        assertEquals 1, h2GIS.getTable("relations_tests").rowCount
     }
 
 }

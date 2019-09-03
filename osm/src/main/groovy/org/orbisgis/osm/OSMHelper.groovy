@@ -25,8 +25,6 @@ abstract class OSMHelper extends GroovyProcessFactory {
 
     //Utility methods
     static def uuid = { UUID.randomUUID().toString().replaceAll("-", "_") }
-    static def Input = { Input.call() }
-    static def Output = { Output.call() }
     static def utf8ToUrl = { utf8 -> URLEncoder.encode(utf8, UTF_8.toString()) }
     static def info = { obj -> logger.info(obj.toString()) }
     static def warn = { obj -> logger.warn(obj.toString()) }

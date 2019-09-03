@@ -57,6 +57,7 @@ private static def extraction(datasource, filterArea, epsg, dataDim, tagsKeys) {
     else {
         error "The filter area must a JTS Envelope or a Polygon"
     }
+    if(epsg!=-1){
 
     def extract = OSMHelper.Loader.extract()
     if (!query.isEmpty()) {
@@ -71,19 +72,19 @@ private static def extraction(datasource, filterArea, epsg, dataDim, tagsKeys) {
                 if (dataDim.contains(0)) {
                     def transform = OSMHelper.Transform.toPoints()
                     info "Transforming points"
-                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tagKeys: tagsKeys)
+                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tagKeys: tagsKeys)
                     outputPointsTableName = transform.results.outputTableName
                 }
                 if (dataDim.contains(1)) {
                     def transform = OSMHelper.Transform.toLines()
                     info "Transforming lines"
-                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tagKeys: tagsKeys)
+                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tagKeys: tagsKeys)
                     outputLinesTableName = transform.results.outputTableName
                 }
                 if (dataDim.contains(2)) {
                     def transform = OSMHelper.Transform.toPolygons()
                     info "Transforming polygons"
-                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: 2154, tagKeys: tagsKeys)
+                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tagKeys: tagsKeys)
                     outputPolygonsTableName = transform.results.outputTableName
                 }
                 return [datasource             : datasource,
@@ -91,6 +92,11 @@ private static def extraction(datasource, filterArea, epsg, dataDim, tagsKeys) {
                         outputPointsTableName  : outputPointsTableName,
                         outputLinesTableName   : outputLinesTableName]
             }
+        }
+         }
+        else{
+            error "Invalid EPSG code : $epsg"
+            return null
         }
     }
     return null

@@ -29,14 +29,20 @@ IProcess toPoints() {
         run { datasource, osmTablesPrefix, epsgCode, tagKeys ->
             String outputTableName = "OSM_POINTS_$uuid"
             if (datasource != null) {
-                info "Start points transformation"
-                info "Indexing osm tables..."
-                buildIndexes(datasource, osmTablesPrefix)
-                def pointsNodes = extractNodesAsPoints(datasource, osmTablesPrefix, epsgCode, outputTableName, tagKeys)
-                if (pointsNodes) {
-                    info "The points have been built."
-                } else {
-                    info "Cannot extract any point."
+                if(epsgCode!=-1) {
+                    info "Start points transformation"
+                    info "Indexing osm tables..."
+                    buildIndexes(datasource, osmTablesPrefix)
+                    def pointsNodes = extractNodesAsPoints(datasource, osmTablesPrefix, epsgCode, outputTableName, tagKeys)
+                    if (pointsNodes) {
+                        info "The points have been built."
+                    } else {
+                        info "Cannot extract any point."
+                        return
+                    }
+                }
+                else{
+                    error "Invalid EPSG code : $epsg"
                     return
                 }
             } else {
@@ -68,13 +74,14 @@ IProcess toLines() {
         run { datasource, osmTablesPrefix, epsgCode, tagKeys ->
             String outputTableName = "OSM_LINES_$uuid"
             if (datasource != null) {
+                if(epsgCode!=-1){
                 info "Start lines transformation"
                 info "Indexing osm tables..."
                 buildIndexes(datasource, osmTablesPrefix)
                 def outputWayLines = "WAYS_LINES_$uuid"
                 def lineWays = extractWaysAsLines(datasource, osmTablesPrefix, epsgCode, outputWayLines, tagKeys)
                 def outputRelationLines = "RELATION_LINES_$uuid"
-                def lineRelations =  extractRelationsAsLines(datasource,osmTablesPrefix, epsgCode, outputRelationLines, tagKeys)
+                def lineRelations = extractRelationsAsLines(datasource, osmTablesPrefix, epsgCode, outputRelationLines, tagKeys)
                 if (lineWays && lineRelations) {
                     //Merge ways and relations
                     def columnsWays = datasource.getTable(outputWayLines).columnNames
@@ -110,17 +117,19 @@ IProcess toLines() {
                         select  ${rightSelect} from ${outputWayLines};
                         DROP TABLE IF EXISTS ${outputWayLines}, ${outputRelationLines};"""
                     info "The way and relation lines have been built."
-                }
-                else if (lineWays) {
+                } else if (lineWays) {
                     datasource.execute """ALTER TABLE ${outputWayLines} RENAME TO ${outputTableName};"""
                     info "The way lines have been built."
-                }
-                else if(lineRelations){
+                } else if (lineRelations) {
                     datasource.execute """ALTER TABLE ${outputRelationLines} RENAME TO ${outputTableName};"""
                     info "The relation lines have been built."
-                }
-                else {
+                } else {
                     info "Cannot extract any lines."
+                    return
+                }
+            }
+                else{
+                    error "Invalid EPSG code : $epsg"
                     return
                 }
             } else {
@@ -150,6 +159,7 @@ IProcess toPolygons() {
         run { datasource, osmTablesPrefix, epsgCode, tagKeys ->
             String outputTableName = "OSM_POLYGONS_$uuid"
             if (datasource != null) {
+                if(epsgCode!=-1){
                 info "Start polygon transformation"
                 info "Indexing osm tables..."
                 buildIndexes(datasource, osmTablesPrefix)
@@ -200,6 +210,10 @@ IProcess toPolygons() {
                     info "The relation polygons have been built."
                 } else {
                     info "Cannot extract any polygon."
+                    return
+                }
+            }else{
+                    error "Invalid EPSG code : $epsg"
                     return
                 }
             } else {

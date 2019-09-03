@@ -67,8 +67,7 @@ class OSMHelperTests {
         assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
                 osmFilePath : new File(this.class.getResource("osmFileForTest.osm").toURI()).getAbsolutePath())
         def transform = OSMHelper.Transform.toPolygons()
-        transform.execute( datasource:h2GIS, osmTablesPrefix:prefix,
-                epsgCode :2154)
+        transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154)
         assertEquals 126, h2GIS.getTable(transform.results.outputTableName).rowCount
     }
 
@@ -81,9 +80,7 @@ class OSMHelperTests {
                 osmFilePath : new File(this.class.getResource("osmFileForTest.osm").toURI()).getAbsolutePath())
 
         def transform = OSMHelper.Transform.toPolygons()
-        transform.execute( datasource:h2GIS, osmTablesPrefix:prefix,
-                epsgCode :2154,
-                tagKeys:["building"])
+        transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154, tagKeys:["building"])
         assertEquals 125, h2GIS.getTable(transform.results.outputTableName).rowCount
     }
 

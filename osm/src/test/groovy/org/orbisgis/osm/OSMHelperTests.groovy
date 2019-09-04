@@ -94,7 +94,6 @@ class OSMHelperTests {
         def transform = OSMHelper.Transform.toLines()
         transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154)
         h2GIS.save(transform.results.outputTableName, "/tmp/osm.shp")
-
         assertEquals 167, h2GIS.getTable(transform.results.outputTableName).rowCount
     }
 
@@ -109,6 +108,18 @@ class OSMHelperTests {
         def transform = OSMHelper.Transform.toPoints()
         transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154, tagKeys:["place"])
         assertEquals 3, h2GIS.getTable(transform.results.outputTableName).rowCount
+    }
+
+    @Test
+    void loadTransformLinesWithoutKeysTest() {
+        def h2GIS = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
+        def load = OSMHelper.Loader.load()
+        def prefix = "OSM_FILE"
+        assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
+                osmFilePath : new File(this.class.getResource("saint_jean.osm").toURI()).getAbsolutePath())
+        def transform = OSMHelper.Transform.toLines()
+        transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154,tagKeys: ['railway', 'layer'])
+        assertNull(transform.results.outputTableName)
     }
 
 

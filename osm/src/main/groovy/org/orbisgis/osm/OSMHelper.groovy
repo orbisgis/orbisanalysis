@@ -1,8 +1,6 @@
 package org.orbisgis.osm
 
 import org.orbisgis.processmanager.GroovyProcessFactory
-import org.orbisgis.processmanager.inoutput.Input
-import org.orbisgis.processmanager.inoutput.Output
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -24,6 +22,7 @@ abstract class OSMHelper extends GroovyProcessFactory {
     public static Utilities = new Utilities()
 
     //Utility methods
+    static def getUuid() { UUID.randomUUID().toString().replaceAll("-", "_") }
     static def uuid = { UUID.randomUUID().toString().replaceAll("-", "_") }
     static def utf8ToUrl = { utf8 -> URLEncoder.encode(utf8, UTF_8.toString()) }
     static def info = { obj -> logger.info(obj.toString()) }

@@ -37,7 +37,7 @@ enum OSMElement{
  */
 Geometry getAreaFromPlace(def placeName) {
     def outputOSMFile = File.createTempFile("nominatim_osm", ".geojson")
-    def area
+    def area = null
     if (executeNominatimQuery(placeName, outputOSMFile)) {
         def jsonSlurper = new JsonSlurper()
         def jsonRoot = jsonSlurper.parse(outputOSMFile)
@@ -53,11 +53,13 @@ Geometry getAreaFromPlace(def placeName) {
             if (feature.geometry != null) {
                 if (feature.geometry.type.equalsIgnoreCase("polygon")) {
                     area = parsePolygon(feature.geometry.coordinates, geometryFactory)
+                    area.setSRID(4326)
                 } else if (feature.geometry.type.equalsIgnoreCase("multipolygon")) {
                     def mp = feature.geometry.coordinates.collect { it ->
                         parsePolygon(it, geometryFactory)
                     }.toArray(new Polygon[0])
                     area = geometryFactory.createMultiPolygon(mp)
+                    area.setSRID(4326)
                 }
             }
         }
@@ -194,8 +196,13 @@ static String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElemen
     if (envelope != null) {
         def query = "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()}, ${envelope.getMaxX()}];\n(\n"
         osmElement.each { i ->
+            if(keys==null || keys.isEmpty()){
+                query += "\t${i.toString().toLowerCase()};\n"
+            }
+            else{
             keys.each {
                 query += "\t${i.toString().toLowerCase()}[\"${it.toLowerCase()}\"];\n"
+            }
             }
         }
         query += ");\n(._;>;);\nout;"
@@ -219,8 +226,13 @@ static String buildOSMQuery(Polygon polygon, def keys, OSMElement... osmElement)
         def query = "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()}, ${envelope.getMaxX()}];\n(\n"
         String filterArea =  toPoly(polygon)
         osmElement.each { i ->
-            keys.each {
-                query += "\t${i.toString().toLowerCase()}[\"${it.toLowerCase()}\"]$filterArea;\n"
+            if(keys==null || keys.isEmpty()){
+                query += "\t${i.toString().toLowerCase()};\n"
+            }
+            else {
+                keys.each {
+                    query += "\t${i.toString().toLowerCase()}[\"${it.toLowerCase()}\"]$filterArea;\n"
+                }
             }
         }
         query += ");\n(._;>;);\nout;"

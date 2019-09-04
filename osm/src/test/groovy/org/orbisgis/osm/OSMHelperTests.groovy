@@ -180,6 +180,19 @@ class OSMHelperTests {
     }
 
     @Test
+    void buildOSMQueryEmptyKeys() {
+        WKTReader  wktReader = new WKTReader()
+        Geometry p = wktReader.read("POLYGON ((4 2, 10 20, 30 20, 30 0, 4 2))")
+        assertEquals "[bbox:0.0,4.0,20.0, 30.0];\n" +
+                "(\n" +
+                "\tnode;\n" +
+                "\trelation;\n" +
+                ");\n" +
+                "(._;>;);\n" +
+                "out;", OSMHelper.Utilities.buildOSMQuery(p.getEnvelopeInternal(),[], OSMElement.NODE, OSMElement.RELATION)
+    }
+
+    @Test
     void extractPlaceLoadTransformPolygonsFilteredBboxTest() {
         JdbcDataSource dataSource = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
         assertNotNull(dataSource)

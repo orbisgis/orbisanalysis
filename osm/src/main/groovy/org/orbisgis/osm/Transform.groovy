@@ -37,8 +37,8 @@ IProcess toPoints() {
                     if (pointsNodes) {
                         info "The points have been built."
                     } else {
-                        info "Cannot extract any point."
-                        return
+                        info "Cannot extract any point. The name of the output table will be null."
+                        outputTableName = null
                     }
                 }
                 else{
@@ -124,8 +124,8 @@ IProcess toLines() {
                     datasource.execute """ALTER TABLE ${outputRelationLines} RENAME TO ${outputTableName};"""
                     info "The relation lines have been built."
                 } else {
-                    info "Cannot extract any lines."
-                    return
+                    info "Cannot extract any line. The name of the output table will be null."
+                    outputTableName = null
                 }
             }
                 else{
@@ -209,8 +209,8 @@ IProcess toPolygons() {
                     datasource.execute """ALTER TABLE ${outputRelationPolygons} RENAME TO ${outputTableName};"""
                     info "The relation polygons have been built."
                 } else {
-                    info "Cannot extract any polygon."
-                    return
+                    info "Cannot extract any polygon. The name of the output table will be null."
+                    outputTableName = null
                 }
             }else{
                     error "Invalid EPSG code : $epsg"

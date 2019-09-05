@@ -114,7 +114,7 @@ IProcess toLines() {
                         CREATE TABLE ${outputTableName} AS 
                         SELECT  ${leftSelect} from ${outputWayLines} 
                         union all 
-                        select  ${rightSelect} from ${outputWayLines};
+                        select  ${rightSelect} from ${outputRelationLines};
                         DROP TABLE IF EXISTS ${outputWayLines}, ${outputRelationLines};"""
                     info "The way and relation lines have been built."
                 } else if (lineWays) {

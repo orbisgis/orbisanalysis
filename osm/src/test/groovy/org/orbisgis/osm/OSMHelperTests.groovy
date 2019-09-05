@@ -37,7 +37,7 @@ class OSMHelperTests {
 
     @Test
     void loadTest() {
-        def h2GIS = H2GIS.open('./target/osmhelper')
+        def h2GIS = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
         def load = OSMHelper.Loader.load()
         def prefix = "OSM_FILE"
         assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix, osmFilePath : new File(this.class.getResource("osmFileForTest.osm").toURI()).getAbsolutePath())

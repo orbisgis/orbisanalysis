@@ -76,7 +76,7 @@ private static def extraction(datasource, filterArea, epsg, dataDim, tagsKeys) {
                     outputPointsTableName = transform.results.outputTableName
                 }
                 if (dataDim.contains(1)) {
-                    def transform = OSMHelper.Transform.toLines()
+                    def transform = OSMHelper.Transform.extractWaysAsLines()
                     info "Transforming lines"
                     assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tagKeys: tagsKeys)
                     outputLinesTableName = transform.results.outputTableName

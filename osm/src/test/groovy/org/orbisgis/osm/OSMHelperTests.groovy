@@ -239,8 +239,22 @@ class OSMHelperTests {
         def prefix = "OSM_FILE"
         assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
                 osmFilePath : new File(this.class.getResource("osm_one_relation.osm").toURI()).getAbsolutePath())
-        def transform = OSMHelper.Transform.extractRelationsAsLines(h2GIS,prefix, 2154, "relations_tests", ["building"])
-
-        assertEquals 1, h2GIS.getTable("relations_tests").rowCount
+        IProcess transform = OSMHelper.Transform.extractRelationsAsLines()
+        transform.execute(datasource:  h2GIS,osmTablesPrefix:  prefix, epsgCode:  2154, tagKeys: ["building"])
+        assertEquals 1, h2GIS.getTable(transform.getResults().outputTableName).rowCount
     }
+
+
+    @Test
+    void extractLoadTransformRelationsIdWaysTest() {
+        def h2GIS = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
+        def load = OSMHelper.Loader.load()
+        def prefix = "OSM_FILE"
+        assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
+                osmFilePath : new File(this.class.getResource("osm_one_relation.osm").toURI()).getAbsolutePath())
+        def transform = OSMHelper.Transform.extractRelationsIdWays(h2GIS,prefix, 2154, "relations_tests", ["building"])
+
+        assertEquals 2, h2GIS.getTable("relations_tests").rowCount
+    }
+
 }

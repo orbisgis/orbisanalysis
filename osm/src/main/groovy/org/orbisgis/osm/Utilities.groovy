@@ -221,21 +221,30 @@ static String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElemen
  * @return a string representation of the OSM query
  */
 static String buildOSMQuery(Polygon polygon, def keys, OSMElement... osmElement) {
-    if (polygon != null) {
+    if (polygon != null || !polygon.isEmpty()) {
         Envelope envelope = polygon.getEnvelopeInternal()
         def query = "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()}, ${envelope.getMaxX()}];\n(\n"
         String filterArea =  toPoly(polygon)
+        def  nokeys = false;
         osmElement.each { i ->
             if(keys==null || keys.isEmpty()){
-                query += "\t${i.toString().toLowerCase()};\n"
+                query += "\t${i.toString().toLowerCase()}$filterArea;\n"
+                nokeys=true
             }
             else {
                 keys.each {
                     query += "\t${i.toString().toLowerCase()}[\"${it.toLowerCase()}\"]$filterArea;\n"
+                    nokeys=false
                 }
             }
         }
-        query += ");\n(._;>;);\nout;"
+        if(nokeys){
+            query += ");\nout;"
+        }
+        else{
+            query += ");\n(._;>;);\nout;"
+        }
+
         return query
     }
     error "Cannot create the overpass query from the bbox $polygon"

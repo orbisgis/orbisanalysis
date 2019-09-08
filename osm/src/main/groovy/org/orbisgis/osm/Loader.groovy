@@ -102,7 +102,11 @@ static boolean executeOverPassQuery(def query, def outputOSMFile) {
         info "Downloading the OSM data from overpass api in ${outputOSMFile}"
         outputOSMFile << connection.inputStream
         return true
-    } else {
+    }
+    else if(connection.responseCode in [429, 504]) {
+        error "Please check bellow the status of Overpass server \n${getSERVER_STATUS()}"
+
+    }else {
         error "Cannot execute the query"
         return false
     }

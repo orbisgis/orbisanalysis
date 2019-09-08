@@ -4,6 +4,7 @@ package org.orbisgis.osm
 import org.junit.jupiter.api.Test
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
+import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.WKTReader
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanager.h2gis.H2GIS
@@ -25,6 +26,17 @@ class OSMHelperTests {
                 "relation(48.780889172043,-3.0626213550568,48.783356423929,-3.0579113960266); );\n" +
                 "out;\n" +
                 ">;");
+        assertTrue new File(extract.results.outputFilePath).exists()
+        assertTrue new File(extract.results.outputFilePath).length() > 0
+    }
+
+    @Test
+    void extractTestFromPlace() {
+        def extract = OSMHelper.Loader.extract()
+        Geometry geom = OSMHelper.Utilities.getAreaFromPlace("Cliscouët, vannes")
+        def query = OSMHelper.Utilities.buildOSMQuery(new GeometryFactory().toGeometry(geom.getEnvelopeInternal()), [],
+                OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+        assertTrue extract.execute(overpassQuery: query);
         assertTrue new File(extract.results.outputFilePath).exists()
         assertTrue new File(extract.results.outputFilePath).length() > 0
     }
@@ -255,6 +267,18 @@ class OSMHelperTests {
         def transform = OSMHelper.Transform.extractRelationsIdWays(h2GIS,prefix, 2154, "relations_tests", ["building"])
 
         assertEquals 2, h2GIS.getTable("relations_tests").rowCount
+    }
+
+    @Test
+    void getSERVER_STATUS(){
+         assertNotNull OSMHelper.SERVER_STATUS
+    }
+
+    @Test
+    void dev(){
+        WKTReader  wktReader = new WKTReader()
+        Geometry p = wktReader.read "POLYGON ((-2.7976946 47.6377566, -2.7976946 47.6530896, -2.7694425 47.6530896, -2.7694425 47.6377566, -2.7976946 47.6377566))"
+        println OSMHelper.Utilities.buildOSMQuery(p, [], OSMElement.NODE, OSMElement.RELATION,OSMElement.WAY)
     }
 
 }

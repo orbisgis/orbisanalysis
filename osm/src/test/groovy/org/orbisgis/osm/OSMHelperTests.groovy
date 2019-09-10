@@ -90,9 +90,8 @@ class OSMHelperTests {
         def prefix = "OSM_FILE"
         assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
                 osmFilePath : new File(this.class.getResource("osmFileForTest.osm").toURI()).getAbsolutePath())
-
         def transform = OSMHelper.Transform.toPolygons()
-        transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154, tagKeys:["building"])
+        transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154, expression:  "tag_key in ('building')")
         assertEquals 125, h2GIS.getTable(transform.results.outputTableName).rowCount
     }
 
@@ -105,8 +104,20 @@ class OSMHelperTests {
                 osmFilePath : new File(this.class.getResource("osmFileForTest.osm").toURI()).getAbsolutePath())
         def transform = OSMHelper.Transform.toLines()
         transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154)
-        h2GIS.save(transform.results.outputTableName, "/tmp/osm.shp")
         assertEquals 167, h2GIS.getTable(transform.results.outputTableName).rowCount
+    }
+
+    @Test
+    void loadTransformPointsNotFilteredTest() {
+        def h2GIS = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
+        def load = OSMHelper.Loader.load()
+        def prefix = "OSM_FILE"
+        assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
+                osmFilePath : new File(this.class.getResource("osmFileForTest.osm").toURI()).getAbsolutePath())
+
+        def transform = OSMHelper.Transform.toPoints()
+        transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154)
+        assertEquals 4, h2GIS.getTable(transform.results.outputTableName).rowCount
     }
 
     @Test
@@ -118,8 +129,21 @@ class OSMHelperTests {
                 osmFilePath : new File(this.class.getResource("osmFileForTest.osm").toURI()).getAbsolutePath())
 
         def transform = OSMHelper.Transform.toPoints()
-        transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154, tagKeys:["place"])
+        transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154, expression:"tag_key='place'")
         assertEquals 3, h2GIS.getTable(transform.results.outputTableName).rowCount
+    }
+
+    @Test
+    void loadTransformPointsBadFilteredTest() {
+        def h2GIS = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
+        def load = OSMHelper.Loader.load()
+        def prefix = "OSM_FILE"
+        assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
+                osmFilePath : new File(this.class.getResource("osmFileForTest.osm").toURI()).getAbsolutePath())
+
+        def transform = OSMHelper.Transform.toPoints()
+        transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154, expression:"tag_key='place' and")
+        assertNull(transform.results.outputTableName)
     }
 
     @Test
@@ -128,9 +152,9 @@ class OSMHelperTests {
         def load = OSMHelper.Loader.load()
         def prefix = "OSM_FILE"
         assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
-                osmFilePath : new File(this.class.getResource("saint_jean.osm").toURI()).getAbsolutePath())
+                osmFilePath : new File(this.class.getResource("osmFileForTest.osm").toURI()).getAbsolutePath())
         def transform = OSMHelper.Transform.toLines()
-        transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154,tagKeys: ['railway', 'layer'])
+        transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154,expression:  "tag_key='toto'")
         assertNull(transform.results.outputTableName)
     }
 
@@ -252,8 +276,10 @@ class OSMHelperTests {
         assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
                 osmFilePath : new File(this.class.getResource("osm_one_relation.osm").toURI()).getAbsolutePath())
         IProcess transform = OSMHelper.Transform.extractRelationsAsLines()
-        transform.execute(datasource:  h2GIS,osmTablesPrefix:  prefix, epsgCode:  2154, tagKeys: ["building"])
+        transform.execute(datasource:  h2GIS,osmTablesPrefix:  prefix, epsgCode:  2154, expression: "tag_key in ('building')")
         assertEquals 1, h2GIS.getTable(transform.getResults().outputTableName).rowCount
+        def row = h2GIS.firstRow("SELECT * FROM $transform.results.outputTableName WHERE ID='r2614051'")
+        assertEquals("yes", row.'BUILDING')
     }
 
 
@@ -264,7 +290,7 @@ class OSMHelperTests {
         def prefix = "OSM_FILE"
         assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
                 osmFilePath : new File(this.class.getResource("osm_one_relation.osm").toURI()).getAbsolutePath())
-        def transform = OSMHelper.Transform.extractRelationsIdWays(h2GIS,prefix, 2154, "relations_tests", ["building"])
+        def transform = OSMHelper.Transform.extractRelationsIdWays(h2GIS,prefix, "relations_tests", "tag_key = 'building'")
 
         assertEquals 2, h2GIS.getTable("relations_tests").rowCount
     }
@@ -274,11 +300,40 @@ class OSMHelperTests {
          assertNotNull OSMHelper.SERVER_STATUS
     }
 
+    //new tests
     @Test
-    void dev(){
-        WKTReader  wktReader = new WKTReader()
-        Geometry p = wktReader.read "POLYGON ((-2.7976946 47.6377566, -2.7976946 47.6530896, -2.7694425 47.6530896, -2.7694425 47.6377566, -2.7976946 47.6377566))"
-        println OSMHelper.Utilities.buildOSMQuery(p, [], OSMElement.NODE, OSMElement.RELATION,OSMElement.WAY)
+    void extractBuilding() {
+        def h2GIS = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
+        def load = OSMHelper.Loader.load()
+        def prefix = "OSM_FILE"
+        assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
+                osmFilePath : new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath())
+
+        def transform = OSMHelper.Transform.toPolygons()
+        transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154, expression: "tag_key in ('building','building:levels')")
+        assertNotNull(transform.results.outputTableName)
+        assertEquals 1038, h2GIS.getTable(transform.results.outputTableName).rowCount
+        assertEquals "BUILDING,BUILDING:LEVELS,ID,THE_GEOM", h2GIS.getTable(transform.results.outputTableName).columnNames.join(",")
+        def row = h2GIS.firstRow("SELECT * FROM $transform.results.outputTableName WHERE ID='w122538293'")
+        assertEquals("retail", row.'BUILDING')
+        assertEquals("0", row.'BUILDING:LEVELS')
     }
 
+    @Test
+    void extractRoads() {
+        def h2GIS = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
+        def load = OSMHelper.Loader.load()
+        def prefix = "OSM_FILE"
+        assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
+                osmFilePath : new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath())
+
+        def transform = OSMHelper.Transform.toLines()
+        transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154, expression:  "tag_key in ('highway', 'maxspeed')")
+        assertNotNull(transform.results.outputTableName)
+        assertEquals 397, h2GIS.getTable(transform.results.outputTableName).rowCount
+        assertEquals "HIGHWAY,ID,MAXSPEED,THE_GEOM", h2GIS.getTable(transform.results.outputTableName).columnNames.join(",")
+        def row = h2GIS.firstRow("SELECT * FROM $transform.results.outputTableName WHERE ID='w138443971'")
+        assertEquals("unclassified", row.'HIGHWAY')
+        assertEquals("50", row.'MAXSPEED')
+    }
 }

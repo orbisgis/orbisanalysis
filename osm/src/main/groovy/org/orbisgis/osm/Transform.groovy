@@ -372,9 +372,9 @@ IProcess extractRelationsAsPolygons() {
                                 outer_condition = "WHERE w.id_way = br.id_way and br.role='outer'"
                                 inner_condition = "WHERE w.id_way = br.id_way and br.role='inner'"
                             }
-                            datasource.execute """DROP TABLE IF EXISTS ${RELATIONS_POLYGONS_OUTER};
+            datasource.execute """DROP TABLE IF EXISTS ${RELATIONS_POLYGONS_OUTER};
             CREATE TABLE ${RELATIONS_POLYGONS_OUTER} AS 
-            SELECT ST_LINEMERGE(st_union(ST_ACCUM(the_geom))) the_geom, id_relation 
+            SELECT ST_LINEMERGE(ST_ACCUM(the_geom)) the_geom, id_relation 
             FROM(
                 SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(the_geom), 4326), ${epsgCode}) the_geom, id_relation, role, id_way 
                 FROM(
@@ -393,7 +393,7 @@ IProcess extractRelationsAsPolygons() {
                             def RELATIONS_POLYGONS_INNER = "RELATIONS_POLYGONS_INNER_$uuid"
                             datasource.execute """DROP TABLE IF EXISTS ${RELATIONS_POLYGONS_INNER};
             CREATE TABLE ${RELATIONS_POLYGONS_INNER} AS 
-            SELECT ST_LINEMERGE(st_union(ST_ACCUM(the_geom))) the_geom, id_relation 
+            SELECT ST_LINEMERGE(ST_ACCUM(the_geom)) the_geom, id_relation 
             FROM(
                 SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(the_geom), 4326), ${epsgCode}) the_geom, id_relation, role, id_way 
                 FROM(     

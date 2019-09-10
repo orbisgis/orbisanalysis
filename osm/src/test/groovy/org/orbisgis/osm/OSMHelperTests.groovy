@@ -300,7 +300,6 @@ class OSMHelperTests {
          assertNotNull OSMHelper.SERVER_STATUS
     }
 
-    //new tests
     @Test
     void extractBuilding() {
         def h2GIS = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
@@ -335,5 +334,41 @@ class OSMHelperTests {
         def row = h2GIS.firstRow("SELECT * FROM $transform.results.outputTableName WHERE ID='w138443971'")
         assertEquals("unclassified", row.'HIGHWAY')
         assertEquals("50", row.'MAXSPEED')
+    }
+
+    @Test
+    void extractLandcover() {
+        def h2GIS = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
+        def load = OSMHelper.Loader.load()
+        def prefix = "OSM_FILE"
+        assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
+                osmFilePath : new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath())
+
+        def transform = OSMHelper.Transform.toPolygons()
+        transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154, expression: "tag_key in('landcover', 'natural', 'landuse', 'water', 'waterway', 'leisure', 'aeroway', 'amenity', 'layer')")
+        assertNotNull(transform.results.outputTableName)
+        assertEquals 207, h2GIS.getTable(transform.results.outputTableName).rowCount
+        assertEquals "AMENITY,ID,LANDUSE,LAYER,LEISURE,NATURAL,THE_GEOM,WATER,WATERWAY", h2GIS.getTable(transform.results.outputTableName).columnNames.join(",")
+        def row = h2GIS.firstRow("SELECT * FROM $transform.results.outputTableName WHERE ID='r278505'")
+        assertEquals("meadow", row.'LANDUSE')
+        assertNull(row.'LEISURE')
+    }
+
+
+    @Test
+    void extractGeometryBorder() {
+        def h2GIS = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
+        def load = OSMHelper.Loader.load()
+        def prefix = "OSM_FILE"
+        assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
+                osmFilePath : new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath())
+
+        def transform = OSMHelper.Transform.toPolygons()
+        transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154, expression: "tag_key in ('leisure')")
+        assertNotNull(transform.results.outputTableName)
+        assertEquals 6, h2GIS.getTable(transform.results.outputTableName).rowCount
+        assertEquals "ID,LEISURE,THE_GEOM", h2GIS.getTable(transform.results.outputTableName).columnNames.join(",")
+        def row = h2GIS.firstRow("SELECT * FROM $transform.results.outputTableName WHERE ID='w717203616'")
+        assertEquals("park", row.'LEISURE')
     }
 }

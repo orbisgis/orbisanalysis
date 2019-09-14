@@ -146,8 +146,10 @@ class OSMHelperTests {
 
         def transform = OSMHelper.Transform.toPoints()
         transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154, tags:['amenity'], columnsToKeep:['iut','operator', 'amenity', 'wheelchair'])
-        h2GIS.getTable(transform.results.outputTableName).save("/tmp/points_osm.shp")
-        //assertEquals 3, h2GIS.getTable(transform.results.outputTableName).rowCount
+        assertEquals 223, h2GIS.getTable(transform.results.outputTableName).rowCount
+        assertEquals "ID_NODE,THE_GEOM,AMENITY,OPERATOR,WHEELCHAIR", h2GIS.getTable(transform.results.outputTableName).columnNames.join(",")
+
+
     }
 
 
@@ -397,18 +399,17 @@ class OSMHelperTests {
         def transform = OSMHelper.Transform.toPolygons()
         transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154, tags : ['leisure'])
         assertNotNull(transform.results.outputTableName)
-        h2GIS.getTable(transform.results.outputTableName).save("/tmp/redon_osm.shp")
         assertEquals 6, h2GIS.getTable(transform.results.outputTableName).rowCount
         assertEquals "ID,LEISURE,THE_GEOM", h2GIS.getTable(transform.results.outputTableName).columnNames.join(",")
         def row = h2GIS.firstRow("SELECT * FROM $transform.results.outputTableName WHERE ID='w717203616'")
         assertEquals("park", row.'LEISURE')
     }
 
-    @Test
+    // @Test disable. It uses for test purpose
     void dev() {
         def h2GIS = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
 
-        Geometry geom = OSMHelper.Utilities.getAreaFromPlace("Vannes");
+        Geometry geom = OSMHelper.Utilities.getAreaFromPlace("singapour");
 
         def query = OSMHelper.Utilities.buildOSMQuery(new GeometryFactory().toGeometry(geom.getEnvelopeInternal())
                 , [], NODE, WAY, RELATION)
@@ -418,20 +419,16 @@ class OSMHelperTests {
                 def prefix = "OSM_FILE_${OSMHelper.getUuid()}"
                 def load = OSMHelper.Loader.load()
                 //info "Loading"
-                if (load(datasource: h2GIS, osmTablesPrefix: prefix, osmFilePath: extract.results.outputFilePath)) {
+                if (load(datasource: h2GIS, osmTablesPrefix: prefix, osmFilePath:extract.results.outputFilePath)) {
 
-                    //def tags = ['building']
-
-                    //def tags = ['highway']
-
-                    def tags = ['landcover', 'landuse']
+                    def tags = ['building']
 
                     def transform = OSMHelper.Transform.toPolygons()
                     transform.execute(datasource: h2GIS, osmTablesPrefix: prefix, epsgCode: 2154, tags: tags)
                     assertNotNull(transform.results.outputTableName)
-                    h2GIS.getTable(transform.results.outputTableName).save("/tmp/redon_osm.shp")
+                    h2GIS.getTable(transform.results.outputTableName).save("/tmp/data_osm.shp")
                 }
             }
-        }
-    }
+     }
+ }
 }

@@ -15,6 +15,8 @@ import org.orbisgis.processmanagerapi.IProcess
  * @param osmTablesPrefix prefix name for OSM tables
  * @param epsgCode EPSG code to reproject the geometries
  * @param tags list of keys and values to be filtered
+ * @param columnsToKeep a list of columns to keep.
+ * The name of a column corresponds to a key name
  *
  * @return outputTableName a name for the table that contains all points
  *
@@ -60,6 +62,8 @@ IProcess toPoints() {
  * @param osmTablesPrefix prefix name for OSM tables
  * @param epsgCode EPSG code to reproject the geometries
  * @param tags list of keys and values to be filtered
+ * @param columnsToKeep a list of columns to keep.
+ * The name of a column corresponds to a key name
  *
  * @return outputTableName a name for the table that contains all lines
  *
@@ -69,7 +73,7 @@ IProcess toPoints() {
 IProcess toLines() {
     return create({
             title "Transform all OSM features as lines"
-            inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: -1, tags : tags, columnsToKeep:columnsToKeep
+            inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: -1, tags : [], columnsToKeep:[]
             outputs outputTableName: String
             run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
                 String outputTableName = "OSM_LINES_$uuid"
@@ -150,6 +154,8 @@ IProcess toLines() {
  * @param osmTablesPrefix prefix name for OSM tables
  * @param epsgCode EPSG code to reproject the geometries
  * @param tags list of keys and values to be filtered
+ * @param columnsToKeep a list of columns to keep.
+ * The name of a column corresponds to a key name
  *
  * @return outputTableName a name for the table that contains all polygons
  * @author Erwan Bocher CNRS LAB-STICC
@@ -240,6 +246,8 @@ IProcess toPolygons() {
  * @param osmTablesPrefix prefix name for OSM tables
  * @param epsgCode EPSG code to reproject the geometries
  * @param tags list of keys and values to be filtered
+ * @param columnsToKeep a list of columns to keep.
+ * The name of a column corresponds to a key name
  *
  * @return outputTableName a name for the table that contains all ways transformed as polygons
  *
@@ -273,7 +281,7 @@ IProcess extractWaysAsPolygons() {
                                 columnsSelector += " where tag_key in ('${(tagKeysList + columnsToKeep).unique().join("','")}')"
                             }
                         }
-                        else if(columnsToKeep!=null){
+                        else if(columnsToKeep!=null&&!columnsToKeep.isEmpty()){
                             columnsSelector += "tag_key in ('${columnsToKeep.unique().join("','")}')"
                         }
                         if (datasource.firstRow(countTagsQuery).count>0) {
@@ -332,6 +340,8 @@ IProcess extractWaysAsPolygons() {
  * @param osmTablesPrefix prefix name for OSM tables
  * @param epsgCode EPSG code to reproject the geometries
  * @param tags list of keys and values to be filtered
+ * @param columnsToKeep a list of columns to keep.
+ * The name of a column corresponds to a key name
  *
  * @return outputTableName a name for the table that contains all relations transformed as polygons
  *
@@ -347,8 +357,8 @@ IProcess extractRelationsAsPolygons() {
                 if (datasource != null) {
                     if(epsgCode!=-1){
                         outputTableName = "RELATION_POLYGONS_$uuid"
-                        def countTagsQuery = "select count(*) as count from ${osmTablesPrefix}_way_tag"
-                        def columnsSelector = """select distinct tag_key as tag_key from ${osmTablesPrefix}_way_tag """
+                        def countTagsQuery = "select count(*) as count from ${osmTablesPrefix}_relation_tag"
+                        def columnsSelector = """select distinct tag_key as tag_key from ${osmTablesPrefix}_relation_tag """
                         def tagsFilter =''
                         if (tags != null && !tags.isEmpty()) {
                             def tagKeysList = []
@@ -364,7 +374,7 @@ IProcess extractRelationsAsPolygons() {
                                 columnsSelector += " where tag_key in ('${(tagKeysList + columnsToKeep).unique().join("','")}')"
                             }
                         }
-                        else if(columnsToKeep!=null){
+                        else if(columnsToKeep!=null&&!columnsToKeep.isEmpty()){
                             columnsSelector += "tag_key in ('${columnsToKeep.unique().join("','")}')"
                         }
 
@@ -496,6 +506,8 @@ IProcess extractRelationsAsPolygons() {
  * @param osmTablesPrefix prefix name for OSM tables
  * @param epsgCode EPSG code to reproject the geometries
  * @param tags list of keys and values to be filtered
+ * @param columnsToKeep a list of columns to keep.
+ * The name of a column corresponds to a key name
  *
  * @return outputTableName a name for the table that contains all ways transformed as lines
  *
@@ -530,7 +542,7 @@ IProcess extractWaysAsLines() {
                                 columnsSelector += " where tag_key in ('${(tagKeysList + columnsToKeep).unique().join("','")}')"
                             }
                         }
-                        else if(columnsToKeep!=null){
+                        else if(columnsToKeep!=null&&!columnsToKeep.isEmpty()){
                             columnsSelector += "tag_key in ('${columnsToKeep.unique().join("','")}')"
                         }
 
@@ -539,7 +551,7 @@ IProcess extractWaysAsLines() {
                             String WAYS_LINES_TMP = "WAYS_LINES_TMP_$uuid"
 
                             if(tagsFilter.isEmpty()){
-                                IDWAYS_TABLE=${osmTablesPrefix}_way_tag
+                                IDWAYS_TABLE="${osmTablesPrefix}_way_tag"
                             }
                             else{
                                 datasource.execute """ DROP TABLE IF EXISTS $IDWAYS_TABLE;
@@ -590,6 +602,8 @@ IProcess extractWaysAsLines() {
  * @param osmTablesPrefix prefix name for OSM tables
  * @param epsgCode EPSG code to reproject the geometries
  * @param tags list of keys and values to be filtered
+ * @param columnsToKeep a list of columns to keep.
+ * The name of a column corresponds to a key name
  *
  * @return outputTableName a name for the table that contains all relations transformed as lines
  *
@@ -622,7 +636,7 @@ IProcess extractRelationsAsLines() {
                                 columnsSelector += " where tag_key in ('${(tagKeysList + columnsToKeep).unique().join("','")}')"
                             }
                         }
-                        else if(columnsToKeep!=null){
+                        else if(columnsToKeep!=null&&!columnsToKeep.isEmpty()){
                             columnsSelector += "tag_key in ('${columnsToKeep.unique().join("','")}')"
                         }
 
@@ -689,6 +703,8 @@ IProcess extractRelationsAsLines() {
  * @param epsgCode EPSG code to reproject the geometries
  * @param outputNodesPoints the name of the nodes points table
  * @param tagKeys list ok keys to be filtered
+ * @param columnsToKeep a list of columns to keep.
+ * The name of a column corresponds to a key name
  *
  * @return true if some points have been built
  *
@@ -713,7 +729,7 @@ static boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesP
             columnsSelector += " where tag_key in ('${(tagKeysList + columnsToKeep).unique().join("','")}')"
         }
     }
-    else if(columnsToKeep!=null){
+    else if(columnsToKeep!=null && !columnsToKeep.isEmpty()){
         columnsSelector += "tag_key in ('${columnsToKeep.unique().join("','")}')"
     }
 
@@ -760,29 +776,29 @@ static def createWhereFilter(def tags){
     if(tags in Map){
         def whereQuery = []
         tags.each{entry ->
-            def query =''
+            def keyIn = ''
+            def valueIn = ''
             def key  = entry.key
             if(key!="null" && !key.isEmpty()){
-                query+= "tag_key = '${key}'"
+                keyIn+= "tag_key = '${key}'"
             }
-            def keyValueIn = ''
 
             def valuesList = entry.value.flatten().findResults{it!=null && !it.isEmpty()?it:null}
             if(valuesList!=null && !valuesList.isEmpty()){
-                keyValueIn += "tag_value in ('${valuesList.join("','")}')"
+                valueIn += "tag_value in ('${valuesList.join("','")}')"
             }
 
-            if(!query.isEmpty()){
-                query+= " and $keyValueIn"
+            if(!keyIn.isEmpty()&& !valueIn.isEmpty()){
+                whereQuery+= "$keyIn and $valueIn"
             }
-            else{
-                query+= "$keyValueIn"
+            else if(!keyIn.isEmpty()){
+                whereQuery+= "$keyIn"
             }
-
-            whereQuery+=query
-
+            else if(!valueIn.isEmpty()){
+                whereQuery+= "$valueIn"
+            }
         }
-        whereKeysValuesFilter = "(${whereQuery.join(') or (')}))"
+        whereKeysValuesFilter = "(${whereQuery.join(') or (')})"
     }
     else {
         whereKeysValuesFilter = "tag_key in ('${tags.join("','")}')"

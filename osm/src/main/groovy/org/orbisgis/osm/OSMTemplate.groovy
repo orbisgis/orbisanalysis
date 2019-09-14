@@ -22,7 +22,7 @@ import static org.orbisgis.osm.OSMElement.*
  * Default value is -1. If the default value is used the process will find the best UTM projection
  * according the interior point of the filterArea
  * @param dataDim Dimension of the data to extract. It should be an array with the value 0, 1, 2.
- * @param tagsKeys Array of tagsKeys to extract.
+ * @param tags Array of tags to extract.
  *
  * @return Map containing the datasource with the key 'datasource', the name of the output polygon table with the key
  * 'outputPolygonsTableName', the name of the output line table with the key 'outputLinesTableName', the name of the
@@ -31,7 +31,7 @@ import static org.orbisgis.osm.OSMElement.*
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-private static def extraction(datasource, filterArea, epsg, dataDim, tagsKeys) {
+private static def extraction(datasource, filterArea, epsg, dataDim, tags) {
     if (datasource == null) {
         datasource = H2GIS.open(File.createTempFile("osm", "db"))
     }
@@ -45,12 +45,12 @@ private static def extraction(datasource, filterArea, epsg, dataDim, tagsKeys) {
     def query =""
     Coordinate interiorPoint
     if(filterArea instanceof Envelope ) {
-        query = OSMHelper.Utilities.buildOSMQuery(filterArea, tagsKeys, NODE, WAY, RELATION)
+        query = OSMHelper.Utilities.buildOSMQuery(filterArea, tags, NODE, WAY, RELATION)
         interiorPoint = filterArea.centre()
         epsg = SFSUtilities.getSRID(datasource.getConnection(), interiorPoint.y as float, interiorPoint.x as float)
     }
     else if( filterArea instanceof Polygon ) {
-        query = OSMHelper.Utilities.buildOSMQuery(filterArea, tagsKeys, NODE, WAY, RELATION)
+        query = OSMHelper.Utilities.buildOSMQuery(filterArea, tags, NODE, WAY, RELATION)
         interiorPoint= filterArea.getCentroid().getCoordinate()
         epsg = SFSUtilities.getSRID(datasource.getConnection(), interiorPoint.y as float, interiorPoint.x as float)
     }
@@ -72,19 +72,19 @@ private static def extraction(datasource, filterArea, epsg, dataDim, tagsKeys) {
                 if (dataDim.contains(0)) {
                     def transform = OSMHelper.Transform.toPoints()
                     info "Transforming points"
-                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg)
+                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags:tags)
                     outputPointsTableName = transform.results.outputTableName
                 }
                 if (dataDim.contains(1)) {
                     def transform = OSMHelper.Transform.extractWaysAsLines()
                     info "Transforming lines"
-                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg)
+                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg,tags:tags)
                     outputLinesTableName = transform.results.outputTableName
                 }
                 if (dataDim.contains(2)) {
                     def transform = OSMHelper.Transform.toPolygons()
                     info "Transforming polygons"
-                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg)
+                    assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg,tags:tags)
                     outputPolygonsTableName = transform.results.outputTableName
                 }
                 return [datasource             : datasource,
@@ -128,11 +128,11 @@ IProcess BUILDING() {
         inputs filterArea: Object, epsg:-1, datasource: JdbcDataSource, dataDim: [2]
         outputs datasource: JdbcDataSource, outputPolygonsTableName: String, outputPointsTableName: String, outputLinesTableName: String
         run { filterArea, epsg, datasource, dataDim ->
-            def tagsKeys = ['building', 'amenity', 'layer', 'aeroway', 'historic', 'leisure', 'monument', 'place_of_worship',
+            def tags = ['building', 'amenity', 'layer', 'aeroway', 'historic', 'leisure', 'monument', 'place_of_worship',
                             'military', 'railway', 'public_transport', 'barrier', 'government', 'historic:building',
                             'grandstand', 'apartments', 'ruins', 'agricultural', 'barn', 'healthcare', 'education', 'restaurant',
                             'sustenance', 'office']
-            extraction(datasource, filterArea, epsg, dataDim, tagsKeys)
+            extraction(datasource, filterArea, epsg, dataDim, tags)
         }
     })
 
@@ -156,8 +156,8 @@ IProcess LANDCOVER() {
         inputs filterArea: Object, epsg:-1,datasource: JdbcDataSource, dataDim: [2]
         outputs datasource: JdbcDataSource, outputPolygonsTableName: String, outputPointsTableName: String, outputLinesTableName: String
         run { filterArea, epsg, datasource, dataDim ->
-            def tagsKeys = ['landcover', 'natural', 'landuse', 'water', 'waterway', 'leisure', 'aeroway', 'amenity']
-            extraction(datasource, filterArea, epsg,dataDim, tagsKeys)
+            def tags = ['landcover', 'natural', 'landuse', 'water', 'waterway', 'leisure', 'aeroway', 'amenity']
+            extraction(datasource, filterArea, epsg,dataDim, tags)
         }
     })
 }
@@ -180,8 +180,8 @@ IProcess WATER() {
         inputs filterArea: Object, epsg:-1,datasource: JdbcDataSource, dataDim: [2]
         outputs datasource: JdbcDataSource, outputPolygonsTableName: String, outputLinesTableName: String, outputPointsTableName: String
         run { filterArea, epsg,datasource, dataDim ->
-            def tagsKeys = ['water', 'waterway', 'amenity']
-            extraction(datasource, filterArea, epsg, dataDim, tagsKeys)
+            def tags = ['water', 'waterway', 'amenity']
+            extraction(datasource, filterArea, epsg, dataDim, tags)
         }
     })
 }

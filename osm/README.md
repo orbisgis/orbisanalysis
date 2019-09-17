@@ -11,7 +11,7 @@ The advanced approach chains a set of processes to extract a OSM xml file from a
 
 ### Template approach
 
-The template approach proposes a set of pre-configured overpass queries to build thematic GIS layers :  BUILDING, LANDCOVER AND WATER. For each processing templates, the 3 dimensions, point, line and polygon can be extracted.
+The template approach proposes a set of pre-configured overpass queries to build thematic GIS layers :  BUILDING, LANDCOVER and WATER. For each processing templates, the 3 dimensions, point, line and polygon can be extracted.
 
 
 # Installation

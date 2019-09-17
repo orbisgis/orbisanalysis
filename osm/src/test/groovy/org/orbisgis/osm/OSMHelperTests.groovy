@@ -409,7 +409,7 @@ class OSMHelperTests {
         assertEquals("park", row.'LEISURE')
     }
 
-    @Test //disable. It uses for test purpose
+    //@Test //disable. It uses for test purpose
     void dev() {
         def h2GIS = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
 

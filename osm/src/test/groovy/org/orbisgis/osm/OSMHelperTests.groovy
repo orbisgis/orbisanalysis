@@ -212,6 +212,10 @@ class OSMHelperTests {
         geom = OSMHelper.Utilities.getAreaFromPlace("séné");
         assertNotNull geom;
         assertEquals(6,geom.getNumGeometries())
+        geom = OSMHelper.Utilities.getAreaFromPlace("Pékin");
+        assertNotNull geom;
+        geom = OSMHelper.Utilities.getAreaFromPlace("Chongqing");
+        assertNotNull geom;
     }
 
 
@@ -405,11 +409,11 @@ class OSMHelperTests {
         assertEquals("park", row.'LEISURE')
     }
 
-    // @Test disable. It uses for test purpose
+    @Test //disable. It uses for test purpose
     void dev() {
         def h2GIS = H2GIS.open('./target/osmhelper;AUTO_SERVER=TRUE')
 
-        Geometry geom = OSMHelper.Utilities.getAreaFromPlace("singapour");
+        Geometry geom = OSMHelper.Utilities.getAreaFromPlace("Chongqing");
 
         def query = OSMHelper.Utilities.buildOSMQuery(new GeometryFactory().toGeometry(geom.getEnvelopeInternal())
                 , [], NODE, WAY, RELATION)
@@ -418,15 +422,14 @@ class OSMHelperTests {
             if (extract.execute(overpassQuery: query)) {
                 def prefix = "OSM_FILE_${OSMHelper.getUuid()}"
                 def load = OSMHelper.Loader.load()
-                //info "Loading"
                 if (load(datasource: h2GIS, osmTablesPrefix: prefix, osmFilePath:extract.results.outputFilePath)) {
 
-                    def tags = ['building']
+                    def tags = ['highway']
 
-                    def transform = OSMHelper.Transform.toPolygons()
+                    def transform = OSMHelper.Transform.toLines()
                     transform.execute(datasource: h2GIS, osmTablesPrefix: prefix, epsgCode: 2154, tags: tags)
                     assertNotNull(transform.results.outputTableName)
-                    h2GIS.getTable(transform.results.outputTableName).save("/tmp/data_osm.shp")
+                    h2GIS.getTable(transform.results.outputTableName).save("/tmp/data_osm_road.shp")
                 }
             }
      }

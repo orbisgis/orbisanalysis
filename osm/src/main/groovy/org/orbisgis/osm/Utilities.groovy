@@ -37,31 +37,36 @@ enum OSMElement{
  */
 Geometry getAreaFromPlace(def placeName) {
     def outputOSMFile = File.createTempFile("nominatim_osm", ".geojson")
-    def area = null
     if (executeNominatimQuery(placeName, outputOSMFile)) {
         def jsonSlurper = new JsonSlurper()
         def jsonRoot = jsonSlurper.parse(outputOSMFile)
         if (jsonRoot == null) {
             throw new Exception("Cannot find any data from the place $placeName")
         }
-        jsonRoot.features.size() == 1 ? info("Building place geometry") :
-                error("Cannot find any data from the place $placeName")
+        if(jsonRoot.features.size() == 0 ){
+            error("Cannot find any features from the place $placeName")
+            return null
+        }
 
         GeometryFactory geometryFactory = new GeometryFactory()
 
-        jsonRoot.features.each() { feature ->
+         area = null
+        jsonRoot.features.find() { feature ->
             if (feature.geometry != null) {
                 if (feature.geometry.type.equalsIgnoreCase("polygon")) {
                     area = parsePolygon(feature.geometry.coordinates, geometryFactory)
                     area.setSRID(4326)
+                    return true
                 } else if (feature.geometry.type.equalsIgnoreCase("multipolygon")) {
                     def mp = feature.geometry.coordinates.collect { it ->
                         parsePolygon(it, geometryFactory)
                     }.toArray(new Polygon[0])
-                    area = geometryFactory.createMultiPolygon(mp)
+                     area = geometryFactory.createMultiPolygon(mp)
                     area.setSRID(4326)
+                    return true
                 }
             }
+            return false
         }
     }
     return area
@@ -103,9 +108,9 @@ Polygon parsePolygon(def coordinates, GeometryFactory geometryFactory) {
         }.toArray(new LinearRing[0])
     }
     if (holes != null) {
-        area = geometryFactory.createPolygon(ring, holes)
+        return geometryFactory.createPolygon(ring, holes)
     } else {
-        area = geometryFactory.createPolygon(ring)
+        return geometryFactory.createPolygon(ring)
     }
 }
 
@@ -122,7 +127,7 @@ Polygon parsePolygon(def coordinates, GeometryFactory geometryFactory) {
  */
 static boolean executeNominatimQuery(def query, def outputOSMFile) {
     def apiUrl = " https://nominatim.openstreetmap.org/search?q="
-    def request = "&limit=1&format=geojson&polygon_geojson=1"
+    def request = "&limit=5&format=geojson&polygon_geojson=1"
 
     URL url = new URL(apiUrl + utf8ToUrl(query) + request)
     def connection = url.openConnection()

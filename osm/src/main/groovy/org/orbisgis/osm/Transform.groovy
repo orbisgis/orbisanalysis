@@ -1,11 +1,22 @@
 package org.orbisgis.osm
 
 import groovy.transform.BaseScript
+import org.h2gis.utilities.SFSUtilities
+import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.Envelope
+import org.locationtech.jts.geom.Polygon
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanagerapi.IProcess
 
+import static org.orbisgis.osm.OSMElement.NODE
+import static org.orbisgis.osm.OSMElement.NODE
+import static org.orbisgis.osm.OSMElement.RELATION
+import static org.orbisgis.osm.OSMElement.RELATION
+import static org.orbisgis.osm.OSMElement.WAY
+import static org.orbisgis.osm.OSMElement.WAY
 
-@BaseScript OSMHelper osmHelper
+
+@BaseScript OSMTools osmTools
 
 
 /**
@@ -40,15 +51,16 @@ IProcess toPoints() {
                             info "The points have been built."
                         } else {
                             info "Cannot extract any point."
-                            outputTableName = null
+                            return null
                         }
                     }
                     else{
                         error "Invalid EPSG code : $epsg"
-                        return
+                        return null
                     }
                 } else {
                     error "Please set a valid database connection"
+                    return null
                 }
                 [outputTableName: outputTableName]
             }
@@ -132,15 +144,16 @@ IProcess toLines() {
                             info "The relation lines have been built."
                         } else {
                             info "Cannot extract any line."
-                            outputTableName = null
+                            return null
                         }
                     }
                     else{
                         error "Invalid EPSG code : $epsg"
-                        return
+                        return null
                     }
                 } else {
                     error "Please set a valid database connection"
+                    return null
                 }
                 [outputTableName: outputTableName]
             }
@@ -224,15 +237,15 @@ IProcess toPolygons() {
                             info "The relation polygons have been built."
                         } else {
                             info "Cannot extract any polygon."
-                            outputTableName = null
+                            return null
                         }
                     }else{
                         error "Invalid EPSG code : $epsg"
-                        return
+                        return null
                     }
                 } else {
                     error "Please set a valid database connection"
-                    return
+                    return null
                 }
                 [outputTableName: outputTableName]
             }
@@ -317,15 +330,15 @@ IProcess extractWaysAsPolygons() {
                         }
                         else {
                             info "No keys or values found to extract ways."
-                            outputTableName = null
+                            return null
                         }
                     }else{
                         error "Invalid EPSG code : $epsg"
-                        return
+                        return null
                     }
                 } else {
                     error "Please set a valid database connection"
-                    return
+                    return null
                 }
 
                 [outputTableName: outputTableName]
@@ -479,15 +492,15 @@ IProcess extractRelationsAsPolygons() {
 
                         } else {
                             info "No keys or values found in the relations."
-                            outputTableName = null
+                            return null
                         }
                     }else{
                         error "Invalid EPSG code : $epsg"
-                        return
+                        return null
                     }
                 } else {
                     error "Please set a valid database connection"
-                    return
+                    return null
                 }
 
                 [outputTableName: outputTableName]
@@ -578,16 +591,16 @@ IProcess extractWaysAsLines() {
             DROP TABLE IF EXISTS ${WAYS_LINES_TMP}, $IDWAYS_TABLE ;"""
                         } else {
                             info "No keys or values found in the ways."
-                            outputTableName = null
+                            return null
                         }
                     }
                     else{
                         error "Invalid EPSG code : $epsg"
-                        return
+                        return null
                     }
                 } else {
                     error "Please set a valid database connection"
-                    return
+                    return null
                 }
                 [outputTableName: outputTableName]
             }
@@ -679,20 +692,112 @@ IProcess extractRelationsAsLines() {
                         }
                         else {
                             info "No keys or values found in the relations."
-                            outputTableName = null
+                            return null
                         }
                     }
                     else{
                         error "Invalid EPSG code : $epsg"
-                        return
+                        return null
                     }
                 } else {
                     error "Please set a valid database connection"
-                    return
+                    return null
                 }
                 [outputTableName: outputTableName]
             }
         })
+}
+
+
+/**
+ * Perform the OSM data transformation from relation model to GIS layers.
+ *
+ * @param datasource Datasource to use for the extraction
+ * @param filterArea Area to extract. Must be specificied
+ * @param epsg as integer value
+ * Default value is -1. If the default value is used the process will find the best UTM projection
+ * according the interior point of the filterArea
+ * @param dataDim Dimension of the data to extract. It should be an array with the value 0, 1, 2.
+ * 0 = extract points
+ * 1 = extract lines
+ * 2 = extract polygons
+ * @param tags Array of tags to extract.
+ *
+ * @return Map containing the name of the output polygon table with the key
+ * 'outputPolygonsTableName', the name of the output line table with the key 'outputLinesTableName', the name of the
+ * output point table with the key 'outputPointsTableName'
+ *
+ * @author Erwan Bocher (CNRS LAB-STICC)
+ * @author Elisabeth Le Saux (UBS LAB-STICC)
+ */
+IProcess stackingTransform(datasource, filterArea, epsg, dataDim, tags) {
+    if (datasource == null) {
+        error "The datasource cannot be null"
+    }
+    if (filterArea == null) {
+        error "Filter area not defined"
+    }
+    if (dataDim == null) {
+        dataDim = [0,1,2]
+    }
+
+    def query =""
+    Coordinate interiorPoint
+    if(filterArea instanceof Envelope ) {
+        query = OSMHelper.Utilities.buildOSMQuery(filterArea, tags, NODE, WAY, RELATION)
+        interiorPoint = filterArea.centre()
+        epsg = SFSUtilities.getSRID(datasource.getConnection(), interiorPoint.y as float, interiorPoint.x as float)
+    }
+    else if( filterArea instanceof Polygon ) {
+        query = OSMHelper.Utilities.buildOSMQuery(filterArea, tags, NODE, WAY, RELATION)
+        interiorPoint= filterArea.getCentroid().getCoordinate()
+        epsg = SFSUtilities.getSRID(datasource.getConnection(), interiorPoint.y as float, interiorPoint.x as float)
+    }
+    else {
+        error "The filter area must be an Envelope or a Polygon"
+        return null
+    }
+    if(epsg!=-1){
+        def extract = OSMHelper.Loader.extract()
+        if (!query.isEmpty()) {
+            if (extract.execute(overpassQuery: query)) {
+                def prefix = "OSM_FILE_$uuid"
+                def load = OSMHelper.Loader.load()
+                info "Loading"
+                if (load(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: extract.results.outputFilePath)) {
+                    def outputPointsTableName = null
+                    def outputPolygonsTableName = null
+                    def outputLinesTableName = null
+                    if (dataDim.contains(0)) {
+                        def transform = OSMHelper.Transform.toPoints()
+                        info "Transforming points"
+                        assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags:tags)
+                        outputPointsTableName = transform.results.outputTableName
+                    }
+                    if (dataDim.contains(1)) {
+                        def transform = OSMHelper.Transform.extractWaysAsLines()
+                        info "Transforming lines"
+                        assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg,tags:tags)
+                        outputLinesTableName = transform.results.outputTableName
+                    }
+                    if (dataDim.contains(2)) {
+                        def transform = OSMHelper.Transform.toPolygons()
+                        info "Transforming polygons"
+                        assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg,tags:tags)
+                        outputPolygonsTableName = transform.results.outputTableName
+                    }
+                    return [outputPolygonsTableName: outputPolygonsTableName,
+                            outputPointsTableName  : outputPointsTableName,
+                            outputLinesTableName   : outputLinesTableName]
+                }
+            }
+        }
+        else{
+            error "Invalid EPSG code : $epsg"
+            return null
+        }
+    }
+    return null
 }
 
 /**

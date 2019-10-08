@@ -13,7 +13,7 @@ import static java.nio.charset.StandardCharsets.UTF_8
  */
 abstract class OSMTools extends GroovyProcessFactory {
 
-    public static Logger logger = LoggerFactory.getLogger(OSMHelper.class)
+    public static Logger logger = LoggerFactory.getLogger(OSMTools.class)
 
     //Process scripts
     public static Loader = new Loader()

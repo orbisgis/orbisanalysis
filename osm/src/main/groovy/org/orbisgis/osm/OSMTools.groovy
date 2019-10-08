@@ -11,14 +11,13 @@ import static java.nio.charset.StandardCharsets.UTF_8
  * @author Erwan Bocher CNRS LAB-STICC
  * @author Elisabeth Le Saux UBS LAB-STICC
  */
-abstract class OSMHelper extends GroovyProcessFactory {
+abstract class OSMTools extends GroovyProcessFactory {
 
-    public static Logger logger = LoggerFactory.getLogger(OSMHelper.class)
+    public static Logger logger = LoggerFactory.getLogger(OSMTools.class)
 
     //Process scripts
     public static Loader = new Loader()
     public static Transform = new Transform()
-    public static OSMTemplate = new OSMTemplate()
     public static Utilities = new Utilities()
 
     //Utility methods
@@ -43,6 +42,5 @@ abstract class OSMHelper extends GroovyProcessFactory {
             error "Cannot get the status of the server"
         }
     }
-
 
 }

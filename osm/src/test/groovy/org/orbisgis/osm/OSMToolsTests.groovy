@@ -458,15 +458,12 @@ class OSMToolsTests {
     }
 
     @Test
-    void cleanTableTest() {
+    void cleanTablesTest() {
         JdbcDataSource h2GIS = H2GIS.open('./target/OSMTools;AUTO_SERVER=TRUE')
         def load = OSMTools.Loader.load()
-        def prefix = "OSM_FILE"
+        def prefix = "OSM_FILE_CLEAN"
         assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
                 osmFilePath : new File(this.class.getResource("osmFileForTest.osm").toURI()).getAbsolutePath())
-        def transform = OSMTools.Transform.toPolygons()
-        transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154)
-        assertEquals 126, h2GIS.getTable(transform.results.outputTableName).rowCount
         OSMTools.Utilities.dropOSMTables(prefix, h2GIS)
         assertFalse h2GIS.tableNames.any {it.contains(prefix)}
     }

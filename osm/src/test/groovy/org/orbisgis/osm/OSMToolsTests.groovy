@@ -458,6 +458,17 @@ class OSMToolsTests {
         assertNull(parameters)
     }
 
+    @Test
+    void cleanTablesTest() {
+        JdbcDataSource h2GIS = H2GIS.open('./target/OSMTools;AUTO_SERVER=TRUE')
+        def load = OSMTools.Loader.load()
+        def prefix = "OSM_FILE_CLEAN"
+        assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
+                osmFilePath : new File(this.class.getResource("osmFileForTest.osm").toURI()).getAbsolutePath())
+        OSMTools.Utilities.dropOSMTables(prefix, h2GIS)
+        assertFalse h2GIS.tableNames.any {it.contains(prefix)}
+    }
+
 
 
     //@Test //disable. It uses for test purpose

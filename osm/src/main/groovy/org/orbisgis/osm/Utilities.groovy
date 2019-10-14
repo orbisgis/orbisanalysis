@@ -11,6 +11,7 @@ import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.LinearRing
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.osm.utils.OSMElement
+import org.orbisgis.datamanager.JdbcDataSource
 
 
 @BaseScript OSMTools osmTools
@@ -311,4 +312,15 @@ def buildGeometryAndZone(Geometry geom, int epsg, int distance, def datasource) 
         }
     }
     return [geom :  geom, filterArea : filterArea]
+}
+
+/**
+ ** Function to drop the temp tables coming from the OSM extraction
+ * @param prefix prefix of the OSM tables
+ * @param datasource connection to the database where the OSM tables are
+ **/
+static boolean dropOSMTables (String prefix, JdbcDataSource datasource) {
+    return datasource.execute("""DROP TABLE IF EXISTS ${prefix}_NODE, ${prefix}_NODE_MEMBER, ${prefix}_NODE_TAG,
+    ${prefix}_RELATION,${prefix}_RELATION_MEMBER,${prefix}_RELATION_TAG, ${prefix}_WAY,
+    ${prefix}_WAY_MEMBER,${prefix}_WAY_NODE,${prefix}_WAY_TAG""")
 }

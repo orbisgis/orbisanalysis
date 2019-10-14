@@ -10,7 +10,7 @@ import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.LinearRing
 import org.locationtech.jts.geom.Polygon
-
+import org.orbisgis.osm.utils.OSMElement
 
 
 @BaseScript OSMTools osmTools
@@ -21,13 +21,6 @@ import org.locationtech.jts.geom.Polygon
 * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
 
-
-/**
- * List of OSM elements
- */
-enum OSMElement{
-    NODE,WAY,RELATION
-}
 
 
 /**

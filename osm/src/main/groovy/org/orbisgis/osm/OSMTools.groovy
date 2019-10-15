@@ -45,18 +45,28 @@ abstract class OSMTools extends GroovyProcessFactory {
     /** {@link Closure} logging with ERROR level the given {@link Object} {@link String} representation. */
     static def error = { obj -> logger.error(obj.toString()) }
 
+    /** Default SRID */
+    static def DEFAULT_SRID = 4326
+    /** Null SRID */
+    static def NULL_SRID = -1
+    /** Get method for HTTP request */
+    private static def GET = "GET"
+    /** Overpass server base URL */
+    static def OVERPASS_BASE_URL = "https://overpass-api.de/api/interpreter?data="
+
     /**
      * Return the status of the Overpass server.
      * @return A {@link OverpassStatus} instance.
      */
     static def getServerStatus()  {
         def connection = new URL(OVERPASS_STATUS_URL).openConnection() as HttpURLConnection
-        connection.requestMethod = "GET"
+        connection.requestMethod = GET
         if (connection.responseCode == 200) {
             def content = connection.inputStream.text
             return new OverpassStatus(content)
         } else {
-            error "Cannot get the status of the server"
+            error "Cannot get the status of the server.\n Server answer with code ${connection.responseCode} : " +
+                    "${connection.inputStream.text}"
         }
     }
 
@@ -90,5 +100,38 @@ abstract class OSMTools extends GroovyProcessFactory {
             return status.waitForSlot(timeout)
         }
         return true
+    }
+
+    /**
+     * Method to execute an Overpass query and save the result in a file
+     *
+     * @param query the Overpass query
+     * @param outputOSMFile the output file
+     *
+     * @return True if the query has been successfully executed, false otherwise.
+     *
+     * @author Erwan Bocher (CNRS LAB-STICC)
+     * @author Elisabeth Lesaux (UBS LAB-STICC)
+     */
+    static boolean executeOverPassQuery(def query, def outputOSMFile) {
+        outputOSMFile.delete()
+        def queryUrl = new URL(OVERPASS_BASE_URL + utf8ToUrl(query))
+        def connection = queryUrl.openConnection() as HttpURLConnection
+
+        info queryUrl
+
+        connection.requestMethod = GET
+
+        info "Executing query... $query"
+        //Save the result in a file
+        if (connection.responseCode == 200) {
+            info "Downloading the OSM data from overpass api in ${outputOSMFile}"
+            outputOSMFile << connection.inputStream
+            return true
+        }
+        else {
+            error "Cannot execute the query.\n${getServerStatus()}"
+            return false
+        }
     }
 }

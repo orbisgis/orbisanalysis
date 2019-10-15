@@ -37,7 +37,7 @@ class OSMToolsTests {
     @Test
     void extractTestFromPlace() {
         def extract = OSMTools.Loader.extract()
-        Geometry geom = OSMTools.Utilities.getAreaFromPlace("france")
+        Geometry geom = OSMTools.Utilities.getAreaFromPlace("Cliscouët, vannes")
         def query = OSMTools.Utilities.buildOSMQuery(new GeometryFactory().toGeometry(geom.getEnvelopeInternal()), [],
                 OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
         assertTrue extract.execute(overpassQuery: "[timeout:250]"+query)

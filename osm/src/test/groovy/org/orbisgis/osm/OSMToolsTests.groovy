@@ -8,14 +8,15 @@ import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.WKTReader
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanager.h2gis.H2GIS
+import org.orbisgis.osm.utils.OSMElement
 import org.orbisgis.processmanagerapi.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.*
-import static org.orbisgis.osm.OSMElement.NODE
-import static org.orbisgis.osm.OSMElement.RELATION
-import static org.orbisgis.osm.OSMElement.WAY
+import static org.orbisgis.osm.utils.OSMElement.NODE
+import static org.orbisgis.osm.utils.OSMElement.RELATION
+import static org.orbisgis.osm.utils.OSMElement.WAY
 
 class OSMToolsTests {
 
@@ -39,7 +40,7 @@ class OSMToolsTests {
         Geometry geom = OSMTools.Utilities.getAreaFromPlace("Cliscouët, vannes")
         def query = OSMTools.Utilities.buildOSMQuery(new GeometryFactory().toGeometry(geom.getEnvelopeInternal()), [],
                 OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
-        assertTrue extract.execute(overpassQuery: query);
+        assertTrue extract.execute(overpassQuery: "[timeout:250]"+query)
         assertTrue new File(extract.results.outputFilePath).exists()
         assertTrue new File(extract.results.outputFilePath).length() > 0
     }
@@ -297,7 +298,7 @@ class OSMToolsTests {
 
     @Test
     void getSERVER_STATUS(){
-         assertNotNull OSMTools.SERVER_STATUS
+         assertNotNull OSMTools.serverStatus
     }
 
     @Test

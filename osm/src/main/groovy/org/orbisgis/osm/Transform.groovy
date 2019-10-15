@@ -8,12 +8,9 @@ import org.locationtech.jts.geom.Polygon
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanagerapi.IProcess
 
-import static org.orbisgis.osm.OSMElement.NODE
-import static org.orbisgis.osm.OSMElement.NODE
-import static org.orbisgis.osm.OSMElement.RELATION
-import static org.orbisgis.osm.OSMElement.RELATION
-import static org.orbisgis.osm.OSMElement.WAY
-import static org.orbisgis.osm.OSMElement.WAY
+import static org.orbisgis.osm.utils.OSMElement.NODE
+import static org.orbisgis.osm.utils.OSMElement.RELATION
+import static org.orbisgis.osm.utils.OSMElement.WAY
 
 
 @BaseScript OSMTools osmTools

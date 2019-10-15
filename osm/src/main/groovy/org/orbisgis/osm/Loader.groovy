@@ -9,9 +9,9 @@ import org.locationtech.jts.geom.Polygon
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanagerapi.IProcess
 
-import static org.orbisgis.osm.OSMElement.NODE
-import static org.orbisgis.osm.OSMElement.RELATION
-import static org.orbisgis.osm.OSMElement.WAY
+import static org.orbisgis.osm.utils.OSMElement.NODE
+import static org.orbisgis.osm.utils.OSMElement.RELATION
+import static org.orbisgis.osm.utils.OSMElement.WAY
 
 
 @BaseScript OSMTools osmTools
@@ -278,7 +278,7 @@ static boolean executeOverPassQuery(def query, def outputOSMFile) {
         return true
     }
     else if(connection.responseCode in [429, 504]) {
-        error "Please check bellow the status of Overpass server \n${getSERVER_STATUS()}"
+        error "Please check bellow the status of Overpass server \n${getServerStatus()}"
 
     }else {
         error "Cannot execute the query"

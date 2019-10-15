@@ -417,7 +417,7 @@ class OSMToolsTests {
         def extract = OSMTools.Loader.extract()
         if (!query.isEmpty()) {
             if (extract.execute(overpassQuery: query)) {
-                def prefix = "OSM_FILE_${OSMTools.getUuid()}"
+                def prefix = "OSM_FILE_${OSMTools.uuid}"
                 def load = OSMTools.Loader.load()
                 if (load(datasource: h2GIS, osmTablesPrefix: prefix, osmFilePath:extract.results.outputFilePath)) {
                     def tags = ['landuse']
@@ -482,7 +482,7 @@ class OSMToolsTests {
         def extract = OSMTools.Loader.extract()
         if (!query.isEmpty()) {
             if (extract.execute(overpassQuery: query)) {
-                def prefix = "OSM_FILE_${OSMTools.getUuid()}"
+                def prefix = "OSM_FILE_${OSMTools.uuid}"
                 def load = OSMTools.Loader.load()
                 if (load(datasource: h2GIS, osmTablesPrefix: prefix, osmFilePath:extract.results.outputFilePath)) {
 

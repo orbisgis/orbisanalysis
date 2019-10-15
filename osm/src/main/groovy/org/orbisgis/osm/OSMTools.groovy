@@ -35,7 +35,7 @@ abstract class OSMTools extends GroovyProcessFactory {
     /*     Utility methods     */
     /* *********************** */
     /** {@link Closure} returning a {@link String} prefix/suffix build from a random {@link UUID} with '-' replaced by '_'. */
-    static def uuidCl = { UUID.randomUUID().toString().replaceAll("-", "_") }
+    static def getUuid() { UUID.randomUUID().toString().replaceAll("-", "_") }
     /** {@link Closure} converting and UTF-8 {@link String} into an {@link URL}. */
     static def utf8ToUrl = { utf8 -> URLEncoder.encode(utf8, UTF_8.toString()) }
     /** {@link Closure} logging with INFO level the given {@link Object} {@link String} representation. */
@@ -90,43 +90,5 @@ abstract class OSMTools extends GroovyProcessFactory {
             return status.waitForSlot(timeout)
         }
         return true
-    }
-
-    /**
-     * Handle the calling of a missing property.
-     *
-     * @param name Name of the property missing.
-     *
-     * @return The property if found, throw a {@link MissingPropertyException} otherwise.
-     *
-     * @throws MissingPropertyException Thrown if not able to find a property with the given name.
-     */
-    def propertyMissing(String name) throws MissingPropertyException {
-        switch(name) {
-            case "uuid":
-                return uuidCl()
-            case "serverStatus":
-                return getServerStatus()
-            default:
-                throw new MissingPropertyException(name, this.class)
-        }
-    }
-
-    /**
-     * Handle the calling of a static missing property.
-     *
-     * @param name Name of the property missing.
-     *
-     * @return The property if found, throw a {@link MissingPropertyException} otherwise.
-     *
-     * @throws MissingPropertyException Thrown if not able to find a property with the given name.
-     */
-    static def $static_propertyMissing(String name) throws MissingPropertyException {
-        switch(name) {
-            case "uuid":
-                return uuidCl()
-            default:
-                throw new MissingPropertyException(name, this.class)
-        }
     }
 }

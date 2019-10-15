@@ -1,6 +1,7 @@
 package org.orbisgis.osm.utils
 
 import java.text.SimpleDateFormat
+import java.time.ZoneId
 
 /**
  * Locked slot of the Overpass server which is free after a wait time.
@@ -15,8 +16,8 @@ class Slot {
     private static final SECONDS = " seconds."
 
     /** {@link SimpleDateFormat} used to parse dates. */
-    private format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ENGLISH)
-    private local = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.FRANCE)
+    private format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+    private local = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
 
     /** {@link Date} when the slot will be available. */
     Date availibility
@@ -29,7 +30,7 @@ class Slot {
      */
     Slot(String text){
         format.setTimeZone(TimeZone.getTimeZone("Etc/GMT+0"))
-        local.setTimeZone(TimeZone.getDefault())
+        local.setTimeZone(TimeZone.getTimeZone(ZoneId.systemDefault()))
         String[] values = (text - SLOT_AVAILABLE_AFTER - SECONDS).split(IN)
         availibility = format.parse(values[0])
         waitSeconds = Long.decode(values[1])

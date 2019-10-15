@@ -1,6 +1,7 @@
 package org.orbisgis.osm.utils
 
 import java.text.SimpleDateFormat
+import java.time.ZoneId
 
 /**
  * Running query on the Overpass server.
@@ -17,8 +18,8 @@ class RunningQuery {
     Date startTime
 
     /** {@link SimpleDateFormat} used to parse dates. */
-    private format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ENGLISH)
-    private local = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.FRANCE)
+    private format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+    private local = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
 
     /**
      * Main constructor.
@@ -26,7 +27,7 @@ class RunningQuery {
      */
     RunningQuery(String text){
         format.setTimeZone(TimeZone.getTimeZone("Etc/GMT+0"))
-        local.setTimeZone(TimeZone.getDefault())
+        local.setTimeZone(TimeZone.getTimeZone(ZoneId.systemDefault()))
         def array = text.split()
         pid = Integer.decode(array[0])
         spaceLimit = Integer.decode(array[1])

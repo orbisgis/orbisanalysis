@@ -1,6 +1,7 @@
 package org.orbisgis.osm.utils
 
 import java.text.SimpleDateFormat
+import java.time.ZoneId
 
 /**
  * Status of the overpass server.
@@ -21,8 +22,8 @@ class OverpassStatus {
     private static final RUNNING_QUERIES = "Currently running queries (pid, space limit, time limit, start time):"
 
     /** {@link SimpleDateFormat} used to parse dates. */
-    private format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ENGLISH)
-    private local = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.FRANCE)
+    private format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+    private local = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
 
     /** Connection id */
     long connectionId
@@ -43,7 +44,7 @@ class OverpassStatus {
      */
     OverpassStatus(String test){
         format.setTimeZone(TimeZone.getTimeZone("Etc/GMT+0"))
-        local.setTimeZone(TimeZone.getDefault())
+        local.setTimeZone(TimeZone.getTimeZone(ZoneId.systemDefault()))
         def array = test.split("\n")
         connectionId = Long.decode(array[0]-CONNECT_AS)
         time = format.parse(array[1]-CURRENT_TIME)

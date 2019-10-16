@@ -8,38 +8,53 @@ import org.slf4j.LoggerFactory
 import static java.nio.charset.StandardCharsets.UTF_8
 
 /**
- * Main script to access to all processes used to extract, transform and save OSM data as GIS layers
+ * Main script to access to all processes used to extract, transform and save OSM data as GIS layers.
+ *
  * @author Erwan Bocher CNRS LAB-STICC
  * @author Elisabeth Le Saux UBS LAB-STICC
+ * @author Sylvain PALOMINOS (UBS LAB-STICC 2019)
  */
 abstract class OSMTools extends GroovyProcessFactory {
 
+    /** Url of the status of the Overpass server */
     private static final OVERPASS_STATUS_URL = "http://overpass-api.de/api/status"
+    /** {@link Logger} */
     public static Logger logger = LoggerFactory.getLogger(OSMTools.class)
 
-    //Process scripts
+    /* *********************** */
+    /*     Process scripts     */
+    /* *********************** */
+    /** {@link Loader} script with its {@link Process}. */
     public static Loader = new Loader()
+    /** {@link Transform} script with its {@link Process}. */
     public static Transform = new Transform()
+    /** {@link Utilities} script with its {@link Process}. */
     public static Utilities = new Utilities()
 
-    //Utility methods
+    /* *********************** */
+    /*     Utility methods     */
+    /* *********************** */
+    /** {@link Closure} returning a {@link String} prefix/suffix build from a random {@link UUID} with '-' replaced by '_'. */
     static def getUuid() { UUID.randomUUID().toString().replaceAll("-", "_") }
-    static def uuid = { UUID.randomUUID().toString().replaceAll("-", "_") }
+    /** {@link Closure} converting and UTF-8 {@link String} into an {@link URL}. */
     static def utf8ToUrl = { utf8 -> URLEncoder.encode(utf8, UTF_8.toString()) }
+    /** {@link Closure} logging with INFO level the given {@link Object} {@link String} representation. */
     static def info = { obj -> logger.info(obj.toString()) }
+    /** {@link Closure} logging with WARN level the given {@link Object} {@link String} representation. */
     static def warn = { obj -> logger.warn(obj.toString()) }
+    /** {@link Closure} logging with ERROR level the given {@link Object} {@link String} representation. */
     static def error = { obj -> logger.error(obj.toString()) }
 
     /**
-     * Return the status of the Overpass server
-     * @return
+     * Return the status of the Overpass server.
+     * @return A {@link OverpassStatus} instance.
      */
     static def getServerStatus()  {
         def connection = new URL(OVERPASS_STATUS_URL).openConnection() as HttpURLConnection
         connection.requestMethod = "GET"
         if (connection.responseCode == 200) {
             def content = connection.inputStream.text
-            return content
+            return new OverpassStatus(content)
         } else {
             error "Cannot get the status of the server"
         }
@@ -52,7 +67,7 @@ abstract class OSMTools extends GroovyProcessFactory {
      */
     static def wait(int timeout)  {
         def to = timeout
-        def status = new OverpassStatus(getServerStatus())
+        def status = getServerStatus()
         info("Try to wait for slot available")
         if(!status.waitForSlot(timeout)){
             //Case of too low timeout for slot availibility
@@ -76,5 +91,4 @@ abstract class OSMTools extends GroovyProcessFactory {
         }
         return true
     }
-
 }

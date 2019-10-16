@@ -844,7 +844,7 @@ static boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesP
             ${epsgCode}) as the_geom ${createTagList(datasource, columnsSelector)} from ${osmTablesPrefix}_node as a, 
           ${osmTablesPrefix}_node_tag  b where a.id_node=b.id_node group by a.id_node;"""
         }else {
-            def FILTERED_NODES = "FILTERED_NODES_$uuid"
+            def FILTERED_NODES = "FILTERED_NODES_${OSMTools.uuid}"
             datasource.execute """create table $FILTERED_NODES as
         SELECT DISTINCT id_node from ${osmTablesPrefix}_node_tag where ${tagsFilter};
         create index on $FILTERED_NODES(id_node);        

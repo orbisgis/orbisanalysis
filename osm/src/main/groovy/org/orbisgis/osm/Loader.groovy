@@ -8,6 +8,8 @@ import org.locationtech.jts.geom.Polygon
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanagerapi.IProcess
 
+import java.util.regex.Pattern
+
 import static org.orbisgis.osm.utils.OSMElement.NODE
 import static org.orbisgis.osm.utils.OSMElement.RELATION
 import static org.orbisgis.osm.utils.OSMElement.WAY
@@ -211,21 +213,32 @@ IProcess load() {
         title "Load an OSM file to the current database"
         inputs datasource: JdbcDataSource, osmTablesPrefix: String, osmFilePath: String
         outputs datasource: JdbcDataSource
-        run { datasource, osmTablesPrefix, osmFilePath ->
-            if (datasource) {
-                info "Load the OSM file in the database"
-                File osmFile = new File(osmFilePath)
-                if (osmFile.exists()) {
-                    datasource.load(osmFile, osmTablesPrefix, true)
-                    info "The input OSM file has been loaded in the database"
-                } else {
-                    error "The input OSM file does not exist"
-                    return
-                }
-            } else {
-                error "Please set a valid database connection"
+        run { JdbcDataSource datasource, osmTablesPrefix, osmFilePath ->
+            if(!datasource) {
+                error "Please set a valid database connection."
                 return
             }
+
+            if(osmTablesPrefix == null ||
+                    !Pattern.compile('^[a-zA-Z0-9_]*$').matcher(osmTablesPrefix).matches()) {
+                error "Please set a valid table prefix."
+                return
+            }
+
+            if(!osmFilePath){
+                error "Please set a valid osm file path."
+                return
+            }
+            File osmFile = new File(osmFilePath)
+            if (!osmFile.exists()) {
+                error "The input OSM file does not exist."
+                return
+            }
+
+            info "Load the OSM file in the database."
+            datasource.load(osmFile, osmTablesPrefix, true)
+            info "The input OSM file has been loaded in the database."
+
             [datasource: datasource]
         }
     })

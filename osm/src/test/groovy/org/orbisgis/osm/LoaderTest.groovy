@@ -1,8 +1,8 @@
 package org.orbisgis.osm
 
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.orbisgis.datamanager.h2gis.H2GIS
-import org.orbisgis.datamanagerapi.dataset.ITable
 
 import static org.junit.jupiter.api.Assertions.*
 
@@ -16,8 +16,49 @@ class LoaderTest {
     private static final def PATH = "./target/"
     private static final def DB_OPTION = ";AUTO_SERVER=TRUE"
     private static final def uuid(){ "_"+UUID.randomUUID().toString().replaceAll("-", "_")}
+    private static def query
 
     protected static final def RANDOM_DS = {H2GIS.open(PATH + uuid() + DB_OPTION)}
+
+    //Override the 'executeOverPassQuery' methods to avoid the call to the server
+    private static void sampleOverpassQueryOverride(){
+        OSMTools.Loader.metaClass.static.executeOverPassQuery = {query, outputOSMFile ->
+            LoaderTest.query = query
+            outputOSMFile << LoaderTest.getResourceAsStream("sample.osm").text
+            return true
+        }
+    }
+
+    //Override the 'executeOverPassQuery' methods to avoid the call to the server
+    private static void badOverpassQueryOverride(){
+        //Replace the executeOverPassQuery methods to avoid the call to the server
+        OSMTools.Loader.metaClass.static.executeOverPassQuery = {query, outputOSMFile ->
+            LoaderTest.query = query
+            return false
+        }
+    }
+
+    @Test
+    void extractTest(){
+        sampleOverpassQueryOverride()
+        def extract = OSMTools.Loader.extract()
+        def query = "Overpass test query"
+        assertTrue extract([overpassQuery : query])
+        assertEquals query, this.query
+        assertNotNull extract.results
+        assertTrue extract.results.containsKey("outputFilePath")
+        def file = new File(extract.results.outputFilePath.toString())
+        assertTrue file.exists()
+        assertEquals this.class.getResourceAsStream("sample.osm").text, file.text
+    }
+
+    @Test
+    void badExtractTest(){
+        badOverpassQueryOverride()
+        def extract = OSMTools.Loader.extract()
+        assertFalse extract([overpassQuery : null])
+        assertTrue extract.results.isEmpty()
+    }
 
     @Test
     void badLoadTest(){
@@ -349,4 +390,16 @@ class LoaderTest {
         }
     }
 
+    static class CustomMetaClass extends MetaClassImpl{
+
+        CustomMetaClass(MetaClass theClass) {
+            super(theClass.theClass)
+        }
+
+        @Override
+        Object invokeMethod(Object object, String methodName, Object arguments) {
+            println object
+            return null
+        }
+    }
 }

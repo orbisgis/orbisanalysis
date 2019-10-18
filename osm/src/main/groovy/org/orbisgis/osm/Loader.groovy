@@ -185,7 +185,7 @@ IProcess extract() {
             info "Extract the OSM data"
             def tmpOSMFile = File.createTempFile("extract_osm", ".osm")
             def osmFilePath = tmpOSMFile.absolutePath
-            if (executeOverPassQuery(overpassQuery, tmpOSMFile)) {
+            if (overpassQuery && executeOverPassQuery(overpassQuery, tmpOSMFile)) {
                 info "The OSM file has been downloaded at $osmFilePath."
             } else {
                 error "Cannot extract the OSM data for the query $overpassQuery"

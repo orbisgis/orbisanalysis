@@ -452,7 +452,7 @@ IProcess extractRelationsAsPolygons() {
             CREATE TABLE ${RELATIONS_POLYGONS_OUTER_EXPLODED} AS 
                 SELECT ST_MAKEPOLYGON(the_geom) as the_geom, id_relation 
                 FROM st_explode('${RELATIONS_POLYGONS_OUTER}') 
-                WHERE ST_STARTPOINT(the_geom) = ST_ENDPOINT(the_geom); """
+                WHERE ST_STARTPOINT(the_geom) = ST_ENDPOINT(the_geom) and ST_NPoints(the_geom)>=4; """
 
                             info "Explode inner polygons"
                             def RELATIONS_POLYGONS_INNER_EXPLODED = "RELATIONS_POLYGONS_INNER_EXPLODED_$uuid"
@@ -460,7 +460,7 @@ IProcess extractRelationsAsPolygons() {
             CREATE TABLE ${RELATIONS_POLYGONS_INNER_EXPLODED} AS 
             SELECT the_geom as the_geom, id_relation 
             FROM st_explode('${RELATIONS_POLYGONS_INNER}') 
-            WHERE ST_STARTPOINT(the_geom) = ST_ENDPOINT(the_geom); """
+            WHERE ST_STARTPOINT(the_geom) = ST_ENDPOINT(the_geom) and ST_NPoints(the_geom)>=4; """
 
                             info "Build all polygon relations"
                             String RELATIONS_MP_HOLES = "RELATIONS_MP_HOLES_$uuid"

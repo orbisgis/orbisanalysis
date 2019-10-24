@@ -431,6 +431,30 @@ class OSMToolsTests {
     }
 
     @Test
+    void singleLineInPolygon() {
+        def h2GIS = H2GIS.open('./target/OSMTools;AUTO_SERVER=TRUE')
+        WKTReader wktReader  = new WKTReader();
+        Geometry geom  = wktReader.read("POLYGON ((2.32752649403629 48.81452581808886, 2.32752649403629 48.816347365723786, 2.3303117564086886 48.816347365723786, 2.3303117564086886 48.81452581808886, 2.32752649403629 48.81452581808886))")
+        geom.setSRID(4326)
+        def query = OSMTools.Utilities.buildOSMQuery(new GeometryFactory().toGeometry(geom.getEnvelopeInternal())
+                , [], NODE, WAY, RELATION)
+        def extract = OSMTools.Loader.extract()
+        if (!query.isEmpty()) {
+            if (extract.execute(overpassQuery: query)) {
+                def prefix = "OSM_FILE_${OSMTools.uuid}"
+                def load = OSMTools.Loader.load()
+                if (load(datasource: h2GIS, osmTablesPrefix: prefix, osmFilePath:extract.results.outputFilePath)) {
+                    def tags = ['building']
+                    def transform = OSMTools.Transform.toPolygons()
+                    transform.execute(datasource: h2GIS, osmTablesPrefix: prefix, epsgCode: 32631, tags: tags)
+                    assertNotNull(transform.results.outputTableName)
+                    assertTrue(h2GIS.firstRow("select count(*) as count from ${transform.results.outputTableName}").count>0)
+                }
+            }
+        }
+    }
+
+    @Test
     void parseJSONParameters1(){
         def paramsDefaultFile = this.class.getResource("road_tags.json").toURI()
         Map  parameters = OSMTools.Utilities.readJSONParameters(paramsDefaultFile)
@@ -475,7 +499,7 @@ class OSMToolsTests {
     void dev() {
         def h2GIS = H2GIS.open('./target/OSMTools;AUTO_SERVER=TRUE')
 
-        Geometry geom = OSMTools.Utilities.getAreaFromPlace("Bouguenais");
+        Geometry geom = OSMTools.Utilities.getAreaFromPlace("Paris");
 
         def query = OSMTools.Utilities.buildOSMQuery(new GeometryFactory().toGeometry(geom.getEnvelopeInternal())
                 , [], NODE, WAY, RELATION)
@@ -486,12 +510,12 @@ class OSMToolsTests {
                 def load = OSMTools.Loader.load()
                 if (load(datasource: h2GIS, osmTablesPrefix: prefix, osmFilePath:extract.results.outputFilePath)) {
 
-                    def tags = ['highway']
+                    def tags = ['building']
 
-                    def transform = OSMTools.Transform.toLines()
+                    def transform = OSMTools.Transform.toPolygons()
                     transform.execute(datasource: h2GIS, osmTablesPrefix: prefix, epsgCode: 2154, tags: tags)
                     assertNotNull(transform.results.outputTableName)
-                    h2GIS.getTable(transform.results.outputTableName).save("/tmp/data_osm_road.shp")
+                    h2GIS.getTable(transform.results.outputTableName).save("/tmp/${transform.results.outputTableName}.shp")
                 }
             }
      }

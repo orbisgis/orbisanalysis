@@ -21,7 +21,7 @@ import static org.orbisgis.osm.utils.OSMElement.WAY
  * The area can be an envelope or a polygon
  *
  * @param datasource A connexion to a DB to load the OSM file
- * @param placeName The name of the place to extract
+ * @param filterArea Filtering area
  * @param distance to expand the envelope of the query box. Default is 0
  *
  * @return The name of the tables that contains the geometry representation of the extracted area (outputZoneTable) and

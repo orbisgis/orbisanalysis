@@ -1,13 +1,12 @@
 package org.orbisgis.osm
 
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.locationtech.jts.geom.Coordinate
-import org.locationtech.jts.geom.Coordinates
 import org.locationtech.jts.geom.GeometryFactory
-import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanager.h2gis.H2GIS
 
-import java.util.regex.Matcher
 import java.util.regex.Pattern
 
 import static org.junit.jupiter.api.Assertions.*
@@ -17,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.*
  *
  * @author Sylvain PALOMINOS (UBS LAB-STICC 2019)
  */
+//@Disabled
 class LoaderTest {
 
     private static final def PATH = "./target/"
@@ -25,6 +25,12 @@ class LoaderTest {
     private static def query
 
     protected static final def RANDOM_DS = {H2GIS.open(PATH + uuid() + DB_OPTION)}
+
+    @AfterAll
+    static void afterAll(){
+        OSMTools.Loader.metaClass = null
+        Utilities.metaClass.static = null
+    }
 
     /**
      * Override the 'executeOverPassQuery' methods to avoid the call to the server
@@ -41,7 +47,6 @@ class LoaderTest {
      * Override the 'executeOverPassQuery' methods to avoid the call to the server
      */
     private static void badOverpassQueryOverride(){
-        //Replace the executeOverPassQuery methods to avoid the call to the server
         OSMTools.Loader.metaClass.static.executeOverPassQuery = {query, outputOSMFile ->
             LoaderTest.query = query
             return false

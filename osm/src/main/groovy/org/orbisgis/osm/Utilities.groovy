@@ -195,7 +195,7 @@ static String toPoly(Geometry geometry) {
  */
 static String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElement) {
     if (envelope != null) {
-        def query = "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()}, ${envelope.getMaxX()}];\n(\n"
+        def query = "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()},${envelope.getMaxX()}];\n(\n"
         osmElement.each { i ->
             if(keys==null || keys.isEmpty()){
                 query += "\t${i.toString().toLowerCase()};\n"

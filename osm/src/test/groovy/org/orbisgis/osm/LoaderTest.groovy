@@ -1,6 +1,5 @@
 package org.orbisgis.osm
 
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.orbisgis.datamanager.h2gis.H2GIS
 
@@ -20,7 +19,9 @@ class LoaderTest {
 
     protected static final def RANDOM_DS = {H2GIS.open(PATH + uuid() + DB_OPTION)}
 
-    //Override the 'executeOverPassQuery' methods to avoid the call to the server
+    /**
+     * Override the 'executeOverPassQuery' methods to avoid the call to the server
+     */
     private static void sampleOverpassQueryOverride(){
         OSMTools.Loader.metaClass.static.executeOverPassQuery = {query, outputOSMFile ->
             LoaderTest.query = query
@@ -29,7 +30,9 @@ class LoaderTest {
         }
     }
 
-    //Override the 'executeOverPassQuery' methods to avoid the call to the server
+    /**
+     * Override the 'executeOverPassQuery' methods to avoid the call to the server
+     */
     private static void badOverpassQueryOverride(){
         //Replace the executeOverPassQuery methods to avoid the call to the server
         OSMTools.Loader.metaClass.static.executeOverPassQuery = {query, outputOSMFile ->
@@ -38,6 +41,9 @@ class LoaderTest {
         }
     }
 
+    /**
+     * Test the OSMTools.Loader.extract() process.
+     */
     @Test
     void extractTest(){
         sampleOverpassQueryOverride()
@@ -52,14 +58,25 @@ class LoaderTest {
         assertEquals this.class.getResourceAsStream("sample.osm").text, file.text
     }
 
+    /**
+     * Test the OSMTools.Loader.extract() process with bad data
+     */
     @Test
     void badExtractTest(){
-        badOverpassQueryOverride()
         def extract = OSMTools.Loader.extract()
+
+        sampleOverpassQueryOverride()
         assertFalse extract([overpassQuery : null])
+        assertTrue extract.results.isEmpty()
+
+        badOverpassQueryOverride()
+        assertFalse extract([overpassQuery : "toto"])
         assertTrue extract.results.isEmpty()
     }
 
+    /**
+     * Test the OSMTools.Loader.load() process with bad data.
+     */
     @Test
     void badLoadTest(){
         H2GIS ds = RANDOM_DS()
@@ -95,6 +112,10 @@ class LoaderTest {
         assertNotNull load.results
         assertTrue load.results.isEmpty()
     }
+
+    /**
+     * Test the OSMTools.Loader.load() process.
+     */
     @Test
     void loadTest(){
         H2GIS ds = RANDOM_DS()
@@ -387,19 +408,6 @@ class LoaderTest {
                 default:
                     fail()
             }
-        }
-    }
-
-    static class CustomMetaClass extends MetaClassImpl{
-
-        CustomMetaClass(MetaClass theClass) {
-            super(theClass.theClass)
-        }
-
-        @Override
-        Object invokeMethod(Object object, String methodName, Object arguments) {
-            println object
-            return null
         }
     }
 }

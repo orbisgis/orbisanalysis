@@ -281,7 +281,7 @@ static Map readJSONParameters(def jsonFile) {
  * system depending on the epsg code.
  * Note that the envelope of the geometry can be expanded according to the input distance value.
  */
-def buildGeometryAndZone(Geometry geom, int epsg, int distance, def datasource) {
+static def buildGeometryAndZone(Geometry geom, int epsg, int distance, def datasource) {
     GeometryFactory gf = new GeometryFactory()
     def con = datasource.getConnection();
     Polygon filterArea = null

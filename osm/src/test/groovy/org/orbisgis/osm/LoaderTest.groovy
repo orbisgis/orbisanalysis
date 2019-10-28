@@ -113,6 +113,7 @@ class LoaderTest {
         sampleOverpassQueryOverride()
         def fromPlace = OSMTools.Loader.fromPlace()
         def placeName = "  The place Name -toFind  "
+        def dist = 5
         def formattedPlaceName = "The_place_Name_toFind_"
         def uuidRegex = "[0-9a-f]{8}_[0-9a-f]{4}_[0-9a-f]{4}_[0-9a-f]{4}_[0-9a-f]{12}"
         def overpassQuery = "[bbox:-5.0,-5.0,13.0,12.0];\n" +
@@ -124,7 +125,7 @@ class LoaderTest {
                 "out;"
         H2GIS ds = RANDOM_DS()
 
-        assertTrue fromPlace(datasource: ds, placeName: placeName, distance:5)
+        assertTrue fromPlace(datasource: ds, placeName: placeName, distance: dist)
         def r = fromPlace.results
         assertFalse r.isEmpty()
         assertTrue r.containsKey("zoneTableName")
@@ -136,6 +137,30 @@ class LoaderTest {
         assertTrue r.containsKey("epsg")
         assertEquals 4326, r.epsg
         assertEquals overpassQuery, query
+    }
+
+    /**
+     * Test the OSMTools.Loader.fromPlace() process with bad data.
+     */
+    @Test
+    void badFromPlaceTest(){
+        sampleGetAreaFromPlace()
+        sampleOverpassQueryOverride()
+        def fromPlace = OSMTools.Loader.fromPlace()
+        def placeName = "  The place Name -toFind  "
+        def dist = -5
+        H2GIS ds = RANDOM_DS()
+
+        assertFalse fromPlace(datasource: ds, placeName: placeName, distance: dist)
+        assertTrue fromPlace.results.isEmpty()
+        assertFalse fromPlace(datasource: ds, placeName: placeName, distance: null)
+        assertTrue fromPlace.results.isEmpty()
+
+        assertFalse fromPlace(datasource: ds, placeName: null)
+        assertTrue fromPlace.results.isEmpty()
+
+        assertFalse fromPlace(datasource: null, placeName: placeName)
+        assertTrue fromPlace.results.isEmpty()
     }
 
     /**

@@ -57,7 +57,7 @@ IProcess fromArea() {
             geom.SRID = DEFAULT_SRID
             if (geom) {
                  // Extract the OSM file from the envelope of the geometry
-                def geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, NULL_SRID, distance, datasource)
+                def geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, distance, datasource)
                 def epsg = geomAndEnv.geom.SRID
 
                 //Create table to store the geometry and the envelope of the extracted area
@@ -114,18 +114,18 @@ IProcess fromArea() {
 IProcess fromPlace() {
     return create({
         title "Extract the OSM data using a place name"
-        inputs datasource: JdbcDataSource, placeName: String, distance : 0
-        outputs zoneTableName: String, zoneEnvelopeTableName: String, osmTablesPrefix: String, epsg:int
+        inputs datasource: JdbcDataSource, placeName: String, distance: 0
+        outputs zoneTableName: String, zoneEnvelopeTableName: String, osmTablesPrefix: String, epsg: int
         run { JdbcDataSource datasource, placeName, distance ->
-            def formatedPlaceName = placeName.trim().split("\\s*(,|\\s)\\s*").join("_") + "_";
+            def formatedPlaceName = placeName.trim().replaceAll("(\\s|,|-|\$)+", "_")
             def outputZoneTable = "ZONE_$formatedPlaceName$uuid"
             def outputZoneEnvelopeTable = "ZONE_ENVELOPE_$formatedPlaceName$uuid"
             def osmTablesPrefix = "OSM_DATA_$formatedPlaceName$uuid"
 
             def geom = OSMTools.Utilities.getAreaFromPlace(placeName);
             if (geom) {
-                 //Extract the OSM file from the envelope of the geometry
-                def geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, NULL_SRID, distance, datasource)
+                //Extract the OSM file from the envelope of the geometry
+                def geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, distance, datasource)
                 def epsg = geomAndEnv.geom.SRID
 
                 //Create table to store the geometry and the envelope of the extracted area
@@ -142,21 +142,19 @@ IProcess fromPlace() {
                 if (extract(overpassQuery: query)) {
                     info "Downloading OSM data from the place $placeName"
                     def load = OSMTools.Loader.load()
-                    if (load(datasource     : datasource,
-                            osmTablesPrefix : osmTablesPrefix,
-                            osmFilePath     : extract.results.outputFilePath)) {
+                    if (load(datasource: datasource,
+                            osmTablesPrefix: osmTablesPrefix,
+                            osmFilePath: extract.results.outputFilePath)) {
                         info "Loading OSM data from the place $placeName"
-                        return [zoneTableName         : outputZoneTable,
-                                zoneEnvelopeTableName : outputZoneEnvelopeTable,
-                                osmTablesPrefix       : osmTablesPrefix,
-                                epsg                  : epsg]
-                    }
-                    else{
+                        return [zoneTableName        : outputZoneTable,
+                                zoneEnvelopeTableName: outputZoneEnvelopeTable,
+                                osmTablesPrefix      : osmTablesPrefix,
+                                epsg                 : epsg]
+                    } else {
                         error "Cannot load the OSM data from the place $placeName"
                     }
 
-                }
-                else{
+                } else {
                     error "Cannot download OSM data from the place $placeName"
                 }
 

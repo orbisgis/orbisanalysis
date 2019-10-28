@@ -1,7 +1,14 @@
 package org.orbisgis.osm
 
 import org.junit.jupiter.api.Test
+import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.Coordinates
+import org.locationtech.jts.geom.GeometryFactory
+import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanager.h2gis.H2GIS
+
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 
 import static org.junit.jupiter.api.Assertions.*
 
@@ -39,6 +46,96 @@ class LoaderTest {
             LoaderTest.query = query
             return false
         }
+    }
+
+    /**
+     * Override the 'getAreaFromPlace' methods to avoid the call to the server
+     */
+    private static void sampleGetAreaFromPlace(){
+        Utilities.metaClass.static.getAreaFromPlace = {placeName ->
+            def coordinates = [new Coordinate(0, 0), new Coordinate(4, 8), new Coordinate(7, 5),
+                              new Coordinate(0, 0)] as Coordinate[]
+            def geom = new GeometryFactory().createPolygon(coordinates)
+            geom.SRID = 4326
+            return geom
+        }
+    }
+
+    /**
+     * Override the 'getAreaFromPlace' methods to avoid the call to the server
+     */
+    private static void badGetAreaFromPlace(){
+        Utilities.metaClass.static.getAreaFromPlace = {placeName ->
+            return null
+        }
+    }
+
+    /**
+     * Test the OSMTools.Loader.fromPlace() process.
+     */
+    @Test
+    void fromPlaceNoDistTest(){
+        sampleGetAreaFromPlace()
+        sampleOverpassQueryOverride()
+        def fromPlace = OSMTools.Loader.fromPlace()
+        def placeName = "  The place Name -toFind  "
+        def formattedPlaceName = "The_place_Name_toFind_"
+        def uuidRegex = "[0-9a-f]{8}_[0-9a-f]{4}_[0-9a-f]{4}_[0-9a-f]{4}_[0-9a-f]{12}"
+        def overpassQuery = "[bbox:0.0,0.0,8.0,7.0];\n" +
+                "(\n" +
+                "\tnode(poly:\"0.0 0.0 8.0 0.0 8.0 7.0 0.0 7.0\");\n" +
+                "\tway(poly:\"0.0 0.0 8.0 0.0 8.0 7.0 0.0 7.0\");\n" +
+                "\trelation(poly:\"0.0 0.0 8.0 0.0 8.0 7.0 0.0 7.0\");\n" +
+                ");\n" +
+                "out;"
+        H2GIS ds = RANDOM_DS()
+
+        assertTrue fromPlace(datasource: ds, placeName: placeName)
+        def r = fromPlace.results
+        assertFalse r.isEmpty()
+        assertTrue r.containsKey("zoneTableName")
+        assertTrue Pattern.compile("ZONE_$formattedPlaceName$uuidRegex").matcher(r.zoneTableName as String).matches()
+        assertTrue r.containsKey("zoneEnvelopeTableName")
+        assertTrue Pattern.compile("ZONE_ENVELOPE_$formattedPlaceName$uuidRegex").matcher(r.zoneEnvelopeTableName as String).matches()
+        assertTrue r.containsKey("osmTablesPrefix")
+        assertTrue Pattern.compile("OSM_DATA_$formattedPlaceName$uuidRegex").matcher(r.osmTablesPrefix as String).matches()
+        assertTrue r.containsKey("epsg")
+        assertEquals 4326, r.epsg
+        assertEquals overpassQuery, query
+    }
+
+    /**
+     * Test the OSMTools.Loader.fromPlace() process.
+     */
+    @Test
+    void fromPlaceWithDistTest(){
+        sampleGetAreaFromPlace()
+        sampleOverpassQueryOverride()
+        def fromPlace = OSMTools.Loader.fromPlace()
+        def placeName = "  The place Name -toFind  "
+        def formattedPlaceName = "The_place_Name_toFind_"
+        def uuidRegex = "[0-9a-f]{8}_[0-9a-f]{4}_[0-9a-f]{4}_[0-9a-f]{4}_[0-9a-f]{12}"
+        def overpassQuery = "[bbox:-5.0,-5.0,13.0,12.0];\n" +
+                "(\n" +
+                "\tnode(poly:\"-5.0 -5.0 13.0 -5.0 13.0 12.0 -5.0 12.0\");\n" +
+                "\tway(poly:\"-5.0 -5.0 13.0 -5.0 13.0 12.0 -5.0 12.0\");\n" +
+                "\trelation(poly:\"-5.0 -5.0 13.0 -5.0 13.0 12.0 -5.0 12.0\");\n" +
+                ");\n" +
+                "out;"
+        H2GIS ds = RANDOM_DS()
+
+        assertTrue fromPlace(datasource: ds, placeName: placeName, distance:5)
+        def r = fromPlace.results
+        assertFalse r.isEmpty()
+        assertTrue r.containsKey("zoneTableName")
+        assertTrue Pattern.compile("ZONE_$formattedPlaceName$uuidRegex").matcher(r.zoneTableName as String).matches()
+        assertTrue r.containsKey("zoneEnvelopeTableName")
+        assertTrue Pattern.compile("ZONE_ENVELOPE_$formattedPlaceName$uuidRegex").matcher(r.zoneEnvelopeTableName as String).matches()
+        assertTrue r.containsKey("osmTablesPrefix")
+        assertTrue Pattern.compile("OSM_DATA_$formattedPlaceName$uuidRegex").matcher(r.osmTablesPrefix as String).matches()
+        assertTrue r.containsKey("epsg")
+        assertEquals 4326, r.epsg
+        assertEquals overpassQuery, query
     }
 
     /**

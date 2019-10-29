@@ -488,7 +488,7 @@ IProcess extractRelationsAsPolygons() {
            ${RELATIONS_POLYGONS_OUTER_EXPLODED}, ${RELATIONS_POLYGONS_INNER_EXPLODED}, ${RELATIONS_MP_HOLES}, ${RELATION_FILTERED_KEYS};"""
 
                         } else {
-                            info "No keys or values found in the relations."
+                            error "No keys or values found in the relations."
                             return null
                         }
                     }else{
@@ -688,7 +688,7 @@ IProcess extractRelationsAsLines() {
 
                         }
                         else {
-                            info "No keys or values found in the relations."
+                            error "No keys or values found in the relations."
                             return null
                         }
                     }

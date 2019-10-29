@@ -54,7 +54,9 @@ IProcess fromArea() {
                 error "The filter area must be an Envelope or a Polygon"
                 return
             }
-            geom.SRID = DEFAULT_SRID
+            if(geom.SRID <= 0) {
+                geom.SRID = DEFAULT_SRID
+            }
             if (geom) {
                  // Extract the OSM file from the envelope of the geometry
                 def geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, distance, datasource)

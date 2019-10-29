@@ -107,6 +107,24 @@ class LoaderTest {
         assertTrue r.containsKey("epsg")
         assertEquals 4326, r.epsg
         assertEquals overpassQuery, query
+
+        def zone = ds.getSpatialTable(r.zoneTableName)
+        assertEquals 1, zone.rowCount
+        assertEquals 2, zone.getColumnCount()
+        assertTrue zone.columnNames.contains("THE_GEOM")
+        assertTrue zone.columnNames.contains("ID_ZONE")
+        zone.next()
+        assertEquals "POLYGON ((0 0, 4 8, 7 5, 0 0))", zone.getGeometry(1).toText()
+        assertEquals "  The place Name -toFind  ", zone.getString(2)
+
+        def zoneEnv = ds.getSpatialTable(r.zoneEnvelopeTableName)
+        assertEquals 1, zoneEnv.rowCount
+        assertEquals 2, zoneEnv.getColumnCount()
+        assertTrue zoneEnv.columnNames.contains("THE_GEOM")
+        assertTrue zoneEnv.columnNames.contains("ID_ZONE")
+        zoneEnv.next()
+        assertEquals "POLYGON ((0 0, 0 8, 7 8, 7 0, 0 0))", zoneEnv.getGeometry(1).toText()
+        assertEquals "  The place Name -toFind  ", zoneEnv.getString(2)
     }
 
     /**
@@ -142,6 +160,24 @@ class LoaderTest {
         assertTrue r.containsKey("epsg")
         assertEquals 4326, r.epsg
         assertEquals overpassQuery, query
+
+        def zone = ds.getSpatialTable(r.zoneTableName)
+        assertEquals 1, zone.rowCount
+        assertEquals 2, zone.getColumnCount()
+        assertTrue zone.columnNames.contains("THE_GEOM")
+        assertTrue zone.columnNames.contains("ID_ZONE")
+        zone.next()
+        assertEquals "POLYGON ((0 0, 4 8, 7 5, 0 0))", zone.getGeometry(1).toText()
+        assertEquals "  The place Name -toFind  ", zone.getString(2)
+
+        def zoneEnv = ds.getSpatialTable(r.zoneEnvelopeTableName)
+        assertEquals 1, zoneEnv.rowCount
+        assertEquals 2, zoneEnv.getColumnCount()
+        assertTrue zoneEnv.columnNames.contains("THE_GEOM")
+        assertTrue zoneEnv.columnNames.contains("ID_ZONE")
+        zoneEnv.next()
+        assertEquals "POLYGON ((-5 -5, -5 13, 12 13, 12 -5, -5 -5))", zoneEnv.getGeometry(1).toText()
+        assertEquals "  The place Name -toFind  ", zoneEnv.getString(2)
     }
 
     /**

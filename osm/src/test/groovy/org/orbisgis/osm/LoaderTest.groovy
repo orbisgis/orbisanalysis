@@ -2,10 +2,12 @@ package org.orbisgis.osm
 
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.orbisgis.datamanager.h2gis.H2GIS
+import org.slf4j.Logger
 
 import java.util.regex.Pattern
 
@@ -23,13 +25,24 @@ class LoaderTest {
     private static final def DB_OPTION = ";AUTO_SERVER=TRUE"
     private static final def uuid(){ "_"+UUID.randomUUID().toString().replaceAll("-", "_")}
     private static def query
+    private static def executeOverPassQuery
+    private static def getAreaFromPlace
+    private static def logger
 
     protected static final def RANDOM_DS = {H2GIS.open(PATH + uuid() + DB_OPTION)}
 
+    @BeforeAll
+    static void beforeAll(){
+        //Store the modified object
+        executeOverPassQuery = OSMTools.Loader.&executeOverPassQuery
+        getAreaFromPlace = OSMTools.Utilities.&getAreaFromPlace
+    }
+
     @AfterAll
     static void afterAll(){
-        OSMTools.Loader.metaClass = null
-        Utilities.metaClass.static = null
+        //Restore the modified object
+        OSMTools.Loader.metaClass.static.executeOverPassQuery = executeOverPassQuery
+        OSMTools.Utilities.metaClass.static.getAreaFromPlace = getAreaFromPlace
     }
 
     /**
@@ -57,7 +70,7 @@ class LoaderTest {
      * Override the 'getAreaFromPlace' methods to avoid the call to the server
      */
     private static void sampleGetAreaFromPlace(){
-        Utilities.metaClass.static.getAreaFromPlace = {placeName ->
+        OSMTools.Utilities.metaClass.static.getAreaFromPlace = {placeName ->
             def coordinates = [new Coordinate(0, 0), new Coordinate(4, 8), new Coordinate(7, 5),
                               new Coordinate(0, 0)] as Coordinate[]
             def geom = new GeometryFactory().createPolygon(coordinates)
@@ -70,7 +83,7 @@ class LoaderTest {
      * Override the 'getAreaFromPlace' methods to avoid the call to the server
      */
     private static void badGetAreaFromPlace(){
-        Utilities.metaClass.static.getAreaFromPlace = {placeName ->
+        OSMTools.Utilities.metaClass.static.getAreaFromPlace = {placeName ->
             return null
         }
     }

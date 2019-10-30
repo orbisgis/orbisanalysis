@@ -52,7 +52,7 @@ IProcess toPoints() {
                         }
                     }
                     else{
-                        error "Invalid EPSG code : $epsg"
+                        error "Invalid EPSG code : $epsgCode"
                         return null
                     }
                 } else {
@@ -145,7 +145,7 @@ IProcess toLines() {
                         }
                     }
                     else{
-                        error "Invalid EPSG code : $epsg"
+                        error "Invalid EPSG code : $epsgCode"
                         return null
                     }
                 } else {
@@ -237,7 +237,7 @@ IProcess toPolygons() {
                             return null
                         }
                     }else{
-                        error "Invalid EPSG code : $epsg"
+                        error "Invalid EPSG code : $epsgCode"
                         return null
                     }
                 } else {
@@ -330,7 +330,7 @@ IProcess extractWaysAsPolygons() {
                             return null
                         }
                     }else{
-                        error "Invalid EPSG code : $epsg"
+                        error "Invalid EPSG code : $epsgCode"
                         return null
                     }
                 } else {
@@ -492,7 +492,7 @@ IProcess extractRelationsAsPolygons() {
                             return null
                         }
                     }else{
-                        error "Invalid EPSG code : $epsg"
+                        error "Invalid EPSG code : $epsgCode"
                         return null
                     }
                 } else {
@@ -592,7 +592,7 @@ IProcess extractWaysAsLines() {
                         }
                     }
                     else{
-                        error "Invalid EPSG code : $epsg"
+                        error "Invalid EPSG code : $epsgCode"
                         return null
                     }
                 } else {
@@ -693,7 +693,7 @@ IProcess extractRelationsAsLines() {
                         }
                     }
                     else{
-                        error "Invalid EPSG code : $epsg"
+                        error "Invalid EPSG code : $epsgCode"
                         return null
                     }
                 } else {
@@ -711,7 +711,7 @@ IProcess extractRelationsAsLines() {
  *
  * @param datasource Datasource to use for the extraction
  * @param filterArea Area to extract. Must be specificied
- * @param epsg as integer value
+ * @param epsgCode as integer value
  * Default value is -1. If the default value is used the process will find the best UTM projection
  * according the interior point of the filterArea
  * @param dataDim Dimension of the data to extract. It should be an array with the value 0, 1, 2.
@@ -727,7 +727,7 @@ IProcess extractRelationsAsLines() {
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-IProcess stackingTransform(datasource, filterArea, epsg, dataDim, tags) {
+IProcess stackingTransform(datasource, filterArea, epsgCode, dataDim, tags) {
     if (datasource == null) {
         error "The datasource cannot be null"
     }
@@ -743,18 +743,18 @@ IProcess stackingTransform(datasource, filterArea, epsg, dataDim, tags) {
     if(filterArea instanceof Envelope ) {
         query = OSMHelper.Utilities.buildOSMQuery(filterArea, tags, NODE, WAY, RELATION)
         interiorPoint = filterArea.centre()
-        epsg = SFSUtilities.getSRID(datasource.getConnection(), interiorPoint.y as float, interiorPoint.x as float)
+        epsgCode = SFSUtilities.getSRID(datasource.getConnection(), interiorPoint.y as float, interiorPoint.x as float)
     }
     else if( filterArea instanceof Polygon ) {
         query = OSMHelper.Utilities.buildOSMQuery(filterArea, tags, NODE, WAY, RELATION)
         interiorPoint= filterArea.getCentroid().getCoordinate()
-        epsg = SFSUtilities.getSRID(datasource.getConnection(), interiorPoint.y as float, interiorPoint.x as float)
+        epsgCode = SFSUtilities.getSRID(datasource.getConnection(), interiorPoint.y as float, interiorPoint.x as float)
     }
     else {
         error "The filter area must be an Envelope or a Polygon"
         return null
     }
-    if(epsg!=-1){
+    if(epsgCode!=-1){
         def extract = OSMHelper.Loader.extract()
         if (!query.isEmpty()) {
             if (extract.execute(overpassQuery: query)) {
@@ -768,19 +768,19 @@ IProcess stackingTransform(datasource, filterArea, epsg, dataDim, tags) {
                     if (dataDim.contains(0)) {
                         def transform = OSMHelper.Transform.toPoints()
                         info "Transforming points"
-                        assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags:tags)
+                        assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsgCode, tags:tags)
                         outputPointsTableName = transform.results.outputTableName
                     }
                     if (dataDim.contains(1)) {
                         def transform = OSMHelper.Transform.extractWaysAsLines()
                         info "Transforming lines"
-                        assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg,tags:tags)
+                        assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsgCode,tags:tags)
                         outputLinesTableName = transform.results.outputTableName
                     }
                     if (dataDim.contains(2)) {
                         def transform = OSMHelper.Transform.toPolygons()
                         info "Transforming polygons"
-                        assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg,tags:tags)
+                        assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsgCode,tags:tags)
                         outputPolygonsTableName = transform.results.outputTableName
                     }
                     return [outputPolygonsTableName: outputPolygonsTableName,
@@ -790,7 +790,7 @@ IProcess stackingTransform(datasource, filterArea, epsg, dataDim, tags) {
             }
         }
         else{
-            error "Invalid EPSG code : $epsg"
+            error "Invalid EPSG code : $epsgCode"
             return null
         }
     }

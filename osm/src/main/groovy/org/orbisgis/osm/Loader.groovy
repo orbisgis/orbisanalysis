@@ -57,43 +57,39 @@ IProcess fromArea() {
             if(geom.SRID <= 0) {
                 geom.SRID = DEFAULT_SRID
             }
-            if (geom) {
-                 // Extract the OSM file from the envelope of the geometry
-                def geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, distance, datasource)
-                def epsg = geomAndEnv.geom.SRID
+             // Extract the OSM file from the envelope of the geometry
+            def geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, distance, datasource)
+            def epsg = geomAndEnv.geom.SRID
 
-                //Create table to store the geometry and the envelope of the extracted area
-                datasource.execute "CREATE TABLE $outputZoneTable (the_geom GEOMETRY(POLYGON, $epsg));" +
-                        " INSERT INTO $outputZoneTable VALUES (ST_GEOMFROMTEXT('${geomAndEnv.geom}', $epsg));"
+            //Create table to store the geometry and the envelope of the extracted area
+            datasource.execute "CREATE TABLE $outputZoneTable (the_geom GEOMETRY(POLYGON, $epsg));" +
+                    " INSERT INTO $outputZoneTable VALUES (ST_GEOMFROMTEXT('${geomAndEnv.geom}', $epsg));"
 
-                def text = ST_Transform.ST_Transform(datasource.connection, geomAndEnv.filterArea, epsg)
-                datasource.execute "CREATE TABLE $outputZoneEnvelopeTable (the_geom GEOMETRY(POLYGON, $epsg));" +
-                        "INSERT INTO $outputZoneEnvelopeTable VALUES " +
-                            "(ST_GEOMFROMTEXT('$text',$epsg));"
+            def text = ST_Transform.ST_Transform(datasource.connection, geomAndEnv.filterArea, epsg)
+            datasource.execute "CREATE TABLE $outputZoneEnvelopeTable (the_geom GEOMETRY(POLYGON, $epsg));" +
+                    "INSERT INTO $outputZoneEnvelopeTable VALUES " +
+                        "(ST_GEOMFROMTEXT('$text',$epsg));"
 
-                def query = OSMTools.Utilities.buildOSMQuery(geomAndEnv.filterArea, [], NODE, WAY, RELATION)
+            def query = OSMTools.Utilities.buildOSMQuery(geomAndEnv.filterArea, [], NODE, WAY, RELATION)
 
-                def extract = OSMTools.Loader.extract()
-                if (extract(overpassQuery: query)) {
-                    info "Downloading OSM data from the area $filterArea"
-                    def load = OSMTools.Loader.load()
-                    if (load(datasource     : datasource,
-                            osmTablesPrefix : osmTablesPrefix,
-                            osmFilePath     : extract.results.outputFilePath)) {
-                        info "Loading OSM data from the area $filterArea"
-                        return [zoneTableName         : outputZoneTable,
-                                zoneEnvelopeTableName : outputZoneEnvelopeTable,
-                                osmTablesPrefix       : osmTablesPrefix,
-                                epsg                  : epsg]
-                    } else {
-                        error "Cannot load the OSM data from the area $filterArea"
-                    }
-
+            def extract = OSMTools.Loader.extract()
+            if (extract(overpassQuery: query)) {
+                info "Downloading OSM data from the area $filterArea"
+                def load = OSMTools.Loader.load()
+                if (load(datasource     : datasource,
+                        osmTablesPrefix : osmTablesPrefix,
+                        osmFilePath     : extract.results.outputFilePath)) {
+                    info "Loading OSM data from the area $filterArea"
+                    return [zoneTableName         : outputZoneTable,
+                            zoneEnvelopeTableName : outputZoneEnvelopeTable,
+                            osmTablesPrefix       : osmTablesPrefix,
+                            epsg                  : epsg]
                 } else {
-                    error "Cannot download OSM data from the area $filterArea"
+                    error "Cannot load the OSM data from the area $filterArea"
                 }
+
             } else {
-                error("Cannot find an area from the area $filterArea")
+                error "Cannot download OSM data from the area $filterArea"
             }
         }
     })

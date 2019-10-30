@@ -1,6 +1,7 @@
 package org.orbisgis.osm
 
-
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
@@ -16,6 +17,16 @@ import static org.junit.jupiter.api.Assertions.*
  * @author Sylvain PALOMINOS (UBS LAB-STICC 2019)
  */
 class LoaderTest extends AbstractOSMTest {
+
+    @BeforeEach
+    void beforeEach(){
+        super.beforeEach()
+    }
+
+    @AfterEach
+    void afterEach(){
+        super.afterEach()
+    }
 
     /**
      * Test the OSMTools.Loader.fromArea() process.

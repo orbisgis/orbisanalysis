@@ -37,7 +37,6 @@ abstract class AbstractOSMTest {
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
     private static def load
 
-    @BeforeEach
     void beforeEach(){
         //Store the modified object
         executeOverPassQuery = OSMTools.Loader.&executeOverPassQuery
@@ -46,7 +45,6 @@ abstract class AbstractOSMTest {
         getAreaFromPlace = OSMTools.Utilities.&getAreaFromPlace
     }
 
-    @AfterEach
     void afterEach(){
         //Restore the modified object
         OSMTools.Loader.metaClass.static.executeOverPassQuery = executeOverPassQuery

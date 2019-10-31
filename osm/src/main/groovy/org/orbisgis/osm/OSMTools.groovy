@@ -36,6 +36,7 @@ abstract class OSMTools extends GroovyProcessFactory {
     /* *********************** */
     /** {@link Closure} returning a {@link String} prefix/suffix build from a random {@link UUID} with '-' replaced by '_'. */
     static def getUuid() { UUID.randomUUID().toString().replaceAll("-", "_") }
+    static def uuid = {getUuid()}
     /** {@link Closure} converting and UTF-8 {@link String} into an {@link URL}. */
     static def utf8ToUrl = { utf8 -> URLEncoder.encode(utf8, UTF_8.toString()) }
     /** {@link Closure} logging with INFO level the given {@link Object} {@link String} representation. */

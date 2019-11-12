@@ -81,6 +81,14 @@
                 <artifactId>maven-javadoc-plugin</artifactId>
             </plugin>
         </plugins>
+        <resources>
+            <resource>
+                <directory>src/main/groovy/org/orbisgis/osm</directory>
+                <includes>
+                    <include>simplelogger.properties</include>
+                </includes>
+            </resource>
+        </resources>
     </build>
 
 

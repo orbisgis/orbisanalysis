@@ -824,7 +824,7 @@ IProcess stackingTransform(datasource, filterArea, epsgCode, dataDim, tags) {
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Lesaux (UBS LAB-STICC)
  */
-static boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode, String outputNodesPoints, def tags, def columnsToKeep) {
+boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode, String outputNodesPoints, def tags, def columnsToKeep) {
     def tableNode = "${osmTablesPrefix}_node"
     def tableNodeTag = "${osmTablesPrefix}_node_tag"
     def countTagsQuery = "SELECT count(*) AS count FROM $tableNodeTag"

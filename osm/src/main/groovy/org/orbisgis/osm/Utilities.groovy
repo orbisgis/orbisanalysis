@@ -121,7 +121,7 @@ Polygon parsePolygon(def coordinates, GeometryFactory geometryFactory) {
  * @return true if the file has been downloaded
  *
  */
-static boolean executeNominatimQuery(def query, def outputOSMFile) {
+boolean executeNominatimQuery(def query, def outputOSMFile) {
     def apiUrl = " https://nominatim.openstreetmap.org/search?q="
     def request = "&limit=5&format=geojson&polygon_geojson=1"
 
@@ -151,7 +151,7 @@ static boolean executeNominatimQuery(def query, def outputOSMFile) {
  *
  * @return osm bbox
  */
-static String toBBox(Geometry geometry) {
+String toBBox(Geometry geometry) {
     if (geometry != null) {
         Envelope env = geometry.getEnvelopeInternal()
         return "(bbox:${env.getMinY()},${env.getMinX()},${env.getMaxY()}, ${env.getMaxX()})".toString()
@@ -166,7 +166,7 @@ static String toBBox(Geometry geometry) {
  *
  * @return osm poly
  */
-static String toPoly(Geometry geometry) {
+String toPoly(Geometry geometry) {
     if (geometry != null) {
         if (geometry instanceof Polygon) {
             Coordinate[] coordinates = ((Polygon) geometry).getExteriorRing().getCoordinates()
@@ -193,7 +193,7 @@ static String toPoly(Geometry geometry) {
  *
  * @return a string representation of the OSM query
  */
-static String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElement) {
+String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElement) {
     if (envelope != null) {
         def query = "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()},${envelope.getMaxX()}];\n(\n"
         osmElement.each { i ->
@@ -221,7 +221,7 @@ static String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElemen
  *
  * @return a string representation of the OSM query
  */
-static String buildOSMQuery(Polygon polygon, def keys, OSMElement... osmElement) {
+String buildOSMQuery(Polygon polygon, def keys, OSMElement... osmElement) {
     if (polygon != null || !polygon.isEmpty()) {
         Envelope envelope = polygon.getEnvelopeInternal()
         def query = "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()},${envelope.getMaxX()}];\n(\n"
@@ -256,7 +256,7 @@ static String buildOSMQuery(Polygon polygon, def keys, OSMElement... osmElement)
  * @param jsonFile
  * @return
  */
-static Map readJSONParameters(def jsonFile) {
+Map readJSONParameters(def jsonFile) {
     def jsonSlurper = new JsonSlurper()
     if (jsonFile) {
         if (new File(jsonFile).isFile()) {

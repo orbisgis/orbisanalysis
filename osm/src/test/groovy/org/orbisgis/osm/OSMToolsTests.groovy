@@ -218,12 +218,6 @@ class OSMToolsTests {
         assertEquals("yes", row.'BUILDING')
     }
 
-
-    @Test
-    void getSERVER_STATUS(){
-         assertNotNull OSMTools.serverStatus
-    }
-
     @Test
     void extractBuilding() {
         def h2GIS = H2GIS.open('./target/OSMTools;AUTO_SERVER=TRUE')

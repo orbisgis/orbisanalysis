@@ -108,6 +108,14 @@ IProcess toPolygons() {
     })
 }
 
+/**
+ * Merge arrays into one.
+ *
+ * @param removeDuplicated If true remove duplicated values.
+ * @param arrays Array of collections or arrays to merge.
+ *
+ * @return One array containing the values of the given arrays.
+ */
 private static def arrayUnion(boolean removeDuplicated, Collection... arrays){
     def union = []
     for(Object[] array : arrays){
@@ -206,7 +214,7 @@ private def toPolygonOrLine(String type, datasource, osmTablesPrefix, epsgCode, 
     } else if (outputWay){
         datasource.execute "ALTER TABLE $outputWay RENAME TO $outputTableName"
         info "The way $type have been built."
-    } else if (outputRelationPolygons) {
+    } else if (outputRelation) {
         datasource.execute "ALTER TABLE $outputRelation RENAME TO $outputTableName"
         info "The relation $type have been built."
     } else {
@@ -247,8 +255,9 @@ IProcess extractWaysAsPolygons() {
                 }
                 def outputTableName = "WAYS_POLYGONS_$uuid"
                 def idWaysPolygons = "ID_WAYS_POLYGONS_$uuid"
-                def countTagsQuery = "SELECT count(*) AS count FROM ${osmTablesPrefix}_way_tag"
-                def columnsSelector = "SELECT distinct tag_key AS tag_key FROM ${osmTablesPrefix}_way_tag"
+                def osmTableWayTag = "${osmTablesPrefix}_way_tag"
+                def countTagsQuery = "SELECT count(*) AS count FROM $osmTableWayTag"
+                def columnsSelector = "SELECT distinct tag_key AS tag_key FROM $osmTableWayTag"
                 def tagsFilter =''
                 if (tags) {
                     def tagKeysList
@@ -267,61 +276,61 @@ IProcess extractWaysAsPolygons() {
                 else if(columnsToKeep){
                     columnsSelector += " tag_key IN ('${columnsToKeep.unique().join("','")}')"
                 }
-                if (datasource.firstRow(countTagsQuery).count>0) {
-                    info "Build way polygons"
-                    def WAYS_POLYGONS_TMP = "WAYS_POLYGONS_TMP$uuid"
-                    datasource.execute "DROP TABLE IF EXISTS $WAYS_POLYGONS_TMP;"
 
-                    if(tagsFilter){
-                        datasource.execute """
-                                DROP TABLE IF EXISTS $idWaysPolygons;
-                                CREATE TABLE $idWaysPolygons AS
-                                    SELECT DISTINCT id_way
-                                    FROM ${osmTablesPrefix}_way_tag
-                                    WHERE $tagsFilter;
-                                CREATE INDEX ON $idWaysPolygons(id_way);"""
-                    }
-                    else{
-                        idWaysPolygons = "${osmTablesPrefix}_way_tag"
-                    }
-
-                    datasource.execute """
-                            CREATE TABLE $WAYS_POLYGONS_TMP AS
-                                SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKEPOLYGON(ST_MAKELINE(the_geom)), 4326), $epsgCode) AS the_geom, id_way
-                                FROM(
-                                    SELECT(
-                                        SELECT ST_ACCUM(the_geom) AS the_geom
-                                        FROM(
-                                            SELECT n.id_node, n.the_geom, wn.id_way idway
-                                            FROM ${osmTablesPrefix}_node n, ${osmTablesPrefix}_way_node wn
-                                            WHERE n.id_node = wn.id_node
-                                            ORDER BY wn.node_order)
-                                        WHERE  idway = w.id_way
-                                    ) the_geom ,w.id_way  
-                                    FROM ${osmTablesPrefix}_way w, $idWaysPolygons b
-                                    WHERE w.id_way = b.id_way
-                                ) geom_table
-                                WHERE ST_GEOMETRYN(the_geom, 1) = ST_GEOMETRYN(the_geom, ST_NUMGEOMETRIES(the_geom)) 
-                                AND ST_NUMGEOMETRIES(the_geom) > 3;
-                            CREATE INDEX ON $WAYS_POLYGONS_TMP(id_way);
-                    """
-
-                    datasource.execute """
-                            DROP TABLE IF EXISTS $outputTableName; 
-                            CREATE TABLE $outputTableName AS 
-                                SELECT 'w'||a.id_way AS id, a.the_geom ${createTagList(datasource,columnsSelector)} 
-                                FROM $WAYS_POLYGONS_TMP AS a, ${osmTablesPrefix}_way_tag b
-                                WHERE a.id_way=b.id_way
-                                GROUP BY a.id_way;
-                    """
-
-                    datasource.execute "DROP TABLE IF EXISTS $WAYS_POLYGONS_TMP;"
-
-                }
-                else {
+                if (datasource.firstRow(countTagsQuery).count <= 0) {
                     warn "No keys or values found to extract ways."
                     return
                 }
+
+                info "Build way polygons"
+                def waysPolygonTmp = "WAYS_POLYGONS_TMP$uuid"
+                datasource.execute "DROP TABLE IF EXISTS $waysPolygonTmp;"
+
+                if(tagsFilter){
+                    datasource.execute """
+                            DROP TABLE IF EXISTS $idWaysPolygons;
+                            CREATE TABLE $idWaysPolygons AS
+                                SELECT DISTINCT id_way
+                                FROM $osmTableWayTag
+                                WHERE $tagsFilter;
+                            CREATE INDEX ON $idWaysPolygons(id_way);"""
+                }
+                else{
+                    idWaysPolygons = osmTableWayTag
+                }
+
+                datasource.execute """
+                        CREATE TABLE $waysPolygonTmp AS
+                            SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKEPOLYGON(ST_MAKELINE(the_geom)), 4326), $epsgCode) AS the_geom, id_way
+                            FROM(
+                                SELECT(
+                                    SELECT ST_ACCUM(the_geom) AS the_geom
+                                    FROM(
+                                        SELECT n.id_node, n.the_geom, wn.id_way idway
+                                        FROM ${osmTablesPrefix}_node n, ${osmTablesPrefix}_way_node wn
+                                        WHERE n.id_node = wn.id_node
+                                        ORDER BY wn.node_order)
+                                    WHERE  idway = w.id_way
+                                ) the_geom ,w.id_way  
+                                FROM ${osmTablesPrefix}_way w, $idWaysPolygons b
+                                WHERE w.id_way = b.id_way
+                            ) geom_table
+                            WHERE ST_GEOMETRYN(the_geom, 1) = ST_GEOMETRYN(the_geom, ST_NUMGEOMETRIES(the_geom)) 
+                            AND ST_NUMGEOMETRIES(the_geom) > 3;
+                        CREATE INDEX ON $waysPolygonTmp(id_way);
+                """
+
+                datasource.execute """
+                        DROP TABLE IF EXISTS $outputTableName; 
+                        CREATE TABLE $outputTableName AS 
+                            SELECT 'w'||a.id_way AS id, a.the_geom ${createTagList(datasource,columnsSelector)} 
+                            FROM $waysPolygonTmp AS a, $osmTableWayTag b
+                            WHERE a.id_way=b.id_way
+                            GROUP BY a.id_way;
+                """
+
+                datasource.execute "DROP TABLE IF EXISTS $waysPolygonTmp;"
+
                 [outputTableName: outputTableName]
             }
     })

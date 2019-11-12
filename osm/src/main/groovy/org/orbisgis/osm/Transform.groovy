@@ -209,7 +209,7 @@ private def toPolygonOrLine(String type, datasource, osmTablesPrefix, epsgCode, 
                                 SELECT $rightSelect
                                 FROM $outputRelation;
                             DROP TABLE IF EXISTS $outputWay, $outputRelation;
-                    """
+        """
         info "The way and relation $type have been built."
     } else if (outputWay){
         datasource.execute "ALTER TABLE $outputWay RENAME TO $outputTableName"
@@ -222,6 +222,34 @@ private def toPolygonOrLine(String type, datasource, osmTablesPrefix, epsgCode, 
         return
     }
     [outputTableName: outputTableName]
+}
+
+private static getColumnSelector(osmTableTag, tags, columnsToKeep){
+    def columnsSelector = "SELECT distinct tag_key AS tag_key FROM $osmTableTag"
+    if (tags) {
+        def tagKeysList
+        if(tags in Map) {
+            tagKeysList = tags.keySet().findResults { it != "null" && !it.isEmpty() ? it : null }
+        }
+        else{
+            tagKeysList = tags.findResults { it != "null" && !it.isEmpty() ? it : null }
+        }
+        if(columnsToKeep != null){
+            columnsSelector += " WHERE tag_key IN ('${(tagKeysList + columnsToKeep).unique().join("','")}')"
+        }
+    }
+    else if(columnsToKeep){
+        columnsSelector += " tag_key IN ('${columnsToKeep.unique().join("','")}')"
+    }
+    return columnsSelector
+}
+
+private static getCountTagsQuery(osmTableTag, tags){
+    def countTagsQuery = "SELECT count(*) AS count FROM $osmTableTag"
+    if (tags) {
+        countTagsQuery += " WHERE ${createWhereFilter(tags)}"
+    }
+    return countTagsQuery
 }
 
 /**
@@ -255,27 +283,10 @@ IProcess extractWaysAsPolygons() {
                 }
                 def outputTableName = "WAYS_POLYGONS_$uuid"
                 def idWaysPolygons = "ID_WAYS_POLYGONS_$uuid"
-                def osmTableWayTag = "${osmTablesPrefix}_way_tag"
-                def countTagsQuery = "SELECT count(*) AS count FROM $osmTableWayTag"
-                def columnsSelector = "SELECT distinct tag_key AS tag_key FROM $osmTableWayTag"
-                def tagsFilter =''
-                if (tags) {
-                    def tagKeysList
-                    if(tags in Map) {
-                        tagKeysList = tags.keySet().findResults { it != "null" && !it.isEmpty() ? it : null }
-                    }
-                    else{
-                        tagKeysList = tags.findResults { it != "null" && !it.isEmpty() ? it : null }
-                    }
-                    tagsFilter = createWhereFilter(tags)
-                    countTagsQuery += " WHERE $tagsFilter"
-                    if(columnsToKeep != null){
-                        columnsSelector += " WHERE tag_key IN ('${(tagKeysList + columnsToKeep).unique().join("','")}')"
-                    }
-                }
-                else if(columnsToKeep){
-                    columnsSelector += " tag_key IN ('${columnsToKeep.unique().join("','")}')"
-                }
+                def osmTableTag = "${osmTablesPrefix}_way_tag"
+                def countTagsQuery = getCountTagsQuery(osmTableTag, tags)
+                def columnsSelector = getColumnSelector(osmTableTag, tags, columnsToKeep)
+                def tagsFilter = createWhereFilter(tags)
 
                 if (datasource.firstRow(countTagsQuery).count <= 0) {
                     warn "No keys or values found to extract ways."
@@ -291,12 +302,13 @@ IProcess extractWaysAsPolygons() {
                             DROP TABLE IF EXISTS $idWaysPolygons;
                             CREATE TABLE $idWaysPolygons AS
                                 SELECT DISTINCT id_way
-                                FROM $osmTableWayTag
+                                FROM $osmTableTag
                                 WHERE $tagsFilter;
-                            CREATE INDEX ON $idWaysPolygons(id_way);"""
+                            CREATE INDEX ON $idWaysPolygons(id_way);
+                    """
                 }
                 else{
-                    idWaysPolygons = osmTableWayTag
+                    idWaysPolygons = osmTableTag
                 }
 
                 datasource.execute """
@@ -324,7 +336,7 @@ IProcess extractWaysAsPolygons() {
                         DROP TABLE IF EXISTS $outputTableName; 
                         CREATE TABLE $outputTableName AS 
                             SELECT 'w'||a.id_way AS id, a.the_geom ${createTagList(datasource,columnsSelector)} 
-                            FROM $waysPolygonTmp AS a, $osmTableWayTag b
+                            FROM $waysPolygonTmp AS a, $osmTableTag b
                             WHERE a.id_way=b.id_way
                             GROUP BY a.id_way;
                 """
@@ -366,26 +378,10 @@ IProcess extractRelationsAsPolygons() {
                     return
                 }
                 def outputTableName = "RELATION_POLYGONS_$uuid"
-                def countTagsQuery = "SELECT count(*) AS count FROM ${osmTablesPrefix}_relation_tag"
-                def columnsSelector = "SELECT distinct tag_key AS tag_key FROM ${osmTablesPrefix}_relation_tag"
-                def tagsFilter =''
-                if (tags) {
-                    def tagKeysList
-                    if(tags in Map) {
-                        tagKeysList = tags.keySet().findResults { it != "null" && !it.isEmpty() ? it : null }
-                    }
-                    else{
-                        tagKeysList = tags.findResults { it != "null" && !it.isEmpty() ? it : null }
-                    }
-                    tagsFilter = createWhereFilter(tags)
-                    countTagsQuery += " WHERE $tagsFilter"
-                    if(columnsToKeep != null){
-                        columnsSelector += " WHERE tag_key IN ('${(tagKeysList + columnsToKeep).unique().join("','")}')"
-                    }
-                }
-                else if(columnsToKeep){
-                    columnsSelector += " tag_key IN ('${columnsToKeep.unique().join("','")}')"
-                }
+                def osmTableTag = "${osmTablesPrefix}_relation_tag"
+                def countTagsQuery = getCountTagsQuery(osmTableTag, tags)
+                def columnsSelector = getColumnSelector(osmTableTag, tags, columnsToKeep)
+                def tagsFilter = createWhereFilter(tags)
 
                 if (datasource.firstRow(countTagsQuery).count <= 0) {
                     warn "No keys or values found in the relations."
@@ -563,27 +559,10 @@ IProcess extractWaysAsLines() {
                 }
                 def outputTableName = "WAYS_LINES_$uuid"
                 def idWaysTable = "ID_WAYS_$uuid"
-
-                def countTagsQuery = "SELECT count(*) AS count FROM ${osmTablesPrefix}_way_tag"
-                def columnsSelector = "SELECT distinct tag_key AS tag_key FROM ${osmTablesPrefix}_way_tag"
-                def tagsFilter =''
-                if (tags && !tags.isEmpty()) {
-                    def tagKeysList
-                    if(tags in Map) {
-                        tagKeysList = tags.keySet().findResults { it != "null" && !it.isEmpty() ? it : null }
-                    }
-                    else{
-                        tagKeysList = tags.findResults { it != "null" && !it.isEmpty() ? it : null }
-                    }
-                    tagsFilter = createWhereFilter(tags)
-                    countTagsQuery += " WHERE $tagsFilter"
-                    if(columnsToKeep){
-                        columnsSelector += " WHERE tag_key IN ('${(tagKeysList + columnsToKeep).unique().join("','")}')"
-                    }
-                }
-                else if(columnsToKeep && !columnsToKeep.isEmpty()){
-                    columnsSelector += " tag_key IN ('${columnsToKeep.unique().join("','")}')"
-                }
+                def osmTableTag = "${osmTablesPrefix}_way_tag"
+                def countTagsQuery = getCountTagsQuery(osmTableTag, tags)
+                def columnsSelector = getColumnSelector(osmTableTag, tags, columnsToKeep)
+                def tagsFilter = createWhereFilter(tags)
 
                 if (datasource.firstRow(countTagsQuery).count <= 0) {
                     info "No keys or values found in the ways."
@@ -670,26 +649,10 @@ IProcess extractRelationsAsLines() {
                     return
                 }
                 def outputTableName = "RELATIONS_LINES_$uuid"
-                def countTagsQuery = "SELECT count(*) AS count FROM ${osmTablesPrefix}_relation_tag"
-                def columnsSelector = "SELECT distinct tag_key AS tag_key FROM ${osmTablesPrefix}_relation_tag"
-                def tagsFilter =''
-                if (tags && !tags.isEmpty()) {
-                    def tagKeysList
-                    if(tags in Map) {
-                        tagKeysList = tags.keySet().findResults { it != "null" && !it.isEmpty() ? it : null }
-                    }
-                    else{
-                        tagKeysList = tags.findResults { it != "null" && !it.isEmpty() ? it : null }
-                    }
-                    tagsFilter = createWhereFilter(tags)
-                    countTagsQuery += " WHERE $tagsFilter"
-                    if(columnsToKeep){
-                        columnsSelector += " WHERE tag_key IN ('${(tagKeysList + columnsToKeep).unique().join("','")}')"
-                    }
-                }
-                else if(columnsToKeep && !columnsToKeep.isEmpty()){
-                    columnsSelector += " tag_key IN ('${columnsToKeep.unique().join("','")}')"
-                }
+                def osmTableTag = "${osmTablesPrefix}_relation_tag"
+                def countTagsQuery = getCountTagsQuery(osmTableTag, tags)
+                def columnsSelector = getColumnSelector(osmTableTag, tags, columnsToKeep)
+                def tagsFilter = createWhereFilter(tags)
 
                 if (datasource.firstRow(countTagsQuery).count <= 0) {
                     warn "No keys or values found in the relations."
@@ -870,9 +833,9 @@ static boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesP
     if (tags != null && !tags.isEmpty()) {
         def tagKeysList
         if (tags in Map) {
-            tagKeysList = tags.keySet().findResults { it != "null" && !it.isEmpty() ? it : null }
+            tagKeysList = tags.keySet().findResults { it != "null" && it.isEmpty() ? null : it }
         } else {
-            tagKeysList = tags.findResults { it != "null" && !it.isEmpty() ? it : null }
+            tagKeysList = tags.findResults { it != "null" && it.isEmpty() ? null : it }
         }
         tagsFilter = createWhereFilter(tags)
         countTagsQuery += " WHERE $tagsFilter"
@@ -926,6 +889,7 @@ static boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesP
  * (tag_key = 'building' and tag_value in ('yes')) or (tag_key = 'landcover' and tag_value in ('grass','forest')))
  */
 static def createWhereFilter(def tags){
+    if(!tags) return ""
     def whereKeysValuesFilter
     if(tags in Map){
         def whereQuery = []

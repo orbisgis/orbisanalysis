@@ -262,7 +262,7 @@ static Map readJSONParameters(def jsonFile) {
         if (new File(jsonFile).isFile()) {
             return jsonSlurper.parse(new File(jsonFile))
         } else {
-            logger.warn("No file named ${jsonFile} found.")
+            warn("No file named ${jsonFile} found.")
         }
     }
 }

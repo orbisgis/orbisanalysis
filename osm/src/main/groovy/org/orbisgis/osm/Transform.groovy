@@ -2,7 +2,6 @@ package org.orbisgis.osm
 
 import groovy.transform.BaseScript
 import org.h2gis.utilities.SFSUtilities
-import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.datamanager.JdbcDataSource
@@ -68,8 +67,7 @@ IProcess toPoints() {
  * @param osmTablesPrefix prefix name for OSM tables
  * @param epsgCode EPSG code to reproject the geometries
  * @param tags list of keys and values to be filtered
- * @param columnsToKeep a list of columns to keep.
- * The name of a column corresponds to a key name
+ * @param columnsToKeep a list of columns to keep. The name of a column corresponds to a key name
  *
  * @return outputTableName a name for the table that contains all lines
  *
@@ -82,89 +80,10 @@ IProcess toLines() {
             inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: int, tags : [], columnsToKeep:[]
             outputs outputTableName: String
             run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
-                String outputTableName = "OSM_LINES_$uuid"
-                if(!datasource){
-                    error "Please set a valid database connection"
-                    return
-                }
-                if(epsgCode == -1){
-                    error "Invalid EPSG code : $epsgCode"
-                    return
-                }
-                info "Start lines transformation"
-                info "Indexing osm tables..."
-                buildIndexes(datasource, osmTablesPrefix)
-
-                def lineWaysProcess = extractWaysAsLines()
-                lineWaysProcess(datasource      : datasource,
-                                osmTablesPrefix : osmTablesPrefix,
-                                epsgCode        : epsgCode,
-                                tags            : tags,
-                                columnsToKeep   : columnsToKeep)
-                def outputWayLines = lineWaysProcess.getResults().outputTableName
-
-                def lineRelationsProcess = extractRelationsAsLines()
-                lineRelationsProcess(datasource      : datasource,
-                                     osmTablesPrefix : osmTablesPrefix,
-                                     epsgCode        : epsgCode,
-                                     tags            : tags,
-                                     columnsToKeep   : columnsToKeep)
-                def outputRelationLines = lineRelationsProcess.getResults().outputTableName
-
-                if (outputWayLines && outputRelationLines) {
-                    //Merge ways and relations
-                    def columnsWays = datasource.getTable(outputWayLines).columnNames
-                    def columnsRelations = datasource.getTable(outputRelationLines).columnNames
-                    def allColumns = []
-                    allColumns.addAll(columnsWays)
-                    allColumns.removeAll(columnsRelations)
-                    allColumns.addAll(columnsRelations)
-                    allColumns.sort()
-                    def leftSelect = ""
-                    def rightSelect = ""
-                    allColumns.each { column ->
-                        if (columnsWays.contains(column)) {
-                            leftSelect += "\"$column\","
-                        } else {
-                            leftSelect += "null AS \"$column\","
-                        }
-
-                        if (columnsRelations.contains(column)) {
-                            rightSelect += "\"$column\","
-
-                        } else {
-                            rightSelect += "null AS \"$column\","
-                        }
-                    }
-                    leftSelect = leftSelect[0..-2]
-                    rightSelect = rightSelect[0..-2]
-
-                    datasource.execute """
-                            DROP TABLE IF EXISTS $outputTableName;
-                            CREATE TABLE $outputTableName AS 
-                                SELECT $leftSelect
-                                FROM $outputWayLines 
-                                UNION ALL
-                                SELECT $rightSelect
-                                FROM $outputRelationLines;
-                            DROP TABLE IF EXISTS $outputWayLines, $outputRelationLines;
-                    """
-                    info "The way and relation lines have been built."
-                } else if (outputWayLines) {
-                    datasource.execute "ALTER TABLE $outputWayLines RENAME TO $outputTableName"
-                    info "The way lines have been built."
-                } else if (outputRelationLines) {
-                    datasource.execute "ALTER TABLE $outputRelationLines RENAME TO $outputTableName"
-                    info "The relation lines have been built."
-                } else {
-                    warn "Cannot extract any line."
-                    return
-                }
-                [outputTableName: outputTableName]
+                return toPolygonOrLine("LINES", datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep)
             }
     })
 }
-
 
 /**
  * This process is used to extract all the polygons from the OSM tables
@@ -172,8 +91,7 @@ IProcess toLines() {
  * @param osmTablesPrefix prefix name for OSM tables
  * @param epsgCode EPSG code to reproject the geometries
  * @param tags list of keys and values to be filtered
- * @param columnsToKeep a list of columns to keep.
- * The name of a column corresponds to a key name
+ * @param columnsToKeep a list of columns to keep. The name of a column corresponds to a key name
  *
  * @return outputTableName a name for the table that contains all polygons
  * @author Erwan Bocher CNRS LAB-STICC
@@ -181,91 +99,121 @@ IProcess toLines() {
  */
 IProcess toPolygons() {
     return create({
-            title "Transform all OSM features as polygons"
-            inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: int, tags: [], columnsToKeep: []
-            outputs outputTableName: String
-            run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
-                String outputTableName = "OSM_POLYGONS_$uuid"
-                if(!datasource){
-                    error "Please set a valid database connection"
-                    return
-                }
-                if(epsgCode == -1){
-                    error "Invalid EPSG code : $epsgCode"
-                    return
-                }
-                info "Start polygon transformation"
-                info "Indexing osm tables..."
-                buildIndexes(datasource, osmTablesPrefix)
+        title "Transform all OSM features as polygons"
+        inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: int, tags: [], columnsToKeep: []
+        outputs outputTableName: String
+        run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
+            return toPolygonOrLine("POLYGONS", datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep)
+        }
+    })
+}
 
-                def polygonWaysProcess = extractWaysAsPolygons()
-                polygonWaysProcess(datasource      : datasource,
-                                   osmTablesPrefix : osmTablesPrefix,
-                                   epsgCode        : epsgCode,
-                                   tags            : tags,
-                                   columnsToKeep   : columnsToKeep)
-                def outputWayPolygons = polygonWaysProcess.getResults().outputTableName
+private static def arrayUnion(boolean removeDuplicated, Collection... arrays){
+    def union = []
+    for(Object[] array : arrays){
+        if(removeDuplicated) union.removeAll(array)
+        union.addAll(array)
+    }
+    union.sort()
+    return union
+}
 
-                def polygonRelationsProcess = extractRelationsAsPolygons()
-                polygonRelationsProcess(datasource      : datasource,
-                                        osmTablesPrefix : osmTablesPrefix,
-                                        epsgCode        : epsgCode,
-                                        tags            : tags,
-                                        columnsToKeep   : columnsToKeep)
-                def outputRelationPolygons = polygonRelationsProcess.getResults().outputTableName
+/**
+ *Extract all the polygons/lines from the OSM tables
+ *
+ * @param type
+ * @param datasource a connection to a database
+ * @param osmTablesPrefix prefix name for OSM tables
+ * @param epsgCode EPSG code to reproject the geometries
+ * @param tags list of keys and values to be filtered
+ * @param columnsToKeep a list of columns to keep. The name of a column corresponds to a key name
+ *
+ * @return The name for the table that contains all polygons/lines
+ */
+private def toPolygonOrLine(String type, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep){
+    //Check if parameters a good
+    if(!datasource){
+        error "Please set a valid database connection"
+        return
+    }
+    if(epsgCode == -1){
+        error "Invalid EPSG code : $epsgCode"
+        return
+    }
 
-                if (outputWayPolygons && outputRelationPolygons) {
-                    //Merge ways and relations
-                    def columnsWays = datasource.getTable(outputWayPolygons).columnNames
-                    def columnsRelations = datasource.getTable(outputRelationPolygons).columnNames
-                    def allColumns = []
-                    allColumns.addAll(columnsWays)
-                    allColumns.removeAll(columnsRelations)
-                    allColumns.addAll(columnsRelations)
-                    allColumns.sort()
-                    def leftSelect = ""
-                    def rightSelect = ""
-                    allColumns.each { column ->
-                        if (columnsWays.contains(column)) {
-                            leftSelect += "\"$column\","
-                        } else {
-                            leftSelect += "null AS \"$column\","
-                        }
+    //Get the processes according to the type
+    def waysProcess
+    def relationsProcess
+    switch(type){
+        case "POLYGONS":
+            waysProcess = extractWaysAsPolygons()
+            relationsProcess = extractRelationsAsPolygons()
+            break
+        case "LINES":
+            waysProcess = extractWaysAsLines()
+            relationsProcess = extractRelationsAsLines()
+            break
+        default:
+            error "Wrong type '$type'."
+            return
+    }
 
-                        if (columnsRelations.contains(column)) {
-                            rightSelect += "\"$column\","
+    //Start the transformation
+    def outputTableName = "OSM_${type}_$uuid"
+    info "Start ${type.toLowerCase()} transformation"
+    info "Indexing osm tables..."
+    buildIndexes(datasource, osmTablesPrefix)
 
-                        } else {
-                            rightSelect += "null AS \"$column\","
-                        }
-                    }
-                    leftSelect = leftSelect[0..-2]
-                    rightSelect = rightSelect[0..-2]
+    waysProcess(datasource      : datasource,
+                osmTablesPrefix : osmTablesPrefix,
+                epsgCode        : epsgCode,
+                tags            : tags,
+                columnsToKeep   : columnsToKeep)
+    def outputWay = waysProcess.getResults().outputTableName
 
-                    datasource.execute """
+    relationsProcess(datasource      : datasource,
+                     osmTablesPrefix : osmTablesPrefix,
+                     epsgCode        : epsgCode,
+                     tags            : tags,
+                     columnsToKeep   : columnsToKeep)
+    def outputRelation = relationsProcess.getResults().outputTableName
+
+    if (outputWay && outputRelation) {
+        //Merge ways and relations
+        def columnsWays = datasource.getTable(outputWay).columnNames
+        def columnsRelations = datasource.getTable(outputRelation).columnNames
+        def allColumns = arrayUnion(true, columnsWays, columnsRelations)
+        def leftSelect = ""
+        def rightSelect = ""
+        allColumns.each { column ->
+            leftSelect += columnsWays.contains(column) ? "\"$column\"," : "null AS \"$column\","
+            rightSelect += columnsRelations.contains(column) ? "\"$column\"," : "null AS \"$column\","
+        }
+        leftSelect = leftSelect[0..-2]
+        rightSelect = rightSelect[0..-2]
+
+        datasource.execute """
                             DROP TABLE IF EXISTS $outputTableName;
                             CREATE TABLE $outputTableName AS 
                                 SELECT $leftSelect
-                                FROM $outputWayPolygons 
+                                FROM $outputWay
                                 UNION ALL
                                 SELECT $rightSelect
-                                FROM $outputRelationPolygons;
-                            DROP TABLE IF EXISTS $outputWayPolygons, $outputRelationPolygons;
+                                FROM $outputRelation;
+                            DROP TABLE IF EXISTS $outputWay, $outputRelation;
                     """
-                    info "The way and relation polygons have been built."
-                } else if (outputWayPolygons){
-                    datasource.execute "ALTER TABLE $outputWayPolygons RENAME TO $outputTableName"
-                    info "The way polygons have been built."
-                } else if (outputRelationPolygons) {
-                    datasource.execute "ALTER TABLE $outputRelationPolygons RENAME TO $outputTableName"
-                    info "The relation polygons have been built."
-                } else {
-                    warn "Cannot extract any polygon."
-                    return
-                }
-                [outputTableName: outputTableName]
-            }
-    })
+        info "The way and relation $type have been built."
+    } else if (outputWay){
+        datasource.execute "ALTER TABLE $outputWay RENAME TO $outputTableName"
+        info "The way $type have been built."
+    } else if (outputRelationPolygons) {
+        datasource.execute "ALTER TABLE $outputRelation RENAME TO $outputTableName"
+        info "The relation $type have been built."
+    } else {
+        warn "Cannot extract any $type."
+        return
+    }
+    [outputTableName: outputTableName]
 }
 
 /**
@@ -298,7 +246,7 @@ IProcess extractWaysAsPolygons() {
                     return
                 }
                 def outputTableName = "WAYS_POLYGONS_$uuid"
-                def idWayswPolygons = "ID_WAYS_POLYGONS_$uuid"
+                def idWaysPolygons = "ID_WAYS_POLYGONS_$uuid"
                 def countTagsQuery = "SELECT count(*) AS count FROM ${osmTablesPrefix}_way_tag"
                 def columnsSelector = "SELECT distinct tag_key AS tag_key FROM ${osmTablesPrefix}_way_tag"
                 def tagsFilter =''
@@ -326,15 +274,15 @@ IProcess extractWaysAsPolygons() {
 
                     if(tagsFilter){
                         datasource.execute """
-                                DROP TABLE IF EXISTS $idWayswPolygons;
-                                CREATE TABLE $idWayswPolygons AS
+                                DROP TABLE IF EXISTS $idWaysPolygons;
+                                CREATE TABLE $idWaysPolygons AS
                                     SELECT DISTINCT id_way
                                     FROM ${osmTablesPrefix}_way_tag
                                     WHERE $tagsFilter;
-                                CREATE INDEX ON $idWayswPolygons(id_way);"""
+                                CREATE INDEX ON $idWaysPolygons(id_way);"""
                     }
                     else{
-                        idWayswPolygons = "${osmTablesPrefix}_way_tag"
+                        idWaysPolygons = "${osmTablesPrefix}_way_tag"
                     }
 
                     datasource.execute """
@@ -350,7 +298,7 @@ IProcess extractWaysAsPolygons() {
                                             ORDER BY wn.node_order)
                                         WHERE  idway = w.id_way
                                     ) the_geom ,w.id_way  
-                                    FROM ${osmTablesPrefix}_way w, $idWayswPolygons b
+                                    FROM ${osmTablesPrefix}_way w, $idWaysPolygons b
                                     WHERE w.id_way = b.id_way
                                 ) geom_table
                                 WHERE ST_GEOMETRYN(the_geom, 1) = ST_GEOMETRYN(the_geom, ST_NUMGEOMETRIES(the_geom)) 

@@ -224,6 +224,15 @@ private def toPolygonOrLine(String type, datasource, osmTablesPrefix, epsgCode, 
     [outputTableName: outputTableName]
 }
 
+/**
+ * Return the column selection query
+ *
+ * @param osmTableTag Name of the table of OSM tag
+ * @param tags List of keys and values to be filtered
+ * @param columnsToKeep List of columns to keep
+ *
+ * @return The column selection query
+ */
 private static getColumnSelector(osmTableTag, tags, columnsToKeep){
     def columnsSelector = "SELECT distinct tag_key AS tag_key FROM $osmTableTag"
     if (tags) {
@@ -244,6 +253,15 @@ private static getColumnSelector(osmTableTag, tags, columnsToKeep){
     return columnsSelector
 }
 
+/**
+ * Return the tag count query
+ *
+ * @param osmTableTag Name of the table of OSM tag
+ * @param tags List of keys and values to be filtered
+ * @param columnsToKeep List of columns to keep
+ *
+ * @return The tag count query
+ */
 private static getCountTagsQuery(osmTableTag, tags){
     def countTagsQuery = "SELECT count(*) AS count FROM $osmTableTag"
     if (tags) {
@@ -751,32 +769,30 @@ IProcess stackingTransform(datasource, filterArea, epsgCode, dataDim, tags) {
     def query
     def interiorPoint
     if (filterArea instanceof Envelope) {
-        query = Utilities.buildOSMQuery(filterArea, tags, NODE, WAY, RELATION)
         interiorPoint = filterArea.centre()
-        epsgCode = SFSUtilities.getSRID(datasource.getConnection(), interiorPoint.y as float, interiorPoint.x as float)
     } else if (filterArea instanceof Polygon) {
-        query = Utilities.buildOSMQuery(filterArea, tags, NODE, WAY, RELATION)
         interiorPoint = filterArea.getCentroid().getCoordinate()
-        epsgCode = SFSUtilities.getSRID(datasource.getConnection(), interiorPoint.y as float, interiorPoint.x as float)
     } else {
         error "The filter area must be an Envelope or a Polygon"
         return
     }
+    epsgCode = SFSUtilities.getSRID(datasource.getConnection(), interiorPoint.y as float, interiorPoint.x as float)
     if (epsgCode == -1) {
         error "Invalid EPSG code : $epsgCode"
         return
     }
+    query = OSMTools.Utilities.buildOSMQuery(filterArea, tags, NODE, WAY, RELATION)
     if (!query.isEmpty()) {
         error "OSM query should not be empty"
         return
     }
-    def extract = Loader.extract()
-    if (!extract.execute(overpassQuery: query)) {
+    def extract = OSMTools.Loader.extract()
+    if (!extract(overpassQuery: query)) {
         error "Extraction failed"
         return
     }
     def prefix = "OSM_FILE_$uuid"
-    def load = Loader.load()
+    def load = OSMTools.Loader.load()
     info "Loading"
     if (!load(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: extract.results.outputFilePath)) {
         error "Loading failed"
@@ -830,19 +846,19 @@ boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, 
     def countTagsQuery = "SELECT count(*) AS count FROM $tableNodeTag"
     def columnsSelector = "SELECT distinct tag_key AS tag_key FROM $tableNodeTag"
     def tagsFilter = ''
-    if (tags != null && !tags.isEmpty()) {
+    if (tags) {
         def tagKeysList
         if (tags in Map) {
-            tagKeysList = tags.keySet().findResults { it != "null" && it.isEmpty() ? null : it }
+            tagKeysList = tags.keySet().findResults { it != "null" && !it.isEmpty() }
         } else {
-            tagKeysList = tags.findResults { it != "null" && it.isEmpty() ? null : it }
+            tagKeysList = tags.findResults { it != "null" && !it.isEmpty() }
         }
         tagsFilter = createWhereFilter(tags)
         countTagsQuery += " WHERE $tagsFilter"
         if (columnsToKeep != null) {
             columnsSelector += " WHERE tag_key IN ('${(tagKeysList + columnsToKeep).unique().join("','")}')"
         }
-    } else if (columnsToKeep != null && !columnsToKeep.isEmpty()) {
+    } else if (columnsToKeep) {
         columnsSelector += "tag_key IN ('${columnsToKeep.unique().join("','")}')"
     }
 
@@ -893,15 +909,15 @@ static def createWhereFilter(def tags){
     def whereKeysValuesFilter
     if(tags in Map){
         def whereQuery = []
-        tags.each{entry ->
+        tags.each{ tag ->
             def keyIn = ''
             def valueIn = ''
-            def key  = entry.key
+            def key  = tag.key
             if(key!="null" && !key.isEmpty()){
                 keyIn+= "tag_key = '$key'"
             }
 
-            def valuesList = entry.value.flatten().findResults{it!=null && !it.isEmpty()?it:null}
+            def valuesList = tag.value.flatten().findResults{it!=null && it.isEmpty()?null:it}
             if(valuesList!=null && !valuesList.isEmpty()){
                 valueIn += "tag_value IN ('${valuesList.join("','")}')"
             }

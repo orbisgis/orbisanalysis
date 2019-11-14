@@ -1,7 +1,14 @@
 package org.orbisgis.osm.utils
 
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInfo
+import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.Extension
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.text.SimpleDateFormat
 import java.time.ZoneId
@@ -14,6 +21,9 @@ import static org.junit.jupiter.api.Assertions.*
  * @author Sylvain PALOMINOS (UBS LAB-STICC 2019)
  */
 class OverpassStatusTest {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(OverpassStatusTest)
+
     private static final CONNECTION_ID = "3265774337"
     private static final CURRENT_TIME = "2019-10-11T13:31:36Z"
     private static final RATE_LIMIT = 3
@@ -32,6 +42,16 @@ class OverpassStatusTest {
     static final void beforeAll(){
         format.setTimeZone(TimeZone.getTimeZone("Etc/GMT+0"))
         current.setTimeZone(TimeZone.getTimeZone(ZoneId.systemDefault()))
+    }
+
+    @BeforeEach
+    final void beforeEach(TestInfo testInfo){
+        LOGGER.info("@ ${testInfo.testMethod.get().name}()")
+    }
+
+    @AfterEach
+    final void afterEach(TestInfo testInfo){
+        LOGGER.info("# ${testInfo.testMethod.get().name}()")
     }
 
     /**

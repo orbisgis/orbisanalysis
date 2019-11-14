@@ -1,7 +1,10 @@
 package org.orbisgis.osm
 
 import org.h2gis.functions.spatial.crs.ST_Transform
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInfo
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
@@ -19,6 +22,18 @@ import static org.orbisgis.osm.utils.OSMElement.RELATION
 import static org.orbisgis.osm.utils.OSMElement.WAY
 
 class OSMToolsTests {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(OSMToolsTests)
+
+    @BeforeEach
+    final void beforeEach(TestInfo testInfo){
+        LOGGER.info("@ ${testInfo.testMethod.get().name}()")
+    }
+
+    @AfterEach
+    final void afterEach(TestInfo testInfo){
+        LOGGER.info("# ${testInfo.testMethod.get().name}()")
+    }
 
     @Test
     void loadTransformPolygonsTest() {

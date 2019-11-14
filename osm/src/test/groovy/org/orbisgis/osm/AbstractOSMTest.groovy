@@ -1,7 +1,5 @@
 package org.orbisgis.osm
 
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.orbisgis.datamanager.JdbcDataSource

@@ -3,9 +3,12 @@ package org.orbisgis.osm
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInfo
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.orbisgis.datamanager.h2gis.H2GIS
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 import java.util.regex.Pattern
 
@@ -18,16 +21,19 @@ import static org.junit.jupiter.api.Assertions.*
  */
 class LoaderTest extends AbstractOSMTest {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoaderTest)
+
     @BeforeEach
-    void beforeEach(){
+    final void beforeEach(TestInfo testInfo){
+        LOGGER.info("@ ${testInfo.testMethod.get().name}()")
         super.beforeEach()
     }
 
     @AfterEach
-    void afterEach(){
+    final void afterEach(TestInfo testInfo){
         super.afterEach()
+        LOGGER.info("# ${testInfo.testMethod.get().name}()")
     }
-
     /**
      * Test the OSMTools.Loader.fromArea() process.
      */

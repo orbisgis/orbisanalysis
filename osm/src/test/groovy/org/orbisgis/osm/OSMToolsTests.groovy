@@ -1,7 +1,10 @@
 package org.orbisgis.osm
 
 import org.h2gis.functions.spatial.crs.ST_Transform
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInfo
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
@@ -19,6 +22,18 @@ import static org.orbisgis.osm.utils.OSMElement.RELATION
 import static org.orbisgis.osm.utils.OSMElement.WAY
 
 class OSMToolsTests {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(OSMToolsTests)
+
+    @BeforeEach
+    final void beforeEach(TestInfo testInfo){
+        LOGGER.info("@ ${testInfo.testMethod.get().name}()")
+    }
+
+    @AfterEach
+    final void afterEach(TestInfo testInfo){
+        LOGGER.info("# ${testInfo.testMethod.get().name}()")
+    }
 
     @Test
     void loadTransformPolygonsTest() {
@@ -216,12 +231,6 @@ class OSMToolsTests {
         assertEquals 1, h2GIS.getTable(transform.getResults().outputTableName).rowCount
         def row = h2GIS.firstRow("SELECT * FROM $transform.results.outputTableName WHERE ID='r2614051'")
         assertEquals("yes", row.'BUILDING')
-    }
-
-
-    @Test
-    void getSERVER_STATUS(){
-         assertNotNull OSMTools.serverStatus
     }
 
     @Test

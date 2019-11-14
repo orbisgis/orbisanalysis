@@ -16,10 +16,18 @@ import static java.nio.charset.StandardCharsets.UTF_8
  */
 abstract class OSMTools extends GroovyProcessFactory {
 
+    OSMTools(){
+        def clazz = this.class
+        if(!(clazz in LOGGER_MAP)){
+            LOGGER_MAP.put(clazz, LoggerFactory.getLogger(clazz))
+        }
+    }
+
     /** Url of the status of the Overpass server */
     private static final OVERPASS_STATUS_URL = "http://overpass-api.de/api/status"
     /** {@link Logger} */
-    public static Logger logger = LoggerFactory.getLogger(OSMTools.class)
+    public static Logger DEFAULT_LOGGER = LoggerFactory.getLogger(OSMTools)
+    public static Map<Class, Logger> LOGGER_MAP = new HashMap<>()
 
     /* *********************** */
     /*     Process scripts     */
@@ -36,14 +44,25 @@ abstract class OSMTools extends GroovyProcessFactory {
     /* *********************** */
     /** {@link Closure} returning a {@link String} prefix/suffix build from a random {@link UUID} with '-' replaced by '_'. */
     static def getUuid() { UUID.randomUUID().toString().replaceAll("-", "_") }
+    static def uuid = {getUuid()}
     /** {@link Closure} converting and UTF-8 {@link String} into an {@link URL}. */
     static def utf8ToUrl = { utf8 -> URLEncoder.encode(utf8, UTF_8.toString()) }
     /** {@link Closure} logging with INFO level the given {@link Object} {@link String} representation. */
-    static def info = { obj -> logger.info(obj.toString()) }
+    def info = { obj -> getLogger(this).info(obj.toString()) }
     /** {@link Closure} logging with WARN level the given {@link Object} {@link String} representation. */
-    static def warn = { obj -> logger.warn(obj.toString()) }
+    def warn = { obj ->  getLogger(this).warn(obj.toString()) }
     /** {@link Closure} logging with ERROR level the given {@link Object} {@link String} representation. */
-    static def error = { obj -> logger.error(obj.toString()) }
+    def error = { obj ->  getLogger(this).error(obj.toString()) }
+
+    private static def getLogger(def source){
+        def clazz = source.class
+        if(clazz in LOGGER_MAP){
+            return LOGGER_MAP.get(clazz)
+        }
+        else{
+            return DEFAULT_LOGGER
+        }
+    }
 
     /** Default SRID */
     static def DEFAULT_SRID = 4326
@@ -58,7 +77,7 @@ abstract class OSMTools extends GroovyProcessFactory {
      * Return the status of the Overpass server.
      * @return A {@link OverpassStatus} instance.
      */
-    static def getServerStatus()  {
+    def getServerStatus()  {
         def connection = new URL(OVERPASS_STATUS_URL).openConnection() as HttpURLConnection
         connection.requestMethod = GET
         if (connection.responseCode == 200) {
@@ -75,7 +94,7 @@ abstract class OSMTools extends GroovyProcessFactory {
      * @param timeout Timeout to limit the waiting.
      * @return True if there is a free slot, false otherwise.
      */
-    static def wait(int timeout)  {
+    def wait(int timeout)  {
         def to = timeout
         def status = getServerStatus()
         info("Try to wait for slot available")
@@ -113,7 +132,7 @@ abstract class OSMTools extends GroovyProcessFactory {
      * @author Erwan Bocher (CNRS LAB-STICC)
      * @author Elisabeth Lesaux (UBS LAB-STICC)
      */
-    static boolean executeOverPassQuery(def query, def outputOSMFile) {
+    boolean executeOverPassQuery(def query, def outputOSMFile) {
         outputOSMFile.delete()
         def queryUrl = new URL(OVERPASS_BASE_URL + utf8ToUrl(query))
         def connection = queryUrl.openConnection() as HttpURLConnection

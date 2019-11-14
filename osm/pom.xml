@@ -77,10 +77,22 @@
                 <artifactId>maven-resources-plugin</artifactId>
             </plugin>
             <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
             </plugin>
         </plugins>
+        <resources>
+            <resource>
+                <directory>src/main/groovy/org/orbisgis/osm</directory>
+                <includes>
+                    <include>simplelogger.properties</include>
+                </includes>
+            </resource>
+        </resources>
     </build>
 
 

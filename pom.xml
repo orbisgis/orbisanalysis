@@ -15,6 +15,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>osm</module>
+        <module>osm-noise</module>
     </modules>
 
     <!-- Properties -->
@@ -112,7 +113,6 @@
     <scm>
         <connection>scm:git:git://github.com/orbisgis/orbisanalysis</connection>
     </scm>
-
     <repositories>
         <repository>
             <id>orbisgis-release</id>

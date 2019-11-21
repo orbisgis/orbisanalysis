@@ -83,4 +83,12 @@ class OSMNoiseTests {
         assertEquals (-1, OSMNoise.Data.getSpeedInKmh("vbghfgh"))
     }
 
+    @Test
+    void buildTrafficWGAENData() {
+        def h2GIS = H2GIS.open('./target/OSMNoise;AUTO_SERVER=TRUE')
+
+        def process = OSMNoise.Traffic.WGAEN
+        process.execute(datasource: h2GIS,roadTableName:null)
+    }
+
 }

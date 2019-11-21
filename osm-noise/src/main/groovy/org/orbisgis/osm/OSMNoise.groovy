@@ -1,20 +1,11 @@
 package org.orbisgis.osm
 
 import groovy.json.JsonSlurper
-import org.h2gis.functions.spatial.crs.ST_Transform
-import org.locationtech.jts.geom.Envelope
-import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.geom.MultiPolygon
-import org.locationtech.jts.geom.Polygon
-import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanager.GroovyProcessFactory
-import org.orbisgis.processmanagerapi.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-
 import java.util.regex.Pattern
 
-import static java.nio.charset.StandardCharsets.UTF_8
 
 /**
  * Main script to access to all processes used to extract, transform and prepare OSM data
@@ -29,6 +20,7 @@ abstract class OSMNoise extends GroovyProcessFactory {
 
 
     public static Data = new Data()
+    public static Traffic = new Traffic()
 
     /* *********************** */
     /*     Utility methods     */

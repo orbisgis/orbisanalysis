@@ -10,13 +10,10 @@
       "tertiary_link",
       "junction","service",
       "road","track"
-    ],"junction": ["roundabout",
-      "circular","jughandle","filter","yes"
     ]
   },
-  "columns":["width","highway", "surface", "sidewalk",
-    "layer","maxspeed","oneway",
-    "route","junction", "bridge"],
+  "columns":["highway", "surface",
+    "layer","maxspeed","oneway"],
     "surface":
      {
         "unpaved": {
@@ -105,131 +102,55 @@
             ]
         }
     },
-    "type" : {
-        "cycleway": {
-            "highway": [
-                "cycleway"
-            ],
-            "cycleway": [
-                "track"
-            ],
-            "biclycle_road": [
-                "yes"
-            ]
-        },
-        "ferry": {
-            "route": [
-                "ferry"
-            ]
-        },
-        "footway": {
-            "highway": [
-                "footway",
-                "pedestrian"
-            ]
-        },
-        "highway": {
-            "highway": [
-                "service",
-                "road",
-                "raceway",
-                "escape"
-            ],
-            "cyclestreet": [
-                "yes"
-            ]
-        },
-        "highway_link": {
-            "highway": [
-                "motorway_link",
-                "motorway_junction",
-                "trunk_link",
-                "primary_link",
-                "secondary_link",
-                "tertiary_link",
-                "junction"
-            ]
-        },
-        "motorway": {
-            "highway": [
-                "motorway"
-            ]
-        },
-        "path": {
-            "highway": [
-                "path",
-                "bridleway"
-            ]
-        },
-        "primary": {
-            "highway": [
-                "primary"
-            ]
-        },
-        "residential": {
-            "highway": [
-                "residential",
-                "living_street"
-            ]
-        },
-        "roundabout": {
-            "junction": [
-                "roundabout",
-                "circular"
-            ]
-        },
-        "secondary": {
-            "highway": [
-                "secondary"
-            ]
-        },
-        "steps": {
-            "highway": [
-                "steps"
-            ]
-        },
-        "tertiary": {
-            "highway": [
-                "tertiary"
-            ]
-        },
-        "track": {
-            "highway": [
-                "track"
-            ]
-        },
-        "trunk": {
-            "highway": [
-                "trunk"
-            ]
-        },
-        "unclassified": {
-            "highway": [
-                "unclassified"
-            ]
-        }
+  "type" : {
+    "Motorway": {
+      "highway": [
+        "motorway",
+        "motorway_link"
+      ]},
+      "Trunk road": {
+        "highway": [
+          "trunk",
+          "trunk_link"
+        ]
+      },
+    "Main road": {
+      "highway": [
+        "primary",
+        "primary_link"
+      ]
     },
-    "width" :
-     {
-        "highway": 8,
-        "motorway": 24,
-        "trunk": 16,
-        "primary": 10,
-        "secondary": 10,
-        "tertiary": 8,
-        "residential": 8,
-        "unclassified": 3,
-        "track": 2,
-        "path": 1,
-        "footway": 1,
-        "cycleway": 1,
-        "steps": 1,
-        "highway_link": 8,
-        "roundabout": 4,
-        "ferry": 0
+    "Small main road": {
+      "highway": [
+        "secondary",
+        "secondary_link"
+      ]
     },
-  "crossing":{"bridge" :
-  ["yes", "aqueduct", "cantilever", "covered", "low_water_crossing", "movable", "trestle",
-    "viaduct"]}
-
+    "Collecting road": {
+      "highway": [
+        "tertiary",
+        "tertiary_link",
+        "unclassified"
+      ]},
+      "Service road": {
+        "highway": [
+          "residential"
+        ]
+      },
+      "Dead-end road": {
+        "highway": [
+          "service",
+          "living_street"
+        ]
+      }
+  },
+  "maxspeed" : {
+    "Motorway": 110,
+    "Trunk road": 110,
+    "Main road":90,
+    "Small main road":80,
+    "Collecting road": 50,
+    "Service road": 30,
+    "Dead-end road": 30
+  }
 }

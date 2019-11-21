@@ -1,5 +1,6 @@
 package org.orbisgis.osm
 
+import groovy.json.JsonSlurper
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
@@ -10,6 +11,8 @@ import org.orbisgis.processmanager.GroovyProcessFactory
 import org.orbisgis.processmanagerapi.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+
+import java.util.regex.Pattern
 
 import static java.nio.charset.StandardCharsets.UTF_8
 
@@ -42,6 +45,28 @@ abstract class OSMNoise extends GroovyProcessFactory {
 
 
 
+    /**
+     * Get a set of parameters stored in a json file
+     *
+     * @param file
+     * @param altResourceStream
+     * @return
+     */
+    static Map parametersMapping(def file, def altResourceStream) {
+        def paramStream
+        def jsonSlurper = new JsonSlurper()
+        if (file) {
+            if (new File(file).isFile()) {
+                paramStream = new FileInputStream(file)
+            } else {
+                warn("No file named ${file} found. Taking default instead")
+                paramStream = altResourceStream
+            }
+        } else {
+            paramStream = altResourceStream
+        }
+        return jsonSlurper.parse(paramStream)
+    }
 
-
+    static def speedPattern = Pattern.compile("([0-9]+)( ([a-zA-Z]+))?", Pattern.CASE_INSENSITIVE)
 }

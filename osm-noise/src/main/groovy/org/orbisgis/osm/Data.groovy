@@ -16,6 +16,8 @@ import org.orbisgis.osm.OSMTools
 
 @BaseScript OSMNoise osmNoise
 
+
+
 /**
  * Download the OSM data and transform it to a set of GIS layers
  *
@@ -36,15 +38,12 @@ IProcess GISLayers() {
             String formatedPlaceName = placeName.trim().split("\\s*(,|\\s)\\s*").join("_");
             IProcess downloadData = download()
             if(downloadData.execute(datasource: datasource, placeName: placeName, epsg:epsg)){
-                if(epsg<=-1){
-                    error "Invalid epsg code $epsg"
-                    return null
-                }
+                epsg = downloadData.results.epsg
                 def prefix = "OSM_DATA_${UUID.randomUUID().toString().replaceAll("-", "_")}"
                 def load = OSMTools.Loader.load()
                 info "Loading OSM data from the place name $placeName"
                 if (load(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: downloadData.results.osmFilePath)) {
-                    epsg = downloadData.results.epsg
+
                     def outputBuildingTableName =null
                     def outputRoadTableName =null
                     def outputRailTableName =null
@@ -60,6 +59,9 @@ IProcess GISLayers() {
                     //createRoadLayer(datasource, prefix, epsg)
 
                     //TODO : Create landcover with G coeff
+
+                    //Delete OSM tables
+                    OSMTools.Utilities.dropOSMTables(osmTablesPrefix, datasource)
 
                     [buildingTableName  : outputBuildingTableName,
                      roadTableName      : outputRoadTableName,
@@ -85,40 +87,48 @@ IProcess GISLayers() {
 }
 
 /**
- * Create building layer
- * @return
+ * This process creates the building layer
+ *
+ * @param datasource A connexion to a DB to load the OSM file
+ * @param osmTablesPrefix prefix for the OSM tables
+ * @param epsg to transform the geometries into a referenced coordinate system
+ * @param inputZoneEnvelopeTableName a table used to keep the geometries that intersect
+ * @param outputTablePrefix prefix of the output table
+ *
+ * @return the name of the output building layer
  */
 IProcess createBuildingLayer() {
     return create({
     title "Create the building layer"
-    inputs datasource: JdbcDataSource, prefix: String, epsg:int, outputTablePrefix: String
+    inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsg:int, inputZoneEnvelopeTableName:"",
+            outputTablePrefix: String,jsonFilename: ""
     outputs outputTableName: String
-    run { datasource, prefix, epsg ->
+    run { datasource, osmTablesPrefix, epsg, inputZoneEnvelopeTableName, outputTablePrefix,jsonFilename ->
         def transform = OSMTools.Transform.toPolygons()
         logger.info "Create the building layer"
         def paramsDefaultFile = this.class.getResourceAsStream("buildingParams.json")
-        def parametersMap = readJSONParameters(paramsDefaultFile)
+        def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
         def tags = parametersMap.get("tags")
         def columnsToKeep = parametersMap.get("columns")
-        if (transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
+        def mappingTypeAndUse = parametersMap.get("type")
+        def typeAndLevel = parametersMap.get("level")
+        def h_lev_min = parametersMap.get("h_lev_min")
+        def h_lev_max = parametersMap.get("h_lev_max")
+        def hThresholdLev2 = parametersMap.get("hThresholdLev2")
+        if (transform(datasource: datasource, osmTablesPrefix: osmTablesPrefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
             def inputTableName = transform.results.outputTableName
-            logger.info "Building layer created"
             logger.info "Formating building layer"
-            logger.info('Formating building layer')
-            def outputTableName = "${formatedPlaceName}_BUILDING_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+            def outputTableName = "${outputTablePrefix}_BUILDING_${UUID.randomUUID().toString().replaceAll("-", "_")}"
             datasource.execute """ DROP TABLE if exists ${outputTableName};
                         CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id_build serial, ID_SOURCE VARCHAR, HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT,
                               NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER);"""
-            def mappingTypeAndUse = parametersMap.get("type")
-            def typeAndLevel = parametersMap.get("level")
             def queryMapper = "SELECT "
-            def columnToMap = parametersMap.get("columns")
             ISpatialTable inputSpatialTable = datasource.getSpatialTable(inputTableName)
             if (inputSpatialTable.rowCount > 0) {
                 inputSpatialTable.the_geom.createSpatialIndex()
                 def columnNames = inputSpatialTable.columnNames
                 columnNames.remove("THE_GEOM")
-                queryMapper += columnsMapper(columnNames, columnToMap)
+                queryMapper += columnsMapper(columnNames, columnsToKeep)
                 if (inputZoneEnvelopeTableName) {
                     queryMapper += " , case when st_isvalid(a.the_geom) then a.the_geom else st_makevalid(st_force2D(a.the_geom)) end  as the_geom FROM $inputTableName as a,  $inputZoneEnvelopeTableName as b WHERE a.the_geom && b.the_geom and st_intersects(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom)"
                 } else {
@@ -166,31 +176,102 @@ IProcess createBuildingLayer() {
                         }
                     }
                 }
+                [outputTableName:outputTableName]
             }
-            [outputTableName:outputTableName]
+            else{
+                error "Cannot create the building layer"
+            }
         }
     }
     })
 }
 
 /**
+ * This process creates the road layer
  *
- * @param datasource
- * @param prefix
- * @param epsg
+ * @param datasource A connexion to a DB to load the OSM file
+ * @param osmTablesPrefix prefix for the OSM tables
+ * @param epsg to transform the geometries into a referenced coordinate system
+ * @param inputZoneEnvelopeTableName a table used to keep the geometries that intersect
+ * @param outputTablePrefix prefix of the output table
+ *
+ * @return the name of the output building layer
  */
-def createRoadLayer(datasource, prefix, epsg){
-    //Create the road layer
-    transform = OSMTools.Transform.extractWaysAsLines()
-    logger.info "Create the road layer"
-    paramsDefaultFile = this.class.getResourceAsStream("roadParams.json")
-    parametersMap = readJSONParameters(paramsDefaultFile)
-    tags  = parametersMap.get("tags")
-    columnsToKeep = parametersMap.get("columns")
-    if(transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)){
-        outputRoadTableName = transform.results.outputTableName
-        logger.info "Road layer created"
-    }
+IProcess createRoadLayer() {
+    return create({
+        title "Create the road layer"
+        inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsg:int, inputZoneEnvelopeTableName:"",
+                outputTablePrefix: String,jsonFilename: ""
+        outputs outputTableName: String
+        run { datasource, osmTablesPrefix, epsg, inputZoneEnvelopeTableName, outputTablePrefix,jsonFilename ->
+            //Create the road layer
+            transform = OSMTools.Transform.extractWaysAsLines()
+            logger.info "Create the road layer"
+            paramsDefaultFile = this.class.getResourceAsStream("roadParams.json")
+            parametersMap = parametersMapping(jsonFilename,paramsDefaultFile)
+            def mappingTypeAndUse = parametersMap.get("type")
+            def mappingForSurface = parametersMap.get("surface")
+            def mappingMaxSpeed = parametersMap.get("maxspeed")
+            tags = parametersMap.get("tags")
+            columnsToKeep = parametersMap.get("columns")
+            if (transform(datasource: datasource, osmTablesPrefix: osmTablesPrefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
+                def inputTableName = transform.results.outputTableName
+                logger.info('Formating road layer')
+                def outputTableName = "${outputTablePrefix}_ROAD_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+                datasource.execute """drop table if exists $outputTableName;
+                            CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_road serial, ID_SOURCE VARCHAR, WGAEN_TYPE VARCHAR,
+                            SURFACE VARCHAR, MAXSPEED INTEGER, ZINDEX INTEGER);"""
+                    def queryMapper = "SELECT "
+                    ISpatialTable inputSpatialTable = datasource.getSpatialTable(inputTableName)
+                    if(inputSpatialTable.rowCount>0) {
+                        inputSpatialTable.the_geom.createSpatialIndex()
+                        def columnNames = inputSpatialTable.columnNames
+                        columnNames.remove("THE_GEOM")
+                        queryMapper += columnsMapper(columnNames, columnsToKeep)
+                        if(inputZoneEnvelopeTableName) {
+                            queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) then st_intersection(st_force2D(a.the_geom), b.the_geom) else a.the_geom end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
+                        }else{
+                            queryMapper += ", a.the_geom FROM $inputTableName  as a"
+                        }
+                        datasource.withBatch(1000) { stmt ->
+                            datasource.eachRow(queryMapper) { row ->
+                                String type = row."highway"
+
+
+                                /*Return a default value road type from OSM tag
+                                * ref :  Tool 4.5: No heavy vehicle data available
+                                * see the json config file
+                                */
+                                def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
+                                type = typeAndUseValues[0]
+                                if (!type) {
+                                    type = "Small main road"
+                                }
+
+                                int maxspeed = getSpeedInKmh(row."maxspeed")
+
+                                if(maxspeed==-1){
+                                    maxspeed = mappingMaxSpeed[type]
+                                }
+
+                                String surface = getTypeValue(row, columnNames, mappingForSurface)
+                                def zIndex = getZIndex(row.'layer')
+                                if (type) {
+                                    Geometry geom = row.the_geom
+                                    for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                        stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${
+                                            geom.getGeometryN(i)}',$epsg), null, '${row.id}','${type}', '${
+                                            surface}',${maxspeed}, ${zIndex})""".toString()
+                                    }
+                                }
+                            }
+                        }
+                        logger.info('Roads transformation finishes')
+                        [outputTableName: outputTableName]
+                    }
+            }
+        }
+        })
 }
 
 /**
@@ -284,9 +365,38 @@ IProcess download() {
     })
 }
 
+
+
+/**
+ * Return a maxspeed value expressed in kmh
+ * @param maxspeedValue from OSM
+ * @return
+ */
+private double getSpeedInKmh(String maxspeedValue){
+        if (!maxspeedValue) return -1
+        def matcher = speedPattern.matcher(maxspeedValue)
+        if (!matcher.matches()) return -1
+
+        def speed = Integer.parseInt(matcher.group(1))
+
+        if (!(matcher.group(3))) return speed
+
+        def type = matcher.group(3).toLowerCase()
+        switch (type) {
+            case "kmh":
+                return speed
+            case "mph":
+                return speed * 1.609
+            default:
+                return -1
+        }
+
+}
+
+
 /**
  * This function defines the input values for both columns type and use to follow the constraints
- * of the geoClimate Input Model
+ * of the input model
  * @param row The row of the raw table to examine
  * @param columnNames the names of the column in the raw table
  * @param myMap A map between the target values in the model and the associated key/value tags retrieved from OSM

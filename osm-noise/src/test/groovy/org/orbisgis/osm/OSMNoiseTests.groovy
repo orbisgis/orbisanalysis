@@ -34,12 +34,53 @@ class OSMNoiseTests {
     void GISLayersTest() {
         def h2GIS = H2GIS.open('./target/OSMNoise;AUTO_SERVER=TRUE')
         def process = OSMNoise.Data.GISLayers()
-        assertTrue process.execute(datasource: h2GIS, placeName: "Cliscouet, Vannes")
+        assertTrue process.execute(datasource: h2GIS, placeName: "Saint Jean La Poterie")
         assertTrue(h2GIS.hasTable(process.results.zoneTableName))
         ISpatialTable zoneTable = h2GIS.getSpatialTable(process.results.zoneTableName)
         assertTrue(zoneTable.rowCount==1)
         assertTrue(h2GIS.hasTable(process.results.buildingTableName))
 
+    }
+
+    @Test
+    void GISLayersFromOSMFileTest() {
+        def h2GIS = H2GIS.open('./target/OSMNoise;AUTO_SERVER=TRUE')
+        def load = OSMTools.Loader.load()
+        def prefix = "OSM_FILE"
+        assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
+                osmFilePath : new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath())
+
+        def process = OSMNoise.Data.createBuildingLayer()
+        assertTrue process.execute(datasource: h2GIS, osmTablesPrefix: prefix,
+                epsg: 2154, outputTablePrefix : "redon")
+        assertTrue(h2GIS.hasTable(process.results.outputTableName))
+        ISpatialTable ouputTable = h2GIS.getSpatialTable(process.results.outputTableName)
+        assertTrue(ouputTable.rowCount>1)
+
+        process = OSMNoise.Data.createRoadLayer()
+        assertTrue process.execute(datasource: h2GIS, osmTablesPrefix: prefix,
+                epsg: 2154, outputTablePrefix : "redon")
+        assertTrue(h2GIS.hasTable(process.results.outputTableName))
+        ouputTable = h2GIS.getSpatialTable(process.results.outputTableName)
+        assertTrue(ouputTable.rowCount>1)
+        ouputTable.save("/tmp/routes.shp")
+    }
+
+    @Test
+    void test(){
+        assertEquals (-1,OSMNoise.Data.getSpeedInKmh(null))
+        assertEquals (-1,OSMNoise.Data.getSpeedInKmh(""))
+        assertEquals 72,OSMNoise.Data.getSpeedInKmh("72")
+        assertEquals 115.848,OSMNoise.Data.getSpeedInKmh("72 MPH")
+        assertEquals 115.848,OSMNoise.Data.getSpeedInKmh("72 mph")
+        assertEquals 115.848,OSMNoise.Data.getSpeedInKmh("72 MpH")
+        assertEquals 72,OSMNoise.Data.getSpeedInKmh("72 KMH")
+        assertEquals 72,OSMNoise.Data.getSpeedInKmh("72 KmH")
+        assertEquals 72,OSMNoise.Data.getSpeedInKmh("72 kmh")
+        assertEquals 72, OSMNoise.Data.getSpeedInKmh("72 kmh")
+        assertEquals (-1, OSMNoise.Data.getSpeedInKmh("72 knots"))
+        assertEquals (-1, OSMNoise.Data.getSpeedInKmh("25kmh"))
+        assertEquals (-1, OSMNoise.Data.getSpeedInKmh("vbghfgh"))
     }
 
 }

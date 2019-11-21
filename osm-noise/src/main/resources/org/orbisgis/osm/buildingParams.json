@@ -1,4 +1,7 @@
 {
+    "h_lev_min":3,
+    "h_lev_max" : 15,
+    "hThresholdLev2" : 10 ,
     "tags" : ["building"],
     "columns":[
     "height", "building:height", "roof:height", "building:roof:height",

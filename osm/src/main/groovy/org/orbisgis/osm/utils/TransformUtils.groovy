@@ -326,7 +326,8 @@ class TransformUtils {
         def rowskeys = datasource.rows(selectTableQuery)
         def list = []
         rowskeys.tag_key.each { it ->
-            list << "MAX(CASE WHEN b.tag_key = '$it' THEN b.tag_value END) AS \"${it.toUpperCase()}\""
+            if(it != null)
+                list << "MAX(CASE WHEN b.tag_key = '$it' THEN b.tag_value END) AS \"${it.toUpperCase()}\""
         }
         def tagList =""
         if (!list.isEmpty()) {

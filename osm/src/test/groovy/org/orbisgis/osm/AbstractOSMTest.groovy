@@ -3,7 +3,9 @@ package org.orbisgis.osm
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.orbisgis.datamanager.JdbcDataSource
-import org.orbisgis.datamanager.h2gis.H2GIS;
+import org.orbisgis.datamanager.h2gis.H2GIS
+
+import static org.junit.jupiter.api.Assertions.assertEquals
 
 /**
  * Abstract for OSM tests. It contains some utilities methods and static variable in order to simplify test write.
@@ -118,5 +120,52 @@ abstract class AbstractOSMTest {
                 run { JdbcDataSource datasource, osmTablesPrefix, osmFilePath -> }
             })
         }
+    }
+
+    /**
+     * Implementation of the {@link org.junit.jupiter.api.Assertions#assertEquals(String, String)} method to take into
+     * account GString
+     *
+     * @param expected Expected {@link GString}
+     * @param actual Actual {@link GString}
+     */
+    protected static void assertGStringEquals(GString expected, GString actual) {
+        assertEquals(expected.toString(), actual.toString());
+    }
+
+
+    /**
+     * Implementation of the {@link org.junit.jupiter.api.Assertions#assertEquals(String, String)} method to take into
+     * account GString
+     *
+     * @param expected Expected {@link String}
+     * @param actual Actual {@link GString}
+     */
+    protected static void assertGStringEquals(String expected, GString actual) {
+        assertEquals(expected, actual.toString());
+    }
+
+    /**
+     * Implementation of the {@link org.junit.jupiter.api.Assertions#assertEquals(String, String)} method to take into
+     * account GString
+     *
+     * @param expected Expected {@link GString}
+     * @param actual Actual {@link String}
+     */
+
+    protected static void assertGStringEquals(GString expected, String actual) {
+        assertEquals(expected.toString(), actual);
+    }
+
+    /**
+     * Implementation of the {@link org.junit.jupiter.api.Assertions#assertEquals(String, String)} method to take into
+     * account GString
+     *
+     * @param expected Expected {@link String}
+     * @param actual Actual {@link String}
+     */
+
+    protected static void assertGStringEquals(String expected, String actual) {
+        assertEquals(expected.toString(), actual);
     }
 }

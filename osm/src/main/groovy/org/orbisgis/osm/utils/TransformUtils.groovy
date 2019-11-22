@@ -124,7 +124,7 @@ class TransformUtils {
                                 SELECT $rightSelect
                                 FROM $outputRelation;
                             DROP TABLE IF EXISTS $outputWay, $outputRelation;
-        """
+            """
             info "The way and relation $type have been built."
         } else if (outputWay) {
             datasource.execute "ALTER TABLE $outputWay RENAME TO $outputTableName"
@@ -240,7 +240,7 @@ class TransformUtils {
                     SELECT a.id_node,ST_TRANSFORM(ST_SETSRID(a.THE_GEOM, 4326), $epsgCode) AS the_geom $tagList
                     FROM $tableNode AS a, $tableNodeTag b
                     WHERE a.id_node = b.id_node GROUP BY a.id_node;
-        """
+            """
         } else {
             def filteredNodes = "FILTERED_NODES_" + uuid()
             datasource.execute """
@@ -254,7 +254,7 @@ class TransformUtils {
                     WHERE a.id_node=b.id_node
                     AND a.id_node=c.id_node
                     GROUP BY a.id_node;
-        """
+            """
         }
         return true
     }
@@ -352,6 +352,14 @@ class TransformUtils {
      * @author Elisabeth Lesaux (UBS LAB-STICC)
      */
     static def buildIndexes(JdbcDataSource datasource, String osmTablesPrefix){
+        if(!datasource){
+            error "The datasource should not be null."
+            return false
+        }
+        if(!osmTablesPrefix){
+            error "The osmTablesPrefix should not be null or empty."
+            return false
+        }
         datasource.execute """
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_node_index                     ON ${osmTablesPrefix}_node(id_node);
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_way_node_id_node_index         ON ${osmTablesPrefix}_way_node(id_node);
@@ -361,12 +369,13 @@ class TransformUtils {
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_way_tag_key_tag_index          ON ${osmTablesPrefix}_way_tag(tag_key);
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_way_tag_id_way_index           ON ${osmTablesPrefix}_way_tag(id_way);
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_way_tag_value_index            ON ${osmTablesPrefix}_way_tag(tag_value);
+            CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_relation_id_relation_index     ON ${osmTablesPrefix}_relation(id_relation);
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_relation_tag_key_tag_index     ON ${osmTablesPrefix}_relation_tag(tag_key);
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_relation_tag_id_relation_index ON ${osmTablesPrefix}_relation_tag(id_relation);
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_relation_tag_tag_value_index   ON ${osmTablesPrefix}_relation_tag(tag_value);
-            CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_relation_id_relation_index     ON ${osmTablesPrefix}_relation(id_relation);
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_way_member_id_relation_index   ON ${osmTablesPrefix}_way_member(id_relation);
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_way_id_way                     ON ${osmTablesPrefix}_way(id_way);
-    """
+        """
+        return true
     }
 }

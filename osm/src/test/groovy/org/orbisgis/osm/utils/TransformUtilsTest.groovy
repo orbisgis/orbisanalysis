@@ -9,8 +9,8 @@ import org.orbisgis.osm.AbstractOSMTest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertFalse
+import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 
@@ -241,6 +241,96 @@ class TransformUtilsTest extends AbstractOSMTest {
         h2gis.execute("DROP TABLE IF EXISTS toto")
     }
 
+    /**
+     * Test the {@link org.orbisgis.osm.utils.TransformUtils#buildIndexes(org.orbisgis.datamanager.JdbcDataSource, java.lang.String)}
+     * method with bad data.
+     */
+    @Test
+    void badBuildIndexesTest(){
+        def h2gis = RANDOM_DS()
+        def osmTable = "toto"
+
+        LOGGER.warn("An error will be thrown next")
+        assertFalse TransformUtils.buildIndexes(h2gis, null)
+        LOGGER.warn("An error will be thrown next")
+        assertFalse TransformUtils.buildIndexes(null, null)
+        LOGGER.warn("An error will be thrown next")
+        assertFalse TransformUtils.buildIndexes(null, osmTable)
+    }
+
+    /**
+     * Test the {@link org.orbisgis.osm.utils.TransformUtils#buildIndexes(org.orbisgis.datamanager.JdbcDataSource, java.lang.String)}
+     * method.
+     */
+    @Test
+    void buildIndexesTest(){
+        def h2gis = RANDOM_DS()
+        def osmTablesPrefix = "toto"
+        h2gis.execute """
+            CREATE TABLE ${osmTablesPrefix}_node(id_node varchar);
+            CREATE TABLE ${osmTablesPrefix}_way_node(id_node varchar, node_order varchar, id_way varchar);
+            CREATE TABLE ${osmTablesPrefix}_way(id_way varchar, not_taken_into_account varchar);
+            CREATE TABLE ${osmTablesPrefix}_way_tag(tag_key varchar,id_way varchar,tag_value varchar);
+            CREATE TABLE ${osmTablesPrefix}_relation_tag(tag_key varchar,id_relation varchar,tag_value varchar);
+            CREATE TABLE ${osmTablesPrefix}_relation(id_relation varchar);
+            CREATE TABLE ${osmTablesPrefix}_way_member(id_relation varchar);
+            CREATE TABLE ${osmTablesPrefix}_way_not_taken_into_account(id_way varchar);
+            CREATE TABLE ${osmTablesPrefix}_relation_not_taken_into_account(id_relation varchar);
+        """
+
+        TransformUtils.buildIndexes(h2gis, osmTablesPrefix)
+
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_node")
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_node")."id_node"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_node")."id_node".indexed
+
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_node")
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_node")."id_node"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_way_node")."id_node".indexed
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_node")."node_order"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_way_node")."node_order".indexed
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_node")."id_way"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_way_node")."id_way".indexed
+
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way")
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way")."id_way"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_way")."id_way".indexed
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way")."not_taken_into_account"
+        assertFalse h2gis.getTable("${osmTablesPrefix}_way")."not_taken_into_account".indexed
+
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_tag")
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_tag")."tag_key"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_way_tag")."tag_key".indexed
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_tag")."id_way"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_way_tag")."id_way".indexed
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_tag")."tag_value"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_way_tag")."tag_value".indexed
+
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation_tag")
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation_tag")."tag_key"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_relation_tag")."tag_key".indexed
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation_tag")."id_relation"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_relation_tag")."id_relation".indexed
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation_tag")."tag_value"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_relation_tag")."tag_value".indexed
+
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation")
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation")."id_relation"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_relation")."id_relation".indexed
+
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_member")
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_member")."id_relation"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_way_member")."id_relation".indexed
+
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_not_taken_into_account")
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_not_taken_into_account")."id_way"
+        assertFalse h2gis.getTable("${osmTablesPrefix}_way_not_taken_into_account")."id_way".indexed
+
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation_not_taken_into_account")
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation_not_taken_into_account")."id_relation"
+        assertFalse h2gis.getTable("${osmTablesPrefix}_relation_not_taken_into_account")."id_relation".indexed
+    }
+
 
     /**
      * Test the {@link org.orbisgis.osm.utils.TransformUtils#extractNodesAsPoints(org.orbisgis.datamanager.JdbcDataSource, java.lang.String, int, java.lang.String, java.lang.Object, java.lang.Object)}
@@ -271,13 +361,13 @@ class TransformUtilsTest extends AbstractOSMTest {
         ds.execute "INSERT INTO ${prefix}_node_tag VALUES (4, 'building', ('house', 'garage'))"
         ds.execute "INSERT INTO ${prefix}_node_tag VALUES (5, 'material', ('concrete', 'brick'))"
 
-        LOGGER.warn("Ann error will be thrown next")
+        LOGGER.warn("An error will be thrown next")
         assertFalse TransformUtils.extractNodesAsPoints(null, prefix, epsgCode, outTable, tags, columnsToKeep)
-        LOGGER.warn("Ann error will be thrown next")
+        LOGGER.warn("An error will be thrown next")
         assertFalse TransformUtils.extractNodesAsPoints(ds, null, epsgCode, outTable, tags, columnsToKeep)
-        LOGGER.warn("Ann error will be thrown next")
+        LOGGER.warn("An error will be thrown next")
         assertFalse TransformUtils.extractNodesAsPoints(ds, prefix, -1, outTable, tags, columnsToKeep)
-        LOGGER.warn("Ann error will be thrown next")
+        LOGGER.warn("An error will be thrown next")
         assertFalse TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, null, tags, columnsToKeep)
         assertTrue TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, outTable, null, columnsToKeep)
         //assertFalse TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, outTable, tags, null)

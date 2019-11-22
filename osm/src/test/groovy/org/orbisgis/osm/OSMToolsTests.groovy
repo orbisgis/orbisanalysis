@@ -17,13 +17,13 @@ import org.orbisgis.processmanagerapi.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import java.util.regex.Pattern
 
 import static org.junit.jupiter.api.Assertions.*
 import static org.orbisgis.osm.utils.OSMElement.NODE
 import static org.orbisgis.osm.utils.OSMElement.RELATION
 import static org.orbisgis.osm.utils.OSMElement.WAY
 
+@Disabled
 class OSMToolsTests {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OSMToolsTests)

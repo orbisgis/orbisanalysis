@@ -44,4 +44,31 @@ process.execute(datasource: h2GIS, placeName: "Paimpol")
             }
         }
 ```
+Use the next script to generate default traffic data using the WG-AEN road caterogies.
 
+```groovy
+// Declaration of the maven repository
+@GrabResolver(name='orbisgis', root='http://nexus-ng.orbisgis.org/repository/orbisgis/')
+@Grab(group='org.orbisgis', module='osm-noise', version='1.0.0-SNAPSHOT')
+
+import org.orbisgis.datamanager.h2gis.H2GIS
+import org.orbisgis.osm.OSMNoise
+
+//Create a local H2GIS database
+def h2GIS = H2GIS.open('/tmp/osmdb;AUTO_SERVER=TRUE')
+
+//Run the process to extract OSM data from a place name and transform it to a set of GIS layers
+def process = OSMNoise.Data.GISLayers()
+process.execute(datasource: h2GIS, placeName: "Paimpol")
+
+def trafficProcess = OSMNoise.Traffic.WGAEN_ROAD()
+trafficProcess.execute(datasource: h2GIS,roadTableName:process.results.roadTableName, outputTablePrefix:"Paimpol")
+
+ 
+ //Save the layers in a shapeFile
+ //Building
+  h2GIS.getSpatialTable(process.results.buildingTableName,).save("/tmp/building.shp")
+ //Road with traffic data
+ h2GIS.getSpatialTable(trafficProcess.results.roadTableName).save("/tmp/road_traffic.shp")
+ 
+```

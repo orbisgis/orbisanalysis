@@ -34,8 +34,9 @@ class LoaderTest extends AbstractOSMTest {
         super.afterEach()
         LOGGER.info("# ${testInfo.testMethod.get().name}()")
     }
+
     /**
-     * Test the OSMTools.Loader.fromArea() process.
+     * Test the OSMTools.Loader.fromArea() process with bad data.
      */
     @Test
     void badFromAreaTest(){

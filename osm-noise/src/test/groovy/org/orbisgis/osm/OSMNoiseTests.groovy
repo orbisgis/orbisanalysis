@@ -38,7 +38,7 @@ class OSMNoiseTests {
         assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.buildingTableName} where HEIGHT_ROOF is null").count==0
 
         assertTrue(h2GIS.hasTable(process.results.roadTableName))
-        ouputTable = h2GIS.getSpatialTable(process.results.roadTableName)
+        def ouputTable = h2GIS.getSpatialTable(process.results.roadTableName)
         assertTrue(ouputTable.rowCount>1)
         assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.roadTableName} where WGAEN_TYPE is null").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.roadTableName} where ONEWAY is null").count==0

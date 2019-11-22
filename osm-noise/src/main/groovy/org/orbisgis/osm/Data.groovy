@@ -58,7 +58,7 @@ IProcess GISLayers() {
                     IProcess roadFormating = createRoadLayer()
                     if (roadFormating.execute(datasource: datasource, osmTablesPrefix: prefix,epsg:epsg,
                             outputTablePrefix :formatedPlaceName)){
-                        outputBuildingTableName =roadFormating.results.outputTableName
+                            outputRoadTableName =roadFormating.results.outputTableName
                     }
                     else{
                         error "Cannot create the road layer"

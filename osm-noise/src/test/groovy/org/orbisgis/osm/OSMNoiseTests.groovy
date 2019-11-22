@@ -33,9 +33,9 @@ class OSMNoiseTests {
         ISpatialTable zoneTable = h2GIS.getSpatialTable(process.results.zoneTableName)
         assertTrue(zoneTable.rowCount==1)
         assertTrue(h2GIS.hasTable(process.results.buildingTableName))
-        assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.outputTableName} where NB_LEV is null").count==0
-        assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.outputTableName} where HEIGHT_WALL is null").count==0
-        assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.outputTableName} where HEIGHT_ROOF is null").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.buildingTableName} where NB_LEV is null").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.buildingTableName} where HEIGHT_WALL is null").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.buildingTableName} where HEIGHT_ROOF is null").count==0
 
         assertTrue(h2GIS.hasTable(process.results.roadTableName))
         ouputTable = h2GIS.getSpatialTable(process.results.roadTableName)

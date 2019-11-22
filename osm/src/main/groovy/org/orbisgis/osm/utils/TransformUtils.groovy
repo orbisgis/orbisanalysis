@@ -178,9 +178,11 @@ class TransformUtils {
      * @return The tag count query
      */
     static def getCountTagsQuery(osmTableTag, tags) {
+        if(!osmTableTag) return null
         def countTagsQuery = "SELECT count(*) AS count FROM $osmTableTag"
-        if (tags) {
-            countTagsQuery += " WHERE ${createWhereFilter(tags)}"
+        def whereFilter = createWhereFilter(tags)
+        if (whereFilter) {
+            countTagsQuery += " WHERE $whereFilter"
         }
         return countTagsQuery
     }
@@ -272,7 +274,7 @@ class TransformUtils {
             warn "The tag map is empty"
             return ""
         }
-        def whereKeysValuesFilter
+        def whereKeysValuesFilter = ""
         if(tags in Map){
             def whereQuery = []
             tags.each{ tag ->
@@ -304,7 +306,12 @@ class TransformUtils {
             whereKeysValuesFilter = "(${whereQuery.join(') OR (')})"
         }
         else {
-            whereKeysValuesFilter = "tag_key IN ('${tags.join("','")}')"
+            def tagArray = []
+            tagArray.addAll(tags)
+            tagArray.removeAll([null])
+            if(tagArray) {
+                whereKeysValuesFilter = "tag_key IN ('${tagArray.join("','")}')"
+            }
         }
         return whereKeysValuesFilter
     }

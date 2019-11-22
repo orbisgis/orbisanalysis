@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertFalse
+import static org.junit.jupiter.api.Assertions.assertNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 /**
@@ -104,7 +105,7 @@ class TransformUtilsTest extends AbstractOSMTest {
                 "(tag_key = 'water' AND tag_value IN ('pound')) OR " +
                 "(tag_key = 'empty')", TransformUtils.createWhereFilter(tags)
 
-        assertGStringEquals "tag_key IN ('emilie','big','large')", TransformUtils.createWhereFilter(["emilie", "big", "large"])
+        assertGStringEquals "tag_key IN ('emilie','big','large')", TransformUtils.createWhereFilter(["emilie", "big", "large", null])
     }
 
     /**
@@ -115,6 +116,8 @@ class TransformUtilsTest extends AbstractOSMTest {
     void badCreateWhereFilterTest(){
         assertGStringEquals "", TransformUtils.createWhereFilter(null)
         assertGStringEquals "", TransformUtils.createWhereFilter(new HashMap())
+        assertGStringEquals "", TransformUtils.createWhereFilter([])
+        assertGStringEquals "", TransformUtils.createWhereFilter([null])
     }
 
     /**
@@ -126,8 +129,8 @@ class TransformUtilsTest extends AbstractOSMTest {
         def validTableName = "tutu"
         def validTags = [toto:"tata"]
         def columnsToKeep = ["col1", "col2", "col5"]
-        assertEquals null, TransformUtils.getColumnSelector(null, validTags, columnsToKeep)
-        assertEquals null, TransformUtils.getColumnSelector("", validTags, columnsToKeep)
+        assertNull TransformUtils.getColumnSelector(null, validTags, columnsToKeep)
+        assertNull TransformUtils.getColumnSelector("", validTags, columnsToKeep)
     }
 
     /**
@@ -156,9 +159,33 @@ class TransformUtilsTest extends AbstractOSMTest {
         assertGStringEquals "SELECT distinct tag_key FROM tutu", TransformUtils.getColumnSelector(validTableName, null, null)
     }
 
-    //@Test
+    /**
+     * Test the {@link org.orbisgis.osm.utils.TransformUtils#getCountTagsQuery(java.lang.Object, java.lang.Object)}
+     * method.
+     */
+    @Test
     void getCountTagQueryTest(){
+        def osmTable = "tutu"
+        assertGStringEquals "SELECT count(*) AS count FROM tutu WHERE tag_key IN ('titi','tata')",
+                TransformUtils.getCountTagsQuery(osmTable, ["titi", "tata"])
+        assertGStringEquals "SELECT count(*) AS count FROM tutu",
+                TransformUtils.getCountTagsQuery(osmTable, null)
+        assertGStringEquals "SELECT count(*) AS count FROM tutu",
+                TransformUtils.getCountTagsQuery(osmTable, [])
+        assertGStringEquals "SELECT count(*) AS count FROM tutu",
+                TransformUtils.getCountTagsQuery(osmTable, [null])
+        assertGStringEquals "SELECT count(*) AS count FROM tutu WHERE tag_key IN ('toto')",
+                TransformUtils.getCountTagsQuery(osmTable, "toto")
+    }
 
+    /**
+     * Test the {@link org.orbisgis.osm.utils.TransformUtils#getCountTagsQuery(java.lang.Object, java.lang.Object)}
+     * method with bad data.
+     */
+    @Test
+    void badGetCountTagQueryTest(){
+        assertNull TransformUtils.getCountTagsQuery(null, ["titi", "tata"])
+        assertNull TransformUtils.getCountTagsQuery("", ["titi", "tata"])
     }
 
 

@@ -1,15 +1,9 @@
 package org.orbisgis.osm
 
-import org.h2gis.functions.spatial.crs.ST_Transform
+
 import org.junit.jupiter.api.Test
-import org.locationtech.jts.geom.Envelope
-import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.geom.GeometryFactory
-import org.locationtech.jts.io.WKTReader
-import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.datamanagerapi.dataset.ISpatialTable
-import org.orbisgis.processmanagerapi.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -23,7 +17,7 @@ class OSMNoiseTests {
     void downloadTest() {
         def h2GIS = H2GIS.open('./target/OSMNoise;AUTO_SERVER=TRUE')
         def process = OSMNoise.Data.download()
-        assertTrue process.execute(datasource: h2GIS, placeName: "Bouguenais")
+        assertTrue process.execute(datasource: h2GIS, placeName: "Saint Jean La Poterie")
         assertTrue(h2GIS.hasTable(process.results.zoneTableName))
         ISpatialTable zoneTable = h2GIS.getSpatialTable(process.results.zoneTableName)
         assertTrue(zoneTable.rowCount==1)
@@ -31,7 +25,7 @@ class OSMNoiseTests {
     }
 
     @Test
-    void GISLayersTest() {
+    void GISLayersTestFromApi() {
         def h2GIS = H2GIS.open('./target/OSMNoise;AUTO_SERVER=TRUE')
         def process = OSMNoise.Data.GISLayers()
         assertTrue process.execute(datasource: h2GIS, placeName: "Saint Jean La Poterie")
@@ -39,6 +33,16 @@ class OSMNoiseTests {
         ISpatialTable zoneTable = h2GIS.getSpatialTable(process.results.zoneTableName)
         assertTrue(zoneTable.rowCount==1)
         assertTrue(h2GIS.hasTable(process.results.buildingTableName))
+        assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.outputTableName} where NB_LEV is null").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.outputTableName} where HEIGHT_WALL is null").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.outputTableName} where HEIGHT_ROOF is null").count==0
+
+        assertTrue(h2GIS.hasTable(process.results.roadTableName))
+        ouputTable = h2GIS.getSpatialTable(process.results.roadTableName)
+        assertTrue(ouputTable.rowCount>1)
+        assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.roadTableName} where WGAEN_TYPE is null").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.roadTableName} where ONEWAY is null").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.roadTableName} where MAXSPEED is null").count==0
 
     }
 
@@ -56,6 +60,9 @@ class OSMNoiseTests {
         assertTrue(h2GIS.hasTable(process.results.outputTableName))
         ISpatialTable ouputTable = h2GIS.getSpatialTable(process.results.outputTableName)
         assertTrue(ouputTable.rowCount>1)
+        assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.outputTableName} where NB_LEV is null").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.outputTableName} where HEIGHT_WALL is null").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.outputTableName} where HEIGHT_ROOF is null").count==0
 
         process = OSMNoise.Data.createRoadLayer()
         assertTrue process.execute(datasource: h2GIS, osmTablesPrefix: prefix,
@@ -63,7 +70,10 @@ class OSMNoiseTests {
         assertTrue(h2GIS.hasTable(process.results.outputTableName))
         ouputTable = h2GIS.getSpatialTable(process.results.outputTableName)
         assertTrue(ouputTable.rowCount>1)
-        ouputTable.save("/tmp/routes.shp")
+        assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.outputTableName} where WGAEN_TYPE is null").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.outputTableName} where ONEWAY is null").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.outputTableName} where MAXSPEED is null").count==0
+
     }
 
     @Test
@@ -84,11 +94,28 @@ class OSMNoiseTests {
     }
 
     @Test
-    void buildTrafficWGAENData() {
+    void buildTrafficWGAENDataFromTestFile() {
         def h2GIS = H2GIS.open('./target/OSMNoise;AUTO_SERVER=TRUE')
-
-        def process = OSMNoise.Traffic.WGAEN
-        process.execute(datasource: h2GIS,roadTableName:null)
+        def prefix = "OSM_FILE"
+        def load = OSMTools.Loader.load()
+        assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
+                osmFilePath : new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath())
+        def process = OSMNoise.Data.createRoadLayer()
+        assertTrue process.execute(datasource: h2GIS, osmTablesPrefix: prefix,
+                epsg: 2154, outputTablePrefix : "redon")
+        assertTrue(h2GIS.hasTable(process.results.outputTableName))
+        def ouputTable = h2GIS.getSpatialTable(process.results.outputTableName)
+        assertTrue(ouputTable.rowCount>1)
+        process = OSMNoise.Traffic.WGAEN_ROAD()
+        process.execute(datasource: h2GIS,roadTableName:ouputTable.getName(), outputTablePrefix:"redon")
+        ouputTable = h2GIS.getSpatialTable(process.results.outputTableName)
+        assertTrue(ouputTable.rowCount>1)
+        assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.outputTableName} where WGAEN_TYPE is null").count==0
+        def columnsToCheck = ["day_lv_hour", "day_hv_hour","day_lv_speed", "day_hv_speed", "night_lv_hour", "night_hv_hour",
+        "night_lv_speed", "night_hv_speed", "ev_lv_hour", "ev_hv_hour", "ev_lv_speed", "ev_hv_speed"]
+        columnsToCheck.each {it ->
+            assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.outputTableName} where ${it} is null and ${it}<=0").count==0
+        }
     }
 
 }

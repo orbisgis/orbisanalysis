@@ -25,25 +25,24 @@ import org.orbisgis.osm.OSMTools
  * @param datasource A connexion to a DB to load the OSM file
  * @param placeName the name of the place to extract the data
  * @param epsg code to reproject the GIS layers, default is -1
- * @return The name of the resulting GIS tables : zoneTableName, zoneEnvelopeTableName
- *  , the epsg of the processed zone and the path where the OSM file is stored
+ * @return The name of the resulting GIS tables : zoneTableName, zoneEnvelopeTableName, buildingTableName
+ *  roadTableName, the epsg of the processed zone and the path where the OSM file is stored
  */
 IProcess GISLayers() {
     return create({
         title "Download and transform the OSM data to a set of GIS layers"
         inputs datasource: JdbcDataSource, placeName: String, epsg:-1
-        outputs buildingTableName: String, roadTableName:String,railTableName:String,
-                zoneTableName:String,zoneEnvelopeTableName:String
+        outputs buildingTableName: String, roadTableName:String,
+                zoneTableName:String,zoneEnvelopeTableName:String, epsg: int
         run { datasource, placeName, epsg ->
             String formatedPlaceName = placeName.trim().split("\\s*(,|\\s)\\s*").join("_");
             IProcess downloadData = download()
             if(downloadData.execute(datasource: datasource, placeName: placeName, epsg:epsg)){
                 epsg = downloadData.results.epsg
-                def prefix = "OSM_DATA_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+                def prefix = "OSM_DATA_$uuid"
                 def load = OSMTools.Loader.load()
                 info "Loading OSM data from the place name $placeName"
                 if (load(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: downloadData.results.osmFilePath)) {
-
                     def outputBuildingTableName =null
                     def outputRoadTableName =null
                     def outputRailTableName =null
@@ -56,18 +55,25 @@ IProcess GISLayers() {
                         error "Cannot create the building layer"
                     }
 
-                    //createRoadLayer(datasource, prefix, epsg)
+                    IProcess roadFormating = createRoadLayer()
+                    if (roadFormating.execute(datasource: datasource, osmTablesPrefix: prefix,epsg:epsg,
+                            outputTablePrefix :formatedPlaceName)){
+                        outputBuildingTableName =roadFormating.results.outputTableName
+                    }
+                    else{
+                        error "Cannot create the road layer"
+                    }
 
                     //TODO : Create landcover with G coeff
 
                     //Delete OSM tables
-                    OSMTools.Utilities.dropOSMTables(osmTablesPrefix, datasource)
+                    OSMTools.Utilities.dropOSMTables(prefix, datasource)
 
                     [buildingTableName  : outputBuildingTableName,
                      roadTableName      : outputRoadTableName,
-                     railTableName      : outputRailTableName,
                      zoneTableName      : downloadData.results.zoneTableName,
-                     zoneEnvelopeTableName: downloadData.results.zoneEnvelopeTableName]
+                     zoneEnvelopeTableName: downloadData.results.zoneEnvelopeTableName,
+                     epsg: epsg]
 
                 }
                 else{
@@ -94,6 +100,7 @@ IProcess GISLayers() {
  * @param epsg to transform the geometries into a referenced coordinate system
  * @param inputZoneEnvelopeTableName a table used to keep the geometries that intersect
  * @param outputTablePrefix prefix of the output table
+ * @param jsonFilename to define the road parameters to extract and transform
  *
  * @return the name of the output building layer
  */
@@ -118,7 +125,7 @@ IProcess createBuildingLayer() {
         if (transform(datasource: datasource, osmTablesPrefix: osmTablesPrefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
             def inputTableName = transform.results.outputTableName
             logger.info "Formating building layer"
-            def outputTableName = "${outputTablePrefix}_BUILDING_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+            def outputTableName = "${outputTablePrefix}_BUILDING_$uuid"
             datasource.execute """ DROP TABLE if exists ${outputTableName};
                         CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id_build serial, ID_SOURCE VARCHAR, HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT,
                               NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER);"""
@@ -187,15 +194,17 @@ IProcess createBuildingLayer() {
 }
 
 /**
- * This process creates the road layer
+ * This process creates the road layer with the following variables :
+ * WGAEN_TYPE (VARCHAR), MAXPSEED (INTEGER) , ONEWAY (BOOLEAN), SURFACE (VARCHAR)
  *
  * @param datasource A connexion to a DB to load the OSM file
  * @param osmTablesPrefix prefix for the OSM tables
  * @param epsg to transform the geometries into a referenced coordinate system
  * @param inputZoneEnvelopeTableName a table used to keep the geometries that intersect
  * @param outputTablePrefix prefix of the output table
+ * @param jsonFilename to define the road parameters to extract and transform
  *
- * @return the name of the output building layer
+ * @return the name of the output road layer
  */
 IProcess createRoadLayer() {
     return create({
@@ -217,10 +226,10 @@ IProcess createRoadLayer() {
             if (transform(datasource: datasource, osmTablesPrefix: osmTablesPrefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
                 def inputTableName = transform.results.outputTableName
                 logger.info('Formating road layer')
-                def outputTableName = "${outputTablePrefix}_ROAD_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+                def outputTableName = "${outputTablePrefix}_ROAD_$uuid"
                 datasource.execute """drop table if exists $outputTableName;
                             CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_road serial, ID_SOURCE VARCHAR, WGAEN_TYPE VARCHAR,
-                            SURFACE VARCHAR, MAXSPEED INTEGER, ZINDEX INTEGER);"""
+                            SURFACE VARCHAR, ONEWAY BOOLEAN, MAXSPEED INTEGER, ZINDEX INTEGER);"""
                     def queryMapper = "SELECT "
                     ISpatialTable inputSpatialTable = datasource.getSpatialTable(inputTableName)
                     if(inputSpatialTable.rowCount>0) {
@@ -254,6 +263,12 @@ IProcess createRoadLayer() {
                                     maxspeed = mappingMaxSpeed[type]
                                 }
 
+                                String onewayValue = row."oneway"
+                                boolean oneway = false;
+                                if(onewayValue && onewayValue=="yes"){
+                                    oneway=true
+                                }
+
                                 String surface = getTypeValue(row, columnNames, mappingForSurface)
                                 def zIndex = getZIndex(row.'layer')
                                 if (type) {
@@ -261,7 +276,7 @@ IProcess createRoadLayer() {
                                     for (int i = 0; i < geom.getNumGeometries(); i++) {
                                         stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${
                                             geom.getGeometryN(i)}',$epsg), null, '${row.id}','${type}', '${
-                                            surface}',${maxspeed}, ${zIndex})""".toString()
+                                            surface}',${oneway},${maxspeed}, ${zIndex})""".toString()
                                     }
                                 }
                             }
@@ -273,26 +288,6 @@ IProcess createRoadLayer() {
         }
         })
 }
-
-/**
- * Create the rail layer
- * @param datasource
- * @param prefix
- * @param epsg
- */
-def createRailLayer(datasource, prefix, epsg){
-    transform = OSMTools.Transform.extractWaysAsLines()
-    logger.info "Create the rail layer"
-    paramsDefaultFile = this.class.getResourceAsStream("railParams.json")
-    parametersMap = readJSONParameters(paramsDefaultFile)
-    tags  = parametersMap.get("tags")
-    columnsToKeep = parametersMap.get("columns")
-    if(transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)){
-        outputRailTableName = transform.results.outputTableName
-        logger.info "Rail layer created"
-    }
-}
-
 
 /**
  * Download the OSM data using the overpass api
@@ -310,8 +305,8 @@ IProcess download() {
         inputs datasource: JdbcDataSource, placeName: String, epsg:-1
         outputs zoneTableName: String, zoneEnvelopeTableName: String, epsg :int, osmFilePath : String
         run { datasource, placeName, epsg ->
-            def outputZoneTable = "ZONE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
-            def outputZoneEnvelopeTable = "ZONE_ENVELOPE_${UUID.randomUUID().toString().replaceAll("-", "_")}"
+            def outputZoneTable = "ZONE_$uuid"
+            def outputZoneEnvelopeTable = "ZONE_ENVELOPE_$uuid"
 
             if (datasource == null) {
                 logger.error('The datasource cannot be null')

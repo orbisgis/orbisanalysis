@@ -3,6 +3,7 @@ package org.orbisgis.osm
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.locationtech.jts.geom.Envelope

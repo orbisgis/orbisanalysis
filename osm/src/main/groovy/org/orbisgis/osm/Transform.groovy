@@ -233,24 +233,24 @@ private def toPolygonOrLine(String type, datasource, osmTablesPrefix, epsgCode, 
  *
  * @return The column selection query
  */
-private static getColumnSelector(osmTableTag, tags, columnsToKeep){
-    def columnsSelector = "SELECT distinct tag_key AS tag_key FROM $osmTableTag"
-    if (tags) {
-        def tagKeysList
-        if(tags in Map) {
-            tagKeysList = tags.keySet().findResults { it != "null" && !it.isEmpty() ? it : null }
-        }
-        else{
-            tagKeysList = tags.findResults { it != "null" && !it.isEmpty() ? it : null }
-        }
-        if(columnsToKeep != null){
-            columnsSelector += " WHERE tag_key IN ('${(tagKeysList + columnsToKeep).unique().join("','")}')"
-        }
+private getColumnSelector(osmTableTag, tags, columnsToKeep){
+    if(!osmTableTag){
+        error "The table name should not be empty or null."
+        return null
     }
-    else if(columnsToKeep){
-        columnsSelector += " tag_key IN ('${columnsToKeep.unique().join("','")}')"
+    def tagKeys = []
+    if(tags != null) {
+        def tagKeysList = tags in Map ? tags.keySet() : tags
+        tagKeys.addAll(tagKeysList.findResults { it != null && it != "null" && !it.isEmpty() ? it : null })
     }
-    return columnsSelector
+    if(columnsToKeep != null) {
+        tagKeys.addAll(columnsToKeep)
+    }
+    tagKeys.removeAll([null])
+
+    def query = "SELECT distinct tag_key FROM $osmTableTag"
+    if(tagKeys) query +=" WHERE tag_key IN ('${tagKeys.unique().join("','")}')"
+    return query
 }
 
 /**
@@ -262,7 +262,7 @@ private static getColumnSelector(osmTableTag, tags, columnsToKeep){
  *
  * @return The tag count query
  */
-private static getCountTagsQuery(osmTableTag, tags){
+private getCountTagsQuery(osmTableTag, tags){
     def countTagsQuery = "SELECT count(*) AS count FROM $osmTableTag"
     if (tags) {
         countTagsQuery += " WHERE ${createWhereFilter(tags)}"
@@ -670,7 +670,7 @@ IProcess extractRelationsAsLines() {
                 def osmTableTag = "${osmTablesPrefix}_relation_tag"
                 def countTagsQuery = getCountTagsQuery(osmTableTag, tags)
                 def columnsSelector = getColumnSelector(osmTableTag, tags, columnsToKeep)
-                def tagsFilter = createWhereFilter(tags)
+                def tagsFilter = this.createWhereFilter(tags)
 
                 if (datasource.firstRow(countTagsQuery).count <= 0) {
                     warn "No keys or values found in the relations."
@@ -840,27 +840,29 @@ IProcess stackingTransform(datasource, filterArea, epsgCode, dataDim, tags) {
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Lesaux (UBS LAB-STICC)
  */
-boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode, String outputNodesPoints, def tags, def columnsToKeep) {
+boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, int epsgCode,
+                             String outputNodesPoints, def tags, def columnsToKeep) {
+    if(!datasource){
+        error("The datasource should not be null")
+        return false
+    }
+    if(osmTablesPrefix == null){
+        error("Invalid null OSM table prefix")
+        return false
+    }
+    if(epsgCode < 0){
+        error("Invalid EPSG code")
+        return false
+    }
+    if(outputNodesPoints == null){
+        error("Invalid null output node points table name")
+        return false
+    }
     def tableNode = "${osmTablesPrefix}_node"
     def tableNodeTag = "${osmTablesPrefix}_node_tag"
-    def countTagsQuery = "SELECT count(*) AS count FROM $tableNodeTag"
-    def columnsSelector = "SELECT distinct tag_key AS tag_key FROM $tableNodeTag"
-    def tagsFilter = ''
-    if (tags) {
-        def tagKeysList
-        if (tags in Map) {
-            tagKeysList = tags.keySet().findResults { it != "null" && !it.isEmpty() }
-        } else {
-            tagKeysList = tags.findResults { it != "null" && !it.isEmpty() }
-        }
-        tagsFilter = createWhereFilter(tags)
-        countTagsQuery += " WHERE $tagsFilter"
-        if (columnsToKeep != null) {
-            columnsSelector += " WHERE tag_key IN ('${(tagKeysList + columnsToKeep).unique().join("','")}')"
-        }
-    } else if (columnsToKeep) {
-        columnsSelector += "tag_key IN ('${columnsToKeep.unique().join("','")}')"
-    }
+    def countTagsQuery = getCountTagsQuery(tableNodeTag, tags)
+    def columnsSelector = getColumnSelector(tableNodeTag, tags, columnsToKeep)
+    def tagsFilter = createWhereFilter(tags)
 
     if (datasource.firstRow(countTagsQuery).count <= 0) {
         info("No keys or values found in the nodes")
@@ -904,22 +906,28 @@ boolean extractNodesAsPoints(JdbcDataSource datasource, String osmTablesPrefix, 
  * tag_key in '(building', 'landcover') or
  * (tag_key = 'building' and tag_value in ('yes')) or (tag_key = 'landcover' and tag_value in ('grass','forest')))
  */
-static def createWhereFilter(def tags){
-    if(!tags) return ""
+def createWhereFilter(def tags){
+    if(!tags){
+        warn "The tag map is empty"
+        return ""
+    }
     def whereKeysValuesFilter
     if(tags in Map){
         def whereQuery = []
         tags.each{ tag ->
             def keyIn = ''
             def valueIn = ''
-            def key  = tag.key
-            if(key!="null" && !key.isEmpty()){
-                keyIn+= "tag_key = '$key'"
+            if(tag.key){
+                if(tag.key instanceof Collection) {
+                    keyIn += "tag_key IN ('${tag.key.join("','")}')"
+                }
+                else {
+                    keyIn += "tag_key = '${tag.key}'"
+                }
             }
-
-            def valuesList = tag.value.flatten().findResults{it!=null && it.isEmpty()?null:it}
-            if(valuesList!=null && !valuesList.isEmpty()){
-                valueIn += "tag_value IN ('${valuesList.join("','")}')"
+            if(tag.value){
+                def valueList = (tag.value instanceof Collection) ? tag.value.flatten().findResults{it} : [tag.value]
+                valueIn += "tag_value IN ('${valueList.join("','")}')"
             }
 
             if(!keyIn.isEmpty()&& !valueIn.isEmpty()){
@@ -946,7 +954,7 @@ static def createWhereFilter(def tags){
  * @param selectTableQuery the table that contains the keys and values to pivot
  * @return the case when expression
  */
-static def createTagList(datasource, selectTableQuery){
+def createTagList(datasource, selectTableQuery){
     def rowskeys = datasource.rows(selectTableQuery)
     def list = []
     rowskeys.tag_key.each { it ->

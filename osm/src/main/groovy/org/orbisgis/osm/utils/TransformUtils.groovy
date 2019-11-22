@@ -323,6 +323,10 @@ class TransformUtils {
      * @return the case when expression
      */
     static def createTagList(datasource, selectTableQuery){
+        if(!datasource){
+            error "The datasource should not be null."
+            return null
+        }
         def rowskeys = datasource.rows(selectTableQuery)
         def list = []
         rowskeys.tag_key.each { it ->

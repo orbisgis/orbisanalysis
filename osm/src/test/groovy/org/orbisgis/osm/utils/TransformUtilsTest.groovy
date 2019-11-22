@@ -214,6 +214,11 @@ class TransformUtilsTest extends AbstractOSMTest {
         assertGStringEquals ", MAX(CASE WHEN b.tag_key = 'road' THEN b.tag_value END) AS \"ROAD\"",
                 TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable")
         h2gis.execute("DROP TABLE IF EXISTS toto")
+
+        h2gis.execute("CREATE TABLE toto (id int, tag_key varchar, tag_value array[255])")
+        h2gis.execute("INSERT INTO toto VALUES (0, 'material', ('concrete', 'brick'))")
+        assertNull  TransformUtils.createTagList(null, "SELECT tag_key FROM $osmTable")
+        h2gis.execute("DROP TABLE IF EXISTS toto")
     }
 
     /**

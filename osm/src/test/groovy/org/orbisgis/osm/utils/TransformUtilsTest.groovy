@@ -9,6 +9,8 @@ import org.orbisgis.osm.AbstractOSMTest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals
+import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.junit.jupiter.api.Assertions.assertNotNull
 import static org.junit.jupiter.api.Assertions.assertNull
@@ -329,6 +331,47 @@ class TransformUtilsTest extends AbstractOSMTest {
         assertNotNull h2gis.getTable("${osmTablesPrefix}_relation_not_taken_into_account")
         assertNotNull h2gis.getTable("${osmTablesPrefix}_relation_not_taken_into_account")."id_relation"
         assertFalse h2gis.getTable("${osmTablesPrefix}_relation_not_taken_into_account")."id_relation".indexed
+    }
+
+    /**
+     * Test the {@link org.orbisgis.osm.utils.TransformUtils#arrayUnion(boolean, java.util.Collection[])}
+     * method with bad data.
+     */
+    @Test
+    void badArrayUnionTest(){
+        assertNotNull TransformUtils.arrayUnion(true, null)
+        assertTrue TransformUtils.arrayUnion(true, null).isEmpty()
+        assertNotNull TransformUtils.arrayUnion(true, [])
+        assertTrue TransformUtils.arrayUnion(true, []).isEmpty()
+    }
+
+    /**
+     * Test the {@link org.orbisgis.osm.utils.TransformUtils#arrayUnion(boolean, java.util.Collection[])}
+     * method.
+     */
+    @Test
+    void arrayUnionTest(){
+        def unique = TransformUtils.arrayUnion(true, ["tata", "titi", "tutu"], ["titi", "toto", "toto"], [null, "value"])
+        assertNotNull unique
+        assertEquals 6, unique.size
+        assertEquals null, unique[0]
+        assertEquals "tata", unique[1]
+        assertEquals "titi", unique[2]
+        assertEquals "toto", unique[3]
+        assertEquals "tutu", unique[4]
+        assertEquals "value", unique[5]
+
+        def notUnique = TransformUtils.arrayUnion(false, ["tata", "titi", "tutu"], ["titi", "toto", "toto"], [null, "value"])
+        assertNotNull notUnique
+        assertEquals 8, notUnique.size
+        assertEquals null, notUnique[0]
+        assertEquals "tata", notUnique[1]
+        assertEquals "titi", notUnique[2]
+        assertEquals "titi", notUnique[3]
+        assertEquals "toto", notUnique[4]
+        assertEquals "toto", notUnique[5]
+        assertEquals "tutu", notUnique[6]
+        assertEquals "value", notUnique[7]
     }
 
 

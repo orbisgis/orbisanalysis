@@ -33,10 +33,11 @@ class TransformUtils {
      */
     static def arrayUnion(boolean removeDuplicated, Collection... arrays) {
         def union = []
+        if(arrays == null) return union
         for (Object[] array : arrays) {
-            if (removeDuplicated) union.removeAll(array)
             union.addAll(array)
         }
+        if (removeDuplicated) union.unique()
         union.sort()
         return union
     }

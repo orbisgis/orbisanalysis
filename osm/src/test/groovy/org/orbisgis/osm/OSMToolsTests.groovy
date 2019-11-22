@@ -23,7 +23,6 @@ import static org.orbisgis.osm.utils.OSMElement.NODE
 import static org.orbisgis.osm.utils.OSMElement.RELATION
 import static org.orbisgis.osm.utils.OSMElement.WAY
 
-@Disabled
 class OSMToolsTests {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(OSMToolsTests)

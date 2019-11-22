@@ -238,10 +238,6 @@ private getColumnSelector(osmTableTag, tags, columnsToKeep){
         error "The table name should not be empty or null."
         return null
     }
-    if(!tags && !columnsToKeep){
-        error "At least one of the 'tags' or 'columnsToKeep' should not be null or empty."
-        return null
-    }
     def tagKeys = []
     if(tags != null) {
         def tagKeysList = tags in Map ? tags.keySet() : tags
@@ -251,7 +247,10 @@ private getColumnSelector(osmTableTag, tags, columnsToKeep){
         tagKeys.addAll(columnsToKeep)
     }
     tagKeys.removeAll([null])
-    return "SELECT distinct tag_key FROM $osmTableTag WHERE tag_key IN ('${tagKeys.unique().join("','")}')"
+
+    def query = "SELECT distinct tag_key FROM $osmTableTag"
+    if(tagKeys) query +=" WHERE tag_key IN ('${tagKeys.unique().join("','")}')"
+    return query
 }
 
 /**

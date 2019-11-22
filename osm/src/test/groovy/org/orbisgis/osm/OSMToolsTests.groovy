@@ -1,7 +1,10 @@
 package org.orbisgis.osm
 
 import org.h2gis.functions.spatial.crs.ST_Transform
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInfo
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
@@ -20,59 +23,16 @@ import static org.orbisgis.osm.utils.OSMElement.WAY
 
 class OSMToolsTests {
 
-    private static final Logger logger = LoggerFactory.getLogger(OSMToolsTests.class)
+    private static final Logger LOGGER = LoggerFactory.getLogger(OSMToolsTests)
 
-    @Test
-    void extractTest() {
-        def extract = OSMTools.Loader.extract()
-        assertTrue extract.execute(overpassQuery: "(node(48.780889172043,-3.0626213550568,48.783356423929,-3.0579113960266); " +
-                "way(48.780889172043,-3.0626213550568,48.783356423929,-3.0579113960266); " +
-                "relation(48.780889172043,-3.0626213550568,48.783356423929,-3.0579113960266); );\n" +
-                "out;\n" +
-                ">;");
-        assertTrue new File(extract.results.outputFilePath).exists()
-        assertTrue new File(extract.results.outputFilePath).length() > 0
+    @BeforeEach
+    final void beforeEach(TestInfo testInfo){
+        LOGGER.info("@ ${testInfo.testMethod.get().name}()")
     }
 
-    @Test
-    void extractTestFromPlace() {
-        def extract = OSMTools.Loader.extract()
-        Geometry geom = OSMTools.Utilities.getAreaFromPlace("Cliscouët, vannes")
-        def query = OSMTools.Utilities.buildOSMQuery(new GeometryFactory().toGeometry(geom.getEnvelopeInternal()), [],
-                OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
-        assertTrue extract.execute(overpassQuery: "[timeout:250]"+query)
-        assertTrue new File(extract.results.outputFilePath).exists()
-        assertTrue new File(extract.results.outputFilePath).length() > 0
-    }
-
-    @Test
-    void extractTestWrongQuery() {
-        def extract = OSMTools.Loader.extract()
-        assertFalse extract.execute(overpassQuery: "building =yes");
-    }
-
-    @Test
-    void loadTest() {
-        def h2GIS = H2GIS.open('./target/OSMTools;AUTO_SERVER=TRUE')
-        def load = OSMTools.Loader.load()
-        def prefix = "OSM_FILE"
-        assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix, osmFilePath : new File(this.class.getResource("osmFileForTest.osm").toURI()).getAbsolutePath())
-
-        //Count nodes
-        h2GIS.eachRow "SELECT count(*) as nb FROM OSMTools.PUBLIC.${prefix}_NODE",{ row ->
-            assertEquals 1176, row.nb }
-
-        //Count ways
-        h2GIS.eachRow "SELECT count(*) as nb FROM OSMTools.PUBLIC.${prefix}_WAY",{ row ->
-            assertEquals 171, row.nb }
-
-        //Count relations
-        h2GIS.eachRow "SELECT count(*) as nb FROM OSMTools.PUBLIC.${prefix}_RELATION",{ row ->
-            assertEquals 0, row.nb }
-
-        //Check specific tags
-        h2GIS.eachRow "SELECT count(*) as nb FROM OSMTools.PUBLIC.${prefix}_WAY_TAG WHERE ID_WAY=305633653",{ row ->
-            assertEquals 2, row.nb }
+    @AfterEach
+    final void afterEach(TestInfo testInfo){
+        LOGGER.info("# ${testInfo.testMethod.get().name}()")
     }
 
     @Test
@@ -197,35 +157,13 @@ class OSMToolsTests {
         assertEquals 1, dataSource.getTable(processTrans.results.outputTableName).rowCount
     }
 
-    @Test
-    void extractPlace() {
-        WKTReader wktReader = new WKTReader();
-        Geometry geom = OSMTools.Utilities.getAreaFromPlace("vannes")
-        assertNotNull geom;
-        geom = OSMTools.Utilities.getAreaFromPlace("lyon");
-        assertNotNull geom;
-        geom = OSMTools.Utilities.getAreaFromPlace("Baarle-Nassau");
-        assertNotNull geom;
-        assertEquals(9,geom.getNumGeometries())
-        geom = OSMTools.Utilities.getAreaFromPlace("Baerle-Duc");
-        assertNotNull geom;
-        assertEquals(24,geom.getNumGeometries())
-        geom = OSMTools.Utilities.getAreaFromPlace("séné");
-        assertNotNull geom;
-        assertEquals(6,geom.getNumGeometries())
-        geom = OSMTools.Utilities.getAreaFromPlace("Pékin");
-        assertNotNull geom;
-        geom = OSMTools.Utilities.getAreaFromPlace("Chongqing");
-        assertNotNull geom;
-    }
-
 
 
     @Test
     void buildOSMQuery() {
         WKTReader  wktReader = new WKTReader()
         Geometry p = wktReader.read("POLYGON ((4 2, 10 20, 30 20, 30 0, 4 2))")
-        assertEquals "[bbox:0.0,4.0,20.0, 30.0];\n" +
+        assertEquals "[bbox:0.0,4.0,20.0,30.0];\n" +
                 "(\n" +
                 "\tnode[\"water\"];\n" +
                 "\tnode[\"building\"];\n" +
@@ -237,7 +175,7 @@ class OSMToolsTests {
                 "(._;>;);\n" +
                 "out;" ,
                 OSMTools.Utilities.buildOSMQuery(p.getEnvelopeInternal(), ["WATER", "BUILDING"], OSMElement.NODE, OSMElement.RELATION,OSMElement.WAY)
-        assertEquals "[bbox:0.0,4.0,20.0, 30.0];\n" +
+        assertEquals "[bbox:0.0,4.0,20.0,30.0];\n" +
                 "(\n" +
                 "\tnode[\"water\"](poly:\"2.0 4.0 20.0 10.0 20.0 30.0 0.0 30.0\");\n" +
                 "\trelation[\"water\"](poly:\"2.0 4.0 20.0 10.0 20.0 30.0 0.0 30.0\");\n" +
@@ -250,7 +188,7 @@ class OSMToolsTests {
     void buildOSMQueryEmptyKeys() {
         WKTReader  wktReader = new WKTReader()
         Geometry p = wktReader.read("POLYGON ((4 2, 10 20, 30 20, 30 0, 4 2))")
-        assertEquals "[bbox:0.0,4.0,20.0, 30.0];\n" +
+        assertEquals "[bbox:0.0,4.0,20.0,30.0];\n" +
                 "(\n" +
                 "\tnode;\n" +
                 "\trelation;\n" +
@@ -293,12 +231,6 @@ class OSMToolsTests {
         assertEquals 1, h2GIS.getTable(transform.getResults().outputTableName).rowCount
         def row = h2GIS.firstRow("SELECT * FROM $transform.results.outputTableName WHERE ID='r2614051'")
         assertEquals("yes", row.'BUILDING')
-    }
-
-
-    @Test
-    void getSERVER_STATUS(){
-         assertNotNull OSMTools.serverStatus
     }
 
     @Test

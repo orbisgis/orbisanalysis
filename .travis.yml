@@ -4,3 +4,8 @@ jdk:
   - oraclejdk8
   - openjdk8
 script: mvn clean install
+env:
+  global:
+    - CODECOV_TOKEN="0b238497-9fe2-4856-8c80-b65cbba57fec"
+after_success:
+    - bash <(curl -s https://codecov.io/bash)

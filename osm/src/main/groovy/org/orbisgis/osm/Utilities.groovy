@@ -121,7 +121,7 @@ Polygon parsePolygon(def coordinates, GeometryFactory geometryFactory) {
  * @return true if the file has been downloaded
  *
  */
-static boolean executeNominatimQuery(def query, def outputOSMFile) {
+boolean executeNominatimQuery(def query, def outputOSMFile) {
     def apiUrl = " https://nominatim.openstreetmap.org/search?q="
     def request = "&limit=5&format=geojson&polygon_geojson=1"
 
@@ -151,7 +151,7 @@ static boolean executeNominatimQuery(def query, def outputOSMFile) {
  *
  * @return osm bbox
  */
-static String toBBox(Geometry geometry) {
+String toBBox(Geometry geometry) {
     if (geometry != null) {
         Envelope env = geometry.getEnvelopeInternal()
         return "(bbox:${env.getMinY()},${env.getMinX()},${env.getMaxY()}, ${env.getMaxX()})".toString()
@@ -166,7 +166,7 @@ static String toBBox(Geometry geometry) {
  *
  * @return osm poly
  */
-static String toPoly(Geometry geometry) {
+String toPoly(Geometry geometry) {
     if (geometry != null) {
         if (geometry instanceof Polygon) {
             Coordinate[] coordinates = ((Polygon) geometry).getExteriorRing().getCoordinates()
@@ -193,9 +193,9 @@ static String toPoly(Geometry geometry) {
  *
  * @return a string representation of the OSM query
  */
-static String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElement) {
+String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElement) {
     if (envelope != null) {
-        def query = "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()}, ${envelope.getMaxX()}];\n(\n"
+        def query = "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()},${envelope.getMaxX()}];\n(\n"
         osmElement.each { i ->
             if(keys==null || keys.isEmpty()){
                 query += "\t${i.toString().toLowerCase()};\n"
@@ -221,10 +221,10 @@ static String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElemen
  *
  * @return a string representation of the OSM query
  */
-static String buildOSMQuery(Polygon polygon, def keys, OSMElement... osmElement) {
+String buildOSMQuery(Polygon polygon, def keys, OSMElement... osmElement) {
     if (polygon != null || !polygon.isEmpty()) {
         Envelope envelope = polygon.getEnvelopeInternal()
-        def query = "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()}, ${envelope.getMaxX()}];\n(\n"
+        def query = "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()},${envelope.getMaxX()}];\n(\n"
         String filterArea =  toPoly(polygon)
         def  nokeys = false;
         osmElement.each { i ->
@@ -256,15 +256,32 @@ static String buildOSMQuery(Polygon polygon, def keys, OSMElement... osmElement)
  * @param jsonFile
  * @return
  */
-static Map readJSONParameters(def jsonFile) {
+Map readJSONParameters(def jsonFile) {
     def jsonSlurper = new JsonSlurper()
     if (jsonFile) {
         if (new File(jsonFile).isFile()) {
             return jsonSlurper.parse(new File(jsonFile))
         } else {
-            logger.warn("No file named ${jsonFile} found.")
+            warn("No file named ${jsonFile} found.")
         }
     }
+}
+
+
+/**
+ * This method is used to build a new geometry and its envelope according an EPSG code and a distance
+ * The geometry and the envelope are set up in an UTM coordinate system when the epsg code is unknown.
+ *
+ * @param geom the input geometry
+ * @param distance a value to expand the envelope of the geometry
+ * @param datasource a connexion to the database
+ *
+ * @return a map with the input geometry and the envelope of the input geometry. Both are projected in a new reference
+ * system depending on the epsg code.
+ * Note that the envelope of the geometry can be expanded according to the input distance value.
+ */
+static def buildGeometryAndZone(Geometry geom, int distance, def datasource) {
+    return buildGeometryAndZone(geom, geom.SRID, distance, datasource)
 }
 
 
@@ -281,7 +298,7 @@ static Map readJSONParameters(def jsonFile) {
  * system depending on the epsg code.
  * Note that the envelope of the geometry can be expanded according to the input distance value.
  */
-def buildGeometryAndZone(Geometry geom, int epsg, int distance, def datasource) {
+    static def buildGeometryAndZone(Geometry geom, int epsg, int distance, def datasource) {
     GeometryFactory gf = new GeometryFactory()
     def con = datasource.getConnection();
     Polygon filterArea = null
@@ -295,7 +312,9 @@ def buildGeometryAndZone(Geometry geom, int epsg, int distance, def datasource) 
             filterArea = ST_Transform.ST_Transform(con, tmpEnvGeom, 4326)
         }
         else {
-            def tmpEnvGeom = gf.toGeometry(geom.getEnvelopeInternal().expandBy(distance))
+            def env = geom.getEnvelopeInternal()
+            env.expandBy(distance)
+            def tmpEnvGeom = gf.toGeometry(env)
             tmpEnvGeom.setSRID(epsg)
             filterArea = ST_Transform.ST_Transform(con, tmpEnvGeom, 4326)
         }
@@ -307,7 +326,9 @@ def buildGeometryAndZone(Geometry geom, int epsg, int distance, def datasource) 
             filterArea.setSRID(epsg)
         }
         else {
-            filterArea = gf.toGeometry(geom.getEnvelopeInternal().expandBy(distance))
+            def env = geom.getEnvelopeInternal()
+            env.expandBy(distance)
+            filterArea = gf.toGeometry(env)
             filterArea.setSRID(epsg)
         }
     }

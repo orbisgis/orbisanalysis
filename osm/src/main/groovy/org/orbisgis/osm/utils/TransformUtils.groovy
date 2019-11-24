@@ -33,10 +33,11 @@ class TransformUtils {
      */
     static def arrayUnion(boolean removeDuplicated, Collection... arrays) {
         def union = []
+        if(arrays == null) return union
         for (Object[] array : arrays) {
-            if (removeDuplicated) union.removeAll(array)
             union.addAll(array)
         }
+        if (removeDuplicated) union.unique()
         union.sort()
         return union
     }
@@ -124,7 +125,7 @@ class TransformUtils {
                                 SELECT $rightSelect
                                 FROM $outputRelation;
                             DROP TABLE IF EXISTS $outputWay, $outputRelation;
-        """
+            """
             info "The way and relation $type have been built."
         } else if (outputWay) {
             datasource.execute "ALTER TABLE $outputWay RENAME TO $outputTableName"
@@ -178,9 +179,11 @@ class TransformUtils {
      * @return The tag count query
      */
     static def getCountTagsQuery(osmTableTag, tags) {
+        if(!osmTableTag) return null
         def countTagsQuery = "SELECT count(*) AS count FROM $osmTableTag"
-        if (tags) {
-            countTagsQuery += " WHERE ${createWhereFilter(tags)}"
+        def whereFilter = createWhereFilter(tags)
+        if (whereFilter) {
+            countTagsQuery += " WHERE $whereFilter"
         }
         return countTagsQuery
     }
@@ -238,7 +241,7 @@ class TransformUtils {
                     SELECT a.id_node,ST_TRANSFORM(ST_SETSRID(a.THE_GEOM, 4326), $epsgCode) AS the_geom $tagList
                     FROM $tableNode AS a, $tableNodeTag b
                     WHERE a.id_node = b.id_node GROUP BY a.id_node;
-        """
+            """
         } else {
             def filteredNodes = "FILTERED_NODES_" + uuid()
             datasource.execute """
@@ -252,7 +255,7 @@ class TransformUtils {
                     WHERE a.id_node=b.id_node
                     AND a.id_node=c.id_node
                     GROUP BY a.id_node;
-        """
+            """
         }
         return true
     }
@@ -272,7 +275,7 @@ class TransformUtils {
             warn "The tag map is empty"
             return ""
         }
-        def whereKeysValuesFilter
+        def whereKeysValuesFilter = ""
         if(tags in Map){
             def whereQuery = []
             tags.each{ tag ->
@@ -304,7 +307,12 @@ class TransformUtils {
             whereKeysValuesFilter = "(${whereQuery.join(') OR (')})"
         }
         else {
-            whereKeysValuesFilter = "tag_key IN ('${tags.join("','")}')"
+            def tagArray = []
+            tagArray.addAll(tags)
+            tagArray.removeAll([null])
+            if(tagArray) {
+                whereKeysValuesFilter = "tag_key IN ('${tagArray.join("','")}')"
+            }
         }
         return whereKeysValuesFilter
     }
@@ -316,10 +324,15 @@ class TransformUtils {
      * @return the case when expression
      */
     static def createTagList(datasource, selectTableQuery){
+        if(!datasource){
+            error "The datasource should not be null."
+            return null
+        }
         def rowskeys = datasource.rows(selectTableQuery)
         def list = []
         rowskeys.tag_key.each { it ->
-            list << "MAX(CASE WHEN b.tag_key = '$it' THEN b.tag_value END) AS \"${it.toUpperCase()}\""
+            if(it != null)
+                list << "MAX(CASE WHEN b.tag_key = '$it' THEN b.tag_value END) AS \"${it.toUpperCase()}\""
         }
         def tagList =""
         if (!list.isEmpty()) {
@@ -340,6 +353,14 @@ class TransformUtils {
      * @author Elisabeth Lesaux (UBS LAB-STICC)
      */
     static def buildIndexes(JdbcDataSource datasource, String osmTablesPrefix){
+        if(!datasource){
+            error "The datasource should not be null."
+            return false
+        }
+        if(!osmTablesPrefix){
+            error "The osmTablesPrefix should not be null or empty."
+            return false
+        }
         datasource.execute """
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_node_index                     ON ${osmTablesPrefix}_node(id_node);
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_way_node_id_node_index         ON ${osmTablesPrefix}_way_node(id_node);
@@ -349,12 +370,13 @@ class TransformUtils {
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_way_tag_key_tag_index          ON ${osmTablesPrefix}_way_tag(tag_key);
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_way_tag_id_way_index           ON ${osmTablesPrefix}_way_tag(id_way);
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_way_tag_value_index            ON ${osmTablesPrefix}_way_tag(tag_value);
+            CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_relation_id_relation_index     ON ${osmTablesPrefix}_relation(id_relation);
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_relation_tag_key_tag_index     ON ${osmTablesPrefix}_relation_tag(tag_key);
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_relation_tag_id_relation_index ON ${osmTablesPrefix}_relation_tag(id_relation);
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_relation_tag_tag_value_index   ON ${osmTablesPrefix}_relation_tag(tag_value);
-            CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_relation_id_relation_index     ON ${osmTablesPrefix}_relation(id_relation);
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_way_member_id_relation_index   ON ${osmTablesPrefix}_way_member(id_relation);
             CREATE INDEX IF NOT EXISTS ${osmTablesPrefix}_way_id_way                     ON ${osmTablesPrefix}_way(id_way);
-    """
+        """
+        return true
     }
 }

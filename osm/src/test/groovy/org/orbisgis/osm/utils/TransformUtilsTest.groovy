@@ -4,13 +4,17 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
+import org.orbisgis.commons.printer.Ascii
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.osm.AbstractOSMTest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertFalse
+import static org.junit.jupiter.api.Assertions.assertNotNull
+import static org.junit.jupiter.api.Assertions.assertNull
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 /**
@@ -104,7 +108,7 @@ class TransformUtilsTest extends AbstractOSMTest {
                 "(tag_key = 'water' AND tag_value IN ('pound')) OR " +
                 "(tag_key = 'empty')", TransformUtils.createWhereFilter(tags)
 
-        assertGStringEquals "tag_key IN ('emilie','big','large')", TransformUtils.createWhereFilter(["emilie", "big", "large"])
+        assertGStringEquals "tag_key IN ('emilie','big','large')", TransformUtils.createWhereFilter(["emilie", "big", "large", null])
     }
 
     /**
@@ -115,6 +119,8 @@ class TransformUtilsTest extends AbstractOSMTest {
     void badCreateWhereFilterTest(){
         assertGStringEquals "", TransformUtils.createWhereFilter(null)
         assertGStringEquals "", TransformUtils.createWhereFilter(new HashMap())
+        assertGStringEquals "", TransformUtils.createWhereFilter([])
+        assertGStringEquals "", TransformUtils.createWhereFilter([null])
     }
 
     /**
@@ -126,8 +132,8 @@ class TransformUtilsTest extends AbstractOSMTest {
         def validTableName = "tutu"
         def validTags = [toto:"tata"]
         def columnsToKeep = ["col1", "col2", "col5"]
-        assertEquals null, TransformUtils.getColumnSelector(null, validTags, columnsToKeep)
-        assertEquals null, TransformUtils.getColumnSelector("", validTags, columnsToKeep)
+        assertNull TransformUtils.getColumnSelector(null, validTags, columnsToKeep)
+        assertNull TransformUtils.getColumnSelector("", validTags, columnsToKeep)
     }
 
     /**
@@ -156,11 +162,218 @@ class TransformUtilsTest extends AbstractOSMTest {
         assertGStringEquals "SELECT distinct tag_key FROM tutu", TransformUtils.getColumnSelector(validTableName, null, null)
     }
 
-    //@Test
+    /**
+     * Test the {@link org.orbisgis.osm.utils.TransformUtils#getCountTagsQuery(java.lang.Object, java.lang.Object)}
+     * method.
+     */
+    @Test
     void getCountTagQueryTest(){
-
+        def osmTable = "tutu"
+        assertGStringEquals "SELECT count(*) AS count FROM tutu WHERE tag_key IN ('titi','tata')",
+                TransformUtils.getCountTagsQuery(osmTable, ["titi", "tata"])
+        assertGStringEquals "SELECT count(*) AS count FROM tutu",
+                TransformUtils.getCountTagsQuery(osmTable, null)
+        assertGStringEquals "SELECT count(*) AS count FROM tutu",
+                TransformUtils.getCountTagsQuery(osmTable, [])
+        assertGStringEquals "SELECT count(*) AS count FROM tutu",
+                TransformUtils.getCountTagsQuery(osmTable, [null])
+        assertGStringEquals "SELECT count(*) AS count FROM tutu WHERE tag_key IN ('toto')",
+                TransformUtils.getCountTagsQuery(osmTable, "toto")
     }
 
+    /**
+     * Test the {@link org.orbisgis.osm.utils.TransformUtils#getCountTagsQuery(java.lang.Object, java.lang.Object)}
+     * method with bad data.
+     */
+    @Test
+    void badGetCountTagQueryTest(){
+        assertNull TransformUtils.getCountTagsQuery(null, ["titi", "tata"])
+        assertNull TransformUtils.getCountTagsQuery("", ["titi", "tata"])
+    }
+
+    /**
+     * Test the {@link org.orbisgis.osm.utils.TransformUtils#createTagList(java.lang.Object, java.lang.Object)}
+     * method.
+     */
+    @Test
+    void createTagListTest(){
+        def h2gis = RANDOM_DS()
+        def osmTable = "toto"
+
+        h2gis.execute("CREATE TABLE toto (id int, tag_key varchar, tag_value array[255])")
+        h2gis.execute("INSERT INTO toto VALUES (0, 'material', ('concrete', 'brick'))")
+        assertGStringEquals ", MAX(CASE WHEN b.tag_key = 'material' THEN b.tag_value END) AS \"MATERIAL\"",
+                TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable")
+        h2gis.execute("DROP TABLE IF EXISTS toto")
+
+        h2gis.execute("CREATE TABLE toto (id int, tag_key varchar, tag_value array[255])")
+        h2gis.execute("INSERT INTO toto VALUES (1, 'water', null)")
+        assertGStringEquals ", MAX(CASE WHEN b.tag_key = 'water' THEN b.tag_value END) AS \"WATER\"",
+                TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable")
+        h2gis.execute("DROP TABLE IF EXISTS toto")
+
+        h2gis.execute("CREATE TABLE toto (id int, tag_key varchar, tag_value array[255])")
+        h2gis.execute("INSERT INTO toto VALUES (2, 'road', '{}')")
+        assertGStringEquals ", MAX(CASE WHEN b.tag_key = 'road' THEN b.tag_value END) AS \"ROAD\"",
+                TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable")
+        h2gis.execute("DROP TABLE IF EXISTS toto")
+
+        h2gis.execute("CREATE TABLE toto (id int, tag_key varchar, tag_value array[255])")
+        h2gis.execute("INSERT INTO toto VALUES (0, 'material', ('concrete', 'brick'))")
+        assertNull  TransformUtils.createTagList(null, "SELECT tag_key FROM $osmTable")
+        h2gis.execute("DROP TABLE IF EXISTS toto")
+    }
+
+    /**
+     * Test the {@link org.orbisgis.osm.utils.TransformUtils#createTagList(java.lang.Object, java.lang.Object)}
+     * method with bad data.
+     */
+    @Test
+    void badCreateTagListTest(){
+        def h2gis = RANDOM_DS()
+        def osmTable = "toto"
+
+        h2gis.execute("CREATE TABLE toto (id int, tag_key varchar, tag_value array[255])")
+        h2gis.execute("INSERT INTO toto VALUES (3, null, ('lake', 'pound'))")
+        assertGStringEquals "", TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable")
+        h2gis.execute("DROP TABLE IF EXISTS toto")
+
+        h2gis.execute("CREATE TABLE toto (id int, tag_key varchar, tag_value array[255])")
+        h2gis.execute("INSERT INTO toto VALUES (4, null, null)")
+        assertGStringEquals "", TransformUtils.createTagList(h2gis, "SELECT tag_key FROM $osmTable")
+        h2gis.execute("DROP TABLE IF EXISTS toto")
+    }
+
+    /**
+     * Test the {@link org.orbisgis.osm.utils.TransformUtils#buildIndexes(org.orbisgis.datamanager.JdbcDataSource, java.lang.String)}
+     * method with bad data.
+     */
+    @Test
+    void badBuildIndexesTest(){
+        def h2gis = RANDOM_DS()
+        def osmTable = "toto"
+
+        LOGGER.warn("An error will be thrown next")
+        assertFalse TransformUtils.buildIndexes(h2gis, null)
+        LOGGER.warn("An error will be thrown next")
+        assertFalse TransformUtils.buildIndexes(null, null)
+        LOGGER.warn("An error will be thrown next")
+        assertFalse TransformUtils.buildIndexes(null, osmTable)
+    }
+
+    /**
+     * Test the {@link org.orbisgis.osm.utils.TransformUtils#buildIndexes(org.orbisgis.datamanager.JdbcDataSource, java.lang.String)}
+     * method.
+     */
+    @Test
+    void buildIndexesTest(){
+        def h2gis = RANDOM_DS()
+        def osmTablesPrefix = "toto"
+        h2gis.execute """
+            CREATE TABLE ${osmTablesPrefix}_node(id_node varchar);
+            CREATE TABLE ${osmTablesPrefix}_way_node(id_node varchar, node_order varchar, id_way varchar);
+            CREATE TABLE ${osmTablesPrefix}_way(id_way varchar, not_taken_into_account varchar);
+            CREATE TABLE ${osmTablesPrefix}_way_tag(tag_key varchar,id_way varchar,tag_value varchar);
+            CREATE TABLE ${osmTablesPrefix}_relation_tag(tag_key varchar,id_relation varchar,tag_value varchar);
+            CREATE TABLE ${osmTablesPrefix}_relation(id_relation varchar);
+            CREATE TABLE ${osmTablesPrefix}_way_member(id_relation varchar);
+            CREATE TABLE ${osmTablesPrefix}_way_not_taken_into_account(id_way varchar);
+            CREATE TABLE ${osmTablesPrefix}_relation_not_taken_into_account(id_relation varchar);
+        """
+
+        TransformUtils.buildIndexes(h2gis, osmTablesPrefix)
+
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_node")
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_node")."id_node"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_node")."id_node".indexed
+
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_node")
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_node")."id_node"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_way_node")."id_node".indexed
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_node")."node_order"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_way_node")."node_order".indexed
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_node")."id_way"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_way_node")."id_way".indexed
+
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way")
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way")."id_way"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_way")."id_way".indexed
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way")."not_taken_into_account"
+        assertFalse h2gis.getTable("${osmTablesPrefix}_way")."not_taken_into_account".indexed
+
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_tag")
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_tag")."tag_key"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_way_tag")."tag_key".indexed
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_tag")."id_way"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_way_tag")."id_way".indexed
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_tag")."tag_value"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_way_tag")."tag_value".indexed
+
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation_tag")
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation_tag")."tag_key"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_relation_tag")."tag_key".indexed
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation_tag")."id_relation"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_relation_tag")."id_relation".indexed
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation_tag")."tag_value"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_relation_tag")."tag_value".indexed
+
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation")
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation")."id_relation"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_relation")."id_relation".indexed
+
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_member")
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_member")."id_relation"
+        assertTrue h2gis.getTable("${osmTablesPrefix}_way_member")."id_relation".indexed
+
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_not_taken_into_account")
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_way_not_taken_into_account")."id_way"
+        assertFalse h2gis.getTable("${osmTablesPrefix}_way_not_taken_into_account")."id_way".indexed
+
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation_not_taken_into_account")
+        assertNotNull h2gis.getTable("${osmTablesPrefix}_relation_not_taken_into_account")."id_relation"
+        assertFalse h2gis.getTable("${osmTablesPrefix}_relation_not_taken_into_account")."id_relation".indexed
+    }
+
+    /**
+     * Test the {@link org.orbisgis.osm.utils.TransformUtils#arrayUnion(boolean, java.util.Collection[])}
+     * method with bad data.
+     */
+    @Test
+    void badArrayUnionTest(){
+        assertNotNull TransformUtils.arrayUnion(true, null)
+        assertTrue TransformUtils.arrayUnion(true, null).isEmpty()
+        assertNotNull TransformUtils.arrayUnion(true, [])
+        assertTrue TransformUtils.arrayUnion(true, []).isEmpty()
+    }
+
+    /**
+     * Test the {@link org.orbisgis.osm.utils.TransformUtils#arrayUnion(boolean, java.util.Collection[])}
+     * method.
+     */
+    @Test
+    void arrayUnionTest(){
+        def unique = TransformUtils.arrayUnion(true, ["tata", "titi", "tutu"], ["titi", "toto", "toto"], [null, "value"])
+        assertNotNull unique
+        assertEquals 6, unique.size
+        assertEquals null, unique[0]
+        assertEquals "tata", unique[1]
+        assertEquals "titi", unique[2]
+        assertEquals "toto", unique[3]
+        assertEquals "tutu", unique[4]
+        assertEquals "value", unique[5]
+
+        def notUnique = TransformUtils.arrayUnion(false, ["tata", "titi", "tutu"], ["titi", "toto", "toto"], [null, "value"])
+        assertNotNull notUnique
+        assertEquals 8, notUnique.size
+        assertEquals null, notUnique[0]
+        assertEquals "tata", notUnique[1]
+        assertEquals "titi", notUnique[2]
+        assertEquals "titi", notUnique[3]
+        assertEquals "toto", notUnique[4]
+        assertEquals "toto", notUnique[5]
+        assertEquals "tutu", notUnique[6]
+        assertEquals "value", notUnique[7]
+    }
 
     /**
      * Test the {@link org.orbisgis.osm.utils.TransformUtils#extractNodesAsPoints(org.orbisgis.datamanager.JdbcDataSource, java.lang.String, int, java.lang.String, java.lang.Object, java.lang.Object)}
@@ -175,31 +388,497 @@ class TransformUtilsTest extends AbstractOSMTest {
         def tags = [building:["toto", "house", null], material:["concrete"], road:null]
         tags.put(null, null)
         tags.put(null, ["value1", "value2"])
+        tags.put('key', null)
+        tags.put('key1', null)
         def columnsToKeep = []
 
+        loadDataForNodeExtraction(ds, prefix)
+
+        LOGGER.warn("An error will be thrown next")
+        assertFalse TransformUtils.extractNodesAsPoints(null, prefix, epsgCode, outTable, tags, columnsToKeep)
+        LOGGER.warn("An error will be thrown next")
+        assertFalse TransformUtils.extractNodesAsPoints(ds, null, epsgCode, outTable, tags, columnsToKeep)
+        LOGGER.warn("An error will be thrown next")
+        assertFalse TransformUtils.extractNodesAsPoints(ds, prefix, -1, outTable, tags, columnsToKeep)
+        LOGGER.warn("An error will be thrown next")
+        assertFalse TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, null, tags, columnsToKeep)
+
+        assertFalse TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, outTable, [house:"false", path:'false'], null)
+    }
+
+    private loadDataForNodeExtraction(def ds, def prefix){
         ds.execute "CREATE TABLE ${prefix}_node (id_node int, the_geom geometry)"
         ds.execute "INSERT INTO ${prefix}_node VALUES (1, 'POINT(0 0)')"
         ds.execute "INSERT INTO ${prefix}_node VALUES (2, 'POINT(1 1)')"
         ds.execute "INSERT INTO ${prefix}_node VALUES (3, 'POINT(2 2)')"
         ds.execute "INSERT INTO ${prefix}_node VALUES (4, 'POINT(56.23 78.23)')"
         ds.execute "INSERT INTO ${prefix}_node VALUES (5, 'POINT(-5.3 -45.23)')"
+        ds.execute "INSERT INTO ${prefix}_node VALUES (6, 'POINT(-5.3 -45.23)')"
+        ds.execute "INSERT INTO ${prefix}_node VALUES (7, 'POINT(-5.3 -45.23)')"
+        ds.execute "INSERT INTO ${prefix}_node VALUES (8, 'POINT(-5.3 -45.23)')"
+        ds.execute "INSERT INTO ${prefix}_node VALUES (9, 'POINT(-5.3 -45.23)')"
+        ds.execute "INSERT INTO ${prefix}_node VALUES (10, 'POINT(-5.3 -45.23)')"
+        ds.execute "INSERT INTO ${prefix}_node VALUES (11, 'POINT(-5.3 -45.23)')"
+        ds.execute "INSERT INTO ${prefix}_node VALUES (12, 'POINT(-5.3 -45.23)')"
+        ds.execute "INSERT INTO ${prefix}_node VALUES (13, 'POINT(-5.3 -45.23)')"
+        ds.execute "INSERT INTO ${prefix}_node VALUES (14, 'POINT(-5.3 -45.23)')"
+        ds.execute "INSERT INTO ${prefix}_node VALUES (15, 'POINT(-5.3 -45.23)')"
 
         ds.execute "CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar)"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (1, 'building', ('house', 'garage'))"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (2, 'water', ('pound'))"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (3, 'material', ('concrete'))"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (4, 'building', ('house', 'garage'))"
-        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (5, 'material', ('concrete', 'brick'))"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (1, 'building', 'house')"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (1, 'house', 'true')"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (1, 'material', 'concrete')"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (2, 'water', 'pound')"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (3, 'material', 'concrete')"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (4, 'build', 'house')"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (5, 'material', 'brick')"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (6, 'material', null)"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (7, null, 'value1')"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (8, 'key', null)"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (8, 'key1', null)"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (9, 'key2', null)"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (10, 'values', 'value1')"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (11, 'key3', null)"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (12, 'key3', 'val1')"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (13, 'road', 'service')"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (14, 'key4', 'service')"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (15, 'road', 'service')"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES (16, 'material', 'concrete')"
+    }
 
-        LOGGER.warn("Ann error will be thrown next")
-        assertFalse TransformUtils.extractNodesAsPoints(null, prefix, epsgCode, outTable, tags, columnsToKeep)
-        LOGGER.warn("Ann error will be thrown next")
-        assertFalse TransformUtils.extractNodesAsPoints(ds, null, epsgCode, outTable, tags, columnsToKeep)
-        LOGGER.warn("Ann error will be thrown next")
-        assertFalse TransformUtils.extractNodesAsPoints(ds, prefix, -1, outTable, tags, columnsToKeep)
-        LOGGER.warn("Ann error will be thrown next")
-        assertFalse TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, null, tags, columnsToKeep)
-        assertTrue TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, outTable, null, columnsToKeep)
-        //assertFalse TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, outTable, tags, null)
+    /**
+     * Test the {@link org.orbisgis.osm.utils.TransformUtils#extractNodesAsPoints(org.orbisgis.datamanager.JdbcDataSource, java.lang.String, int, java.lang.String, java.lang.Object, java.lang.Object)}
+     * method.
+     */
+    @Test
+    void extractNodesAsPointsTest(){
+        H2GIS ds = RANDOM_DS()
+        def prefix = "prefix"+uuid()
+        def epsgCode  = 2456
+        def outTable = "output"
+        def tags = [building:["toto", "house", null], material:["concrete"], road:null]
+        tags.put(null, null)
+        tags.put(null, ["value1", "value2"])
+        tags.put('key', null)
+        tags.put('key1', null)
+        tags.put('key3', null)
+        tags.put('key4', ["value1", "value2"])
+        def columnsToKeep = ["key1"]
+
+        loadDataForNodeExtraction(ds, prefix)
+
+        //With tags
+        assertTrue TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, outTable, tags, columnsToKeep)
+        def table = ds.getTable("output")
+        assertNotNull table
+
+        assertEquals 9, table.columnCount
+        assertNotNull ds.getTable("output").id_node
+        assertNotNull ds.getTable("output").the_geom
+        assertNotNull ds.getTable("output").building
+        assertNotNull ds.getTable("output").material
+        assertNotNull ds.getTable("output").road
+        assertNotNull ds.getTable("output").key
+        assertNotNull ds.getTable("output").key1
+        assertNotNull ds.getTable("output").key3
+        assertNotNull ds.getTable("output").key4
+        assertFalse table.columnNames.contains("WATER")
+        assertFalse table.columnNames.contains("KEY2")
+        assertFalse table.columnNames.contains("HOUSE")
+        assertFalse table.columnNames.contains("VALUES")
+
+        assertEquals 9, table.rowCount
+        table.each {it ->
+            switch(it.row){
+                case 1:
+                    assertEquals 1, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals "house", it."building"
+                    assertEquals "concrete", it."material"
+                    assertEquals null, it."road"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key3"
+                    assertEquals null, it."key4"
+                    break
+                case 2:
+                    assertEquals 3, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals null, it."building"
+                    assertEquals "concrete", it."material"
+                    assertEquals null, it."road"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key3"
+                    assertEquals null, it."key4"
+                    break
+                case 3:
+                    assertEquals 7, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals null, it."building"
+                    assertEquals null, it."material"
+                    assertEquals null, it."road"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key3"
+                    assertEquals null, it."key4"
+                    break
+                case 4:
+                    assertEquals 8, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals null, it."building"
+                    assertEquals null, it."material"
+                    assertEquals null, it."road"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key3"
+                    assertEquals null, it."key4"
+                    break
+                case 5:
+                    assertEquals 10, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals null, it."building"
+                    assertEquals null, it."material"
+                    assertEquals null, it."road"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key3"
+                    assertEquals null, it."key4"
+                    break
+                case 6:
+                    assertEquals 11, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals null, it."building"
+                    assertEquals null, it."material"
+                    assertEquals null, it."road"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key3"
+                    assertEquals null, it."key4"
+                    break
+                case 7:
+                    assertEquals 12, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals null, it."building"
+                    assertEquals null, it."material"
+                    assertEquals null, it."road"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals "val1", it."key3"
+                    assertEquals null, it."key4"
+                    break
+                case 8:
+                    assertEquals 13, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals null, it."building"
+                    assertEquals null, it."material"
+                    assertEquals "service", it."road"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key3"
+                    assertEquals null, it."key4"
+                    break
+                case 9:
+                    assertEquals 15, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals null, it."building"
+                    assertEquals null, it."material"
+                    assertEquals "service", it."road"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key3"
+                    assertEquals null, it."key4"
+                    break
+            }
+        }
+
+        //Without tags and with column to keep
+        assertTrue TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, outTable, null, ["key1", "build"])
+        table = ds.getTable("output")
+        assertNotNull table
+
+        assertEquals 4, table.columnCount
+        assertNotNull ds.getTable("output").id_node
+        assertNotNull ds.getTable("output").the_geom
+        assertNotNull ds.getTable("output").build
+        assertNotNull ds.getTable("output").key1
+        assertFalse table.columnNames.contains("WATER")
+        assertFalse table.columnNames.contains("MATERIAL")
+        assertFalse table.columnNames.contains("ROAD")
+        assertFalse table.columnNames.contains("KEY")
+        assertFalse table.columnNames.contains("KEY2")
+        assertFalse table.columnNames.contains("KEY3")
+        assertFalse table.columnNames.contains("KEY4")
+        assertFalse table.columnNames.contains("HOUSE")
+        assertFalse table.columnNames.contains("BUILDING")
+        assertFalse table.columnNames.contains("VALUES")
+
+        //Without tags and columns to keep
+        assertTrue TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, outTable, null, [])
+        table = ds.getTable("output")
+        assertNotNull table
+
+        assertEquals 14, table.columnCount
+        assertNotNull ds.getTable("output").id_node
+        assertNotNull ds.getTable("output").the_geom
+        assertNotNull ds.getTable("output").build
+        assertNotNull ds.getTable("output").building
+        assertNotNull ds.getTable("output").house
+        assertNotNull ds.getTable("output").key
+        assertNotNull ds.getTable("output").key1
+        assertNotNull ds.getTable("output").key2
+        assertNotNull ds.getTable("output").key3
+        assertNotNull ds.getTable("output").key4
+        assertNotNull ds.getTable("output").material
+        assertNotNull ds.getTable("output").road
+        assertNotNull ds.getTable("output").values
+        assertNotNull ds.getTable("output").water
+
+        assertEquals 15, table.rowCount
+        table.each {it ->
+            switch(it.row){
+                case 1:
+                    assertEquals 1, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals "house", it."building"
+                    assertEquals null, it."build"
+                    assertEquals "true", it."house"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key2"
+                    assertEquals null, it."key3"
+                    assertEquals null, it."key4"
+                    assertEquals "concrete", it."material"
+                    assertEquals null, it."road"
+                    assertEquals null, it."values"
+                    assertEquals null, it."water"
+                    break
+                case 2:
+                    assertEquals 2, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals null, it."building"
+                    assertEquals null, it."build"
+                    assertEquals null, it."house"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key2"
+                    assertEquals null, it."key3"
+                    assertEquals null, it."key4"
+                    assertEquals null, it."material"
+                    assertEquals null, it."road"
+                    assertEquals null, it."values"
+                    assertEquals "pound", it."water"
+                    break
+                case 3:
+                    assertEquals 3, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals null, it."building"
+                    assertEquals null, it."build"
+                    assertEquals null, it."house"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key2"
+                    assertEquals null, it."key3"
+                    assertEquals null, it."key4"
+                    assertEquals "concrete", it."material"
+                    assertEquals null, it."road"
+                    assertEquals null, it."values"
+                    assertEquals null, it."water"
+                    break
+                case 4:
+                    assertEquals 4, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals null, it."building"
+                    assertEquals "house", it."build"
+                    assertEquals null, it."house"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key2"
+                    assertEquals null, it."key3"
+                    assertEquals null, it."key4"
+                    assertEquals null, it."material"
+                    assertEquals null, it."road"
+                    assertEquals null, it."values"
+                    assertEquals null, it."water"
+                    break
+                case 5:
+                    assertEquals 5, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals null, it."building"
+                    assertEquals null, it."build"
+                    assertEquals null, it."house"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key2"
+                    assertEquals null, it."key3"
+                    assertEquals null, it."key4"
+                    assertEquals "brick", it."material"
+                    assertEquals null, it."road"
+                    assertEquals null, it."values"
+                    assertEquals null, it."water"
+                    break
+                case 6:
+                    assertEquals 6, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals null, it."building"
+                    assertEquals null, it."build"
+                    assertEquals null, it."house"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key2"
+                    assertEquals null, it."key3"
+                    assertEquals null, it."key4"
+                    assertEquals null, it."material"
+                    assertEquals null, it."road"
+                    assertEquals null, it."values"
+                    assertEquals null, it."water"
+                    break
+                case 7:
+                    assertEquals 7, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals null, it."building"
+                    assertEquals null, it."build"
+                    assertEquals null, it."house"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key2"
+                    assertEquals null, it."key3"
+                    assertEquals null, it."key4"
+                    assertEquals null, it."material"
+                    assertEquals null, it."road"
+                    assertEquals null, it."values"
+                    assertEquals null, it."water"
+                    break
+                case 8:
+                    assertEquals 8, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals null, it."building"
+                    assertEquals null, it."build"
+                    assertEquals null, it."house"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key2"
+                    assertEquals null, it."key3"
+                    assertEquals null, it."key4"
+                    assertEquals null, it."material"
+                    assertEquals null, it."road"
+                    assertEquals null, it."values"
+                    assertEquals null, it."water"
+                    break
+                case 9:
+                    assertEquals 9, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals null, it."building"
+                    assertEquals null, it."build"
+                    assertEquals null, it."house"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key2"
+                    assertEquals null, it."key3"
+                    assertEquals null, it."key4"
+                    assertEquals null, it."material"
+                    assertEquals null, it."road"
+                    assertEquals null, it."values"
+                    assertEquals null, it."water"
+                    break
+                case 10:
+                    assertEquals 10, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals null, it."building"
+                    assertEquals null, it."build"
+                    assertEquals null, it."house"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key2"
+                    assertEquals null, it."key3"
+                    assertEquals null, it."key4"
+                    assertEquals null, it."material"
+                    assertEquals null, it."road"
+                    assertEquals "value1", it."values"
+                    assertEquals null, it."water"
+                    break
+                case 11:
+                    assertEquals 11, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals null, it."building"
+                    assertEquals null, it."build"
+                    assertEquals null, it."house"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key2"
+                    assertEquals null, it."key3"
+                    assertEquals null, it."key4"
+                    assertEquals null, it."material"
+                    assertEquals null, it."road"
+                    assertEquals null, it."values"
+                    assertEquals null, it."water"
+                    break
+                case 12:
+                    assertEquals 12, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals null, it."building"
+                    assertEquals null, it."build"
+                    assertEquals null, it."house"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key2"
+                    assertEquals "val1", it."key3"
+                    assertEquals null, it."key4"
+                    assertEquals null, it."material"
+                    assertEquals null, it."road"
+                    assertEquals null, it."values"
+                    assertEquals null, it."water"
+                    break
+                case 13:
+                    assertEquals 13, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals null, it."building"
+                    assertEquals null, it."build"
+                    assertEquals null, it."house"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key2"
+                    assertEquals null, it."key3"
+                    assertEquals null, it."key4"
+                    assertEquals null, it."material"
+                    assertEquals "service", it."road"
+                    assertEquals null, it."values"
+                    assertEquals null, it."water"
+                    break
+                case 14:
+                    assertEquals 14, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals null, it."building"
+                    assertEquals null, it."build"
+                    assertEquals null, it."house"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key2"
+                    assertEquals null, it."key3"
+                    assertEquals "service", it."key4"
+                    assertEquals null, it."material"
+                    assertEquals null, it."road"
+                    assertEquals null, it."values"
+                    assertEquals null, it."water"
+                    break
+                case 15:
+                    assertEquals 15, it."id_node"
+                    assertNotNull it."the_geom"
+                    assertEquals null, it."building"
+                    assertEquals null, it."build"
+                    assertEquals null, it."house"
+                    assertEquals null, it."key"
+                    assertEquals null, it."key1"
+                    assertEquals null, it."key2"
+                    assertEquals null, it."key3"
+                    assertEquals null, it."key4"
+                    assertEquals null, it."material"
+                    assertEquals "service", it."road"
+                    assertEquals null, it."values"
+                    assertEquals null, it."water"
+                    break
+            }
+        }
     }
 }

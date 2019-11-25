@@ -1,17 +1,10 @@
 package org.orbisgis.osm
 
 import groovy.transform.BaseScript
-import org.h2gis.utilities.SFSUtilities
-import org.locationtech.jts.geom.Envelope
-import org.locationtech.jts.geom.Polygon
 import org.orbisgis.datamanager.JdbcDataSource
 import org.orbisgis.processmanagerapi.IProcess
 
-import static org.orbisgis.osm.utils.OSMElement.NODE
-import static org.orbisgis.osm.utils.OSMElement.RELATION
-import static org.orbisgis.osm.utils.OSMElement.WAY
 import static org.orbisgis.osm.utils.TransformUtils.*
-
 
 @BaseScript OSMTools osmTools
 
@@ -571,94 +564,4 @@ IProcess extractRelationsAsLines() {
                 [outputTableName: outputTableName]
             }
     })
-}
-
-/**
- * Perform the OSM data transformation from relation model to GIS layers.
- *
- * @param datasource Datasource to use for the extraction
- * @param filterArea Area to extract. Must be specificied
- * @param epsgCode as integer value
- * Default value is -1. If the default value is used the process will find the best UTM projection
- * according the interior point of the filterArea
- * @param dataDim Dimension of the data to extract. It should be an array with the value 0, 1, 2.
- * 0 = extract points
- * 1 = extract lines
- * 2 = extract polygons
- * @param tags Array of tags to extract.
- *
- * @return Map containing the name of the output polygon table with the key
- * 'outputPolygonsTableName', the name of the output line table with the key 'outputLinesTableName', the name of the
- * output point table with the key 'outputPointsTableName'
- *
- * @author Erwan Bocher (CNRS LAB-STICC)
- * @author Elisabeth Le Saux (UBS LAB-STICC)
- */
-IProcess stackingTransform(datasource, filterArea, epsgCode, dataDim, tags) {
-    if (datasource == null) {
-        error "The datasource cannot be null"
-    }
-    if (filterArea == null) {
-        error "Filter area not defined"
-    }
-    if (dataDim == null) {
-        dataDim = [0, 1, 2]
-    }
-
-    def query
-    def interiorPoint
-    if (filterArea instanceof Envelope) {
-        interiorPoint = filterArea.centre()
-    } else if (filterArea instanceof Polygon) {
-        interiorPoint = filterArea.getCentroid().getCoordinate()
-    } else {
-        error "The filter area must be an Envelope or a Polygon"
-        return
-    }
-    epsgCode = SFSUtilities.getSRID(datasource.getConnection(), interiorPoint.y as float, interiorPoint.x as float)
-    if (epsgCode == -1) {
-        error "Invalid EPSG code : $epsgCode"
-        return
-    }
-    query = OSMTools.Utilities.buildOSMQuery(filterArea, tags, NODE, WAY, RELATION)
-    if (!query.isEmpty()) {
-        error "OSM query should not be empty"
-        return
-    }
-    def extract = OSMTools.Loader.extract()
-    if (!extract(overpassQuery: query)) {
-        error "Extraction failed"
-        return
-    }
-    def prefix = "OSM_FILE_$uuid"
-    def load = OSMTools.Loader.load()
-    info "Loading"
-    if (!load(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: extract.results.outputFilePath)) {
-        error "Loading failed"
-        return
-    }
-    def outputPointsTableName = null
-    def outputPolygonsTableName = null
-    def outputLinesTableName = null
-    if (dataDim.contains(0)) {
-        def transform = this.toPoints()
-        info "Transforming points"
-        assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsgCode, tags: tags)
-        outputPointsTableName = transform.results.outputTableName
-    }
-    if (dataDim.contains(1)) {
-        def transform = this.extractWaysAsLines()
-        info "Transforming lines"
-        assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsgCode, tags: tags)
-        outputLinesTableName = transform.results.outputTableName
-    }
-    if (dataDim.contains(2)) {
-        def transform = this.toPolygons()
-        info "Transforming polygons"
-        assert transform(datasource: datasource, osmTablesPrefix: prefix, epsgCode: epsgCode, tags: tags)
-        outputPolygonsTableName = transform.results.outputTableName
-    }
-    return [outputPolygonsTableName: outputPolygonsTableName,
-            outputPointsTableName  : outputPointsTableName,
-            outputLinesTableName   : outputLinesTableName]
 }

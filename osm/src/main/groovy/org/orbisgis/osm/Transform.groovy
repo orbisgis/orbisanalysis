@@ -5,7 +5,6 @@ import org.h2gis.utilities.SFSUtilities
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.datamanager.JdbcDataSource
-import org.orbisgis.osm.utils.TransformUtils
 import org.orbisgis.processmanagerapi.IProcess
 
 import static org.orbisgis.osm.utils.OSMElement.NODE

@@ -4,6 +4,10 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
+import org.locationtech.jts.geom.LineString
+import org.locationtech.jts.geom.MultiLineString
+import org.locationtech.jts.geom.MultiPolygon
+import org.locationtech.jts.geom.Polygon
 import org.orbisgis.commons.printer.Ascii
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.osm.AbstractOSMTest
@@ -406,7 +410,7 @@ class TransformUtilsTest extends AbstractOSMTest {
         assertFalse TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, outTable, [house:"false", path:'false'], null)
     }
 
-    private loadDataForNodeExtraction(def ds, def prefix){
+    private static loadDataForNodeExtraction(def ds, def prefix){
         ds.execute "CREATE TABLE ${prefix}_node (id_node int, the_geom geometry)"
         ds.execute "INSERT INTO ${prefix}_node VALUES (1, 'POINT(0 0)')"
         ds.execute "INSERT INTO ${prefix}_node VALUES (2, 'POINT(1 1)')"
@@ -880,5 +884,221 @@ class TransformUtilsTest extends AbstractOSMTest {
                     break
             }
         }
+    }
+
+    /**
+     * test the {@link org.orbisgis.osm.utils.TransformUtils#toPolygonOrLine(java.lang.String, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object)}
+     * method with bad data.
+     */
+    @Test
+    void badToPolygonOrLineTest(){
+        def badType = "notAType"
+        def lineType = "lines"
+        H2GIS ds = RANDOM_DS()
+        def prefix = uuid()
+        def epsgCode = 2145
+        def badEpsgCode = -1
+        def tags = [:]
+        def columnsToKeep = []
+
+        LOGGER.warn("An error will be thrown next")
+        assertNull TransformUtils.toPolygonOrLine(null, ds, prefix, epsgCode, tags, columnsToKeep)
+        LOGGER.warn("An error will be thrown next")
+        assertNull TransformUtils.toPolygonOrLine(badType, ds, prefix, epsgCode, tags, columnsToKeep)
+        LOGGER.warn("An error will be thrown next")
+        assertNull TransformUtils.toPolygonOrLine(lineType, null, prefix, epsgCode, tags, columnsToKeep)
+        LOGGER.warn("An error will be thrown next")
+        assertNull TransformUtils.toPolygonOrLine(lineType, ds, null, epsgCode, tags, columnsToKeep)
+        LOGGER.warn("An error will be thrown next")
+        assertNull TransformUtils.toPolygonOrLine(lineType, ds, prefix, badEpsgCode, tags, columnsToKeep)
+        LOGGER.warn("An error will be thrown next")
+        assertNull TransformUtils.toPolygonOrLine(lineType, ds, prefix, null, tags, columnsToKeep)
+        LOGGER.warn("An error will be thrown next")
+        assertNull TransformUtils.toPolygonOrLine(lineType, ds, prefix, epsgCode, null, null)
+    }
+
+    /**
+     * test the {@link org.orbisgis.osm.utils.TransformUtils#toPolygonOrLine(java.lang.String, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object)}
+     * method.
+     */
+    @Test
+    void toPolygonOrLineTest() {
+        def lineType = "LINES"
+        def polygonType = "POLYGONS"
+        H2GIS ds = RANDOM_DS()
+        def prefix = uuid()
+        def epsgCode = 2145
+        def tags = ["building": ["house"]]
+        def columnsToKeep = ["water"]
+
+        //Load data
+        ds.execute "CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar)"
+        ds.execute "INSERT INTO ${prefix}_way_tag VALUES(1, 'building', 'house')"
+        ds.execute "INSERT INTO ${prefix}_way_tag VALUES(1, 'material', 'concrete')"
+        ds.execute "INSERT INTO ${prefix}_way_tag VALUES(1, 'water', 'lake')"
+
+        ds.execute "CREATE TABLE ${prefix}_relation_tag (id_relation int, tag_key varchar, tag_value varchar)"
+        ds.execute "INSERT INTO ${prefix}_relation_tag VALUES(1, 'building', 'house')"
+        ds.execute "INSERT INTO ${prefix}_relation_tag VALUES(1, 'material', 'concrete')"
+        ds.execute "INSERT INTO ${prefix}_relation_tag VALUES(1, 'water', 'lake')"
+
+        ds.execute "CREATE TABLE ${prefix}_node(the_geom geometry, id_node int)"
+        ds.execute "INSERT INTO ${prefix}_node VALUES('POINT(0 0)', 1)"
+        ds.execute "INSERT INTO ${prefix}_node VALUES('POINT(10 0)', 2)"
+        ds.execute "INSERT INTO ${prefix}_node VALUES('POINT(0 10)', 3)"
+        ds.execute "INSERT INTO ${prefix}_node VALUES('POINT(10 10)', 4)"
+
+        ds.execute "CREATE TABLE ${prefix}_way_node(id_way int, id_node int, node_order int)"
+        ds.execute "INSERT INTO ${prefix}_way_node VALUES(1, 1, 1)"
+        ds.execute "INSERT INTO ${prefix}_way_node VALUES(1, 2, 2)"
+        ds.execute "INSERT INTO ${prefix}_way_node VALUES(1, 3, 3)"
+        ds.execute "INSERT INTO ${prefix}_way_node VALUES(1, 4, 4)"
+        ds.execute "INSERT INTO ${prefix}_way_node VALUES(1, 1, 5)"
+
+        ds.execute "CREATE TABLE ${prefix}_way(id_way int)"
+        ds.execute "INSERT INTO ${prefix}_way VALUES(1)"
+
+        ds.execute "CREATE TABLE ${prefix}_relation(id_relation int)"
+        ds.execute "INSERT INTO ${prefix}_relation VALUES(1)"
+
+        ds.execute "CREATE TABLE ${prefix}_way_member(id_relation int, id_way int, role varchar)"
+        ds.execute "INSERT INTO ${prefix}_way_member VALUES(1, 1, 'outer')"
+
+        //Test line
+        def result = TransformUtils.toPolygonOrLine(lineType, ds, prefix, epsgCode, tags, columnsToKeep)
+        assertNotNull result
+        assertTrue result.containsKey("outputTableName")
+        assertNotNull result.outputTableName
+        def table = ds.getTable(result.outputTableName)
+        assertEquals 2, table.rowCount
+        table.each {
+            switch(it.row){
+                case 1:
+                    assertEquals "house", it.building
+                    assertEquals "w1", it.id
+                    assertTrue it.the_geom instanceof LineString
+                    assertEquals "lake", it.water
+                    break
+                case 2:
+                    assertEquals "house", it.building
+                    assertEquals "r1", it.id
+                    assertTrue it.the_geom instanceof MultiLineString
+                    assertEquals "lake", it.water
+                    break
+            }
+        }
+
+        //Test polygon
+        result = TransformUtils.toPolygonOrLine(polygonType, ds, prefix, epsgCode, tags, columnsToKeep)
+        assertNotNull result
+        assertTrue result.containsKey("outputTableName")
+        assertNotNull result.outputTableName
+        table = ds.getTable(result.outputTableName)
+        assertEquals 2, table.rowCount
+        table.each {
+            switch(it.row){
+                case 1:
+                    assertEquals "house", it.building
+                    assertEquals "w1", it.id
+                    assertTrue it.the_geom instanceof Polygon
+                    assertEquals "lake", it.water
+                    break
+                case 2:
+                    assertEquals "house", it.building
+                    assertEquals "r1", it.id
+                    assertTrue it.the_geom instanceof Polygon
+                    assertEquals "lake", it.water
+                    break
+            }
+        }
+
+        //Test no way tags
+        ds.execute "DROP TABLE ${prefix}_way_tag"
+        ds.execute "CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar)"
+        result = TransformUtils.toPolygonOrLine(polygonType, ds, prefix, epsgCode, tags, columnsToKeep)
+        assertNotNull result
+        assertTrue result.containsKey("outputTableName")
+        assertNotNull result.outputTableName
+        table = ds.getTable(result.outputTableName)
+        assertEquals 1, table.rowCount
+        table.each {
+            switch(it.row){
+                case 1:
+                    assertEquals "house", it.building
+                    assertEquals "r1", it.id
+                    assertTrue it.the_geom instanceof Polygon
+                    assertEquals "lake", it.water
+                    break
+            }
+        }
+        result = TransformUtils.toPolygonOrLine(lineType, ds, prefix, epsgCode, tags, columnsToKeep)
+        assertNotNull result
+        assertTrue result.containsKey("outputTableName")
+        assertNotNull result.outputTableName
+        table = ds.getTable(result.outputTableName)
+        assertEquals 1, table.rowCount
+        table.each {
+            switch(it.row){
+                case 1:
+                    assertEquals "house", it.building
+                    assertEquals "r1", it.id
+                    assertTrue it.the_geom instanceof MultiLineString
+                    assertEquals "lake", it.water
+                    break
+            }
+        }
+
+        //Test no relation tags
+        ds.execute "DROP TABLE ${prefix}_way_tag"
+        ds.execute "CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar)"
+        ds.execute "INSERT INTO ${prefix}_way_tag VALUES(1, 'building', 'house')"
+        ds.execute "INSERT INTO ${prefix}_way_tag VALUES(1, 'material', 'concrete')"
+        ds.execute "INSERT INTO ${prefix}_way_tag VALUES(1, 'water', 'lake')"
+        ds.execute "DROP TABLE ${prefix}_relation_tag"
+        ds.execute "CREATE TABLE ${prefix}_relation_tag (id_relation int, tag_key varchar, tag_value varchar)"
+        result = TransformUtils.toPolygonOrLine(polygonType, ds, prefix, epsgCode, tags, columnsToKeep)
+        assertNotNull result
+        assertTrue result.containsKey("outputTableName")
+        assertNotNull result.outputTableName
+        table = ds.getTable(result.outputTableName)
+        assertEquals 1, table.rowCount
+        table.each {
+            switch(it.row){
+                case 1:
+                    assertEquals "house", it.building
+                    assertEquals "w1", it.id
+                    assertTrue it.the_geom instanceof Polygon
+                    assertEquals "lake", it.water
+                    break
+            }
+        }
+        result = TransformUtils.toPolygonOrLine(lineType, ds, prefix, epsgCode, tags, columnsToKeep)
+        assertNotNull result
+        assertTrue result.containsKey("outputTableName")
+        assertNotNull result.outputTableName
+        table = ds.getTable(result.outputTableName)
+        assertEquals 1, table.rowCount
+        table.each {
+            switch(it.row){
+                case 1:
+                    assertEquals "house", it.building
+                    assertEquals "w1", it.id
+                    assertTrue it.the_geom instanceof LineString
+                    assertEquals "lake", it.water
+                    break
+            }
+        }
+
+        //Test no tags
+        ds.execute "DROP TABLE ${prefix}_way_tag"
+        ds.execute "CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar)"
+        ds.execute "DROP TABLE ${prefix}_relation_tag"
+        ds.execute "CREATE TABLE ${prefix}_relation_tag (id_relation int, tag_key varchar, tag_value varchar)"
+
+        result = TransformUtils.toPolygonOrLine(polygonType, ds, prefix, epsgCode, tags, columnsToKeep)
+        assertNull result
+
+        result = TransformUtils.toPolygonOrLine(lineType, ds, prefix, epsgCode, tags, columnsToKeep)
+        assertNull result
     }
 }

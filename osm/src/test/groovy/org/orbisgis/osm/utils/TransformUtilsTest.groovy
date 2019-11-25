@@ -6,20 +6,13 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.MultiLineString
-import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
-import org.orbisgis.commons.printer.Ascii
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.osm.AbstractOSMTest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals
-import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertFalse
-import static org.junit.jupiter.api.Assertions.assertNotNull
-import static org.junit.jupiter.api.Assertions.assertNull
-import static org.junit.jupiter.api.Assertions.assertTrue
+import static org.junit.jupiter.api.Assertions.*
 
 /**
  * Test class for the processes in {@link org.orbisgis.osm.Transform}
@@ -932,37 +925,7 @@ class TransformUtilsTest extends AbstractOSMTest {
         def columnsToKeep = ["water"]
 
         //Load data
-        ds.execute "CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar)"
-        ds.execute "INSERT INTO ${prefix}_way_tag VALUES(1, 'building', 'house')"
-        ds.execute "INSERT INTO ${prefix}_way_tag VALUES(1, 'material', 'concrete')"
-        ds.execute "INSERT INTO ${prefix}_way_tag VALUES(1, 'water', 'lake')"
-
-        ds.execute "CREATE TABLE ${prefix}_relation_tag (id_relation int, tag_key varchar, tag_value varchar)"
-        ds.execute "INSERT INTO ${prefix}_relation_tag VALUES(1, 'building', 'house')"
-        ds.execute "INSERT INTO ${prefix}_relation_tag VALUES(1, 'material', 'concrete')"
-        ds.execute "INSERT INTO ${prefix}_relation_tag VALUES(1, 'water', 'lake')"
-
-        ds.execute "CREATE TABLE ${prefix}_node(the_geom geometry, id_node int)"
-        ds.execute "INSERT INTO ${prefix}_node VALUES('POINT(0 0)', 1)"
-        ds.execute "INSERT INTO ${prefix}_node VALUES('POINT(10 0)', 2)"
-        ds.execute "INSERT INTO ${prefix}_node VALUES('POINT(0 10)', 3)"
-        ds.execute "INSERT INTO ${prefix}_node VALUES('POINT(10 10)', 4)"
-
-        ds.execute "CREATE TABLE ${prefix}_way_node(id_way int, id_node int, node_order int)"
-        ds.execute "INSERT INTO ${prefix}_way_node VALUES(1, 1, 1)"
-        ds.execute "INSERT INTO ${prefix}_way_node VALUES(1, 2, 2)"
-        ds.execute "INSERT INTO ${prefix}_way_node VALUES(1, 3, 3)"
-        ds.execute "INSERT INTO ${prefix}_way_node VALUES(1, 4, 4)"
-        ds.execute "INSERT INTO ${prefix}_way_node VALUES(1, 1, 5)"
-
-        ds.execute "CREATE TABLE ${prefix}_way(id_way int)"
-        ds.execute "INSERT INTO ${prefix}_way VALUES(1)"
-
-        ds.execute "CREATE TABLE ${prefix}_relation(id_relation int)"
-        ds.execute "INSERT INTO ${prefix}_relation VALUES(1)"
-
-        ds.execute "CREATE TABLE ${prefix}_way_member(id_relation int, id_way int, role varchar)"
-        ds.execute "INSERT INTO ${prefix}_way_member VALUES(1, 1, 'outer')"
+        createData(ds, prefix)
 
         //Test line
         def result = TransformUtils.toPolygonOrLine(lineType, ds, prefix, epsgCode, tags, columnsToKeep)

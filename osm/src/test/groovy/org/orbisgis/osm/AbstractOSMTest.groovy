@@ -168,4 +168,52 @@ abstract class AbstractOSMTest {
     protected static void assertGStringEquals(String expected, String actual) {
         assertEquals(expected.toString(), actual);
     }
+
+    /**
+     * Create a sample of OSM data
+     *
+     * @param ds Datasource where the data should be created.
+     * @param prefix Prefix of the OSM tables.
+     */
+    protected void createData(def ds, def prefix){
+        ds.execute "CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar)"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES(1, 'building', 'house')"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES(1, 'material', 'concrete')"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES(2, 'material', 'concrete')"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES(3, 'water', 'lake')"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES(4, 'water', 'lake')"
+        ds.execute "INSERT INTO ${prefix}_node_tag VALUES(4, 'building', 'house')"
+
+        ds.execute "CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar)"
+        ds.execute "INSERT INTO ${prefix}_way_tag VALUES(1, 'building', 'house')"
+        ds.execute "INSERT INTO ${prefix}_way_tag VALUES(1, 'material', 'concrete')"
+        ds.execute "INSERT INTO ${prefix}_way_tag VALUES(1, 'water', 'lake')"
+
+        ds.execute "CREATE TABLE ${prefix}_relation_tag (id_relation int, tag_key varchar, tag_value varchar)"
+        ds.execute "INSERT INTO ${prefix}_relation_tag VALUES(1, 'building', 'house')"
+        ds.execute "INSERT INTO ${prefix}_relation_tag VALUES(1, 'material', 'concrete')"
+        ds.execute "INSERT INTO ${prefix}_relation_tag VALUES(1, 'water', 'lake')"
+
+        ds.execute "CREATE TABLE ${prefix}_node(the_geom geometry, id_node int)"
+        ds.execute "INSERT INTO ${prefix}_node VALUES('POINT(0 0)', 1)"
+        ds.execute "INSERT INTO ${prefix}_node VALUES('POINT(10 0)', 2)"
+        ds.execute "INSERT INTO ${prefix}_node VALUES('POINT(0 10)', 3)"
+        ds.execute "INSERT INTO ${prefix}_node VALUES('POINT(10 10)', 4)"
+
+        ds.execute "CREATE TABLE ${prefix}_way_node(id_way int, id_node int, node_order int)"
+        ds.execute "INSERT INTO ${prefix}_way_node VALUES(1, 1, 1)"
+        ds.execute "INSERT INTO ${prefix}_way_node VALUES(1, 2, 2)"
+        ds.execute "INSERT INTO ${prefix}_way_node VALUES(1, 3, 3)"
+        ds.execute "INSERT INTO ${prefix}_way_node VALUES(1, 4, 4)"
+        ds.execute "INSERT INTO ${prefix}_way_node VALUES(1, 1, 5)"
+
+        ds.execute "CREATE TABLE ${prefix}_way(id_way int)"
+        ds.execute "INSERT INTO ${prefix}_way VALUES(1)"
+
+        ds.execute "CREATE TABLE ${prefix}_relation(id_relation int)"
+        ds.execute "INSERT INTO ${prefix}_relation VALUES(1)"
+
+        ds.execute "CREATE TABLE ${prefix}_way_member(id_relation int, id_way int, role varchar)"
+        ds.execute "INSERT INTO ${prefix}_way_member VALUES(1, 1, 'outer')"
+    }
 }

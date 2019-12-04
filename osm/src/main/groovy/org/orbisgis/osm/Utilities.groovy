@@ -11,7 +11,7 @@ import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.LinearRing
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.osm.utils.OSMElement
-import org.orbisgis.datamanager.JdbcDataSource
+import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 
 @BaseScript OSMTools osmTools
 
@@ -60,6 +60,9 @@ Geometry getAreaFromPlace(def placeName) {
                     parsePolygon(it, geometryFactory)
                 }.toArray(new Polygon[0])
                  area = geometryFactory.createMultiPolygon(mp)
+            }
+            else{
+                return false
             }
             area.setSRID(4326)
             return true

@@ -1,6 +1,6 @@
 package org.orbisgis.osm.utils
 
-import org.orbisgis.datamanager.JdbcDataSource
+import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.osm.OSMTools
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -104,8 +104,8 @@ class TransformUtils {
 
         if (outputWay && outputRelation) {
             //Merge ways and relations
-            def columnsWays = datasource.getTable(outputWay).columnNames
-            def columnsRelations = datasource.getTable(outputRelation).columnNames
+            def columnsWays = datasource.getTable(outputWay).columns
+            def columnsRelations = datasource.getTable(outputRelation).columns
             def allColumns = arrayUnion(true, columnsWays, columnsRelations)
             def leftSelect = ""
             def rightSelect = ""

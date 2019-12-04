@@ -1,7 +1,7 @@
 package org.orbisgis.osm
 
 import org.orbisgis.osm.utils.OverpassStatus
-import org.orbisgis.processmanager.GroovyProcessFactory
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 

@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
-import org.orbisgis.datamanager.h2gis.H2GIS
+import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -104,14 +104,14 @@ class LoaderTest extends AbstractOSMTest {
         def zone = ds.getSpatialTable(r.zoneTableName)
         assertEquals 1, zone.rowCount
         assertEquals 1, zone.getColumnCount()
-        assertTrue zone.columnNames.contains("THE_GEOM")
+        assertTrue zone.columns.contains("THE_GEOM")
         zone.next()
         assertEquals "POLYGON ((0 0, 4 8, 7 5, 0 0))", zone.getGeometry(1).toText()
 
         def zoneEnv = ds.getSpatialTable(r.zoneEnvelopeTableName)
         assertEquals 1, zoneEnv.rowCount
         assertEquals 1, zoneEnv.getColumnCount()
-        assertTrue zoneEnv.columnNames.contains("THE_GEOM")
+        assertTrue zoneEnv.columns.contains("THE_GEOM")
         zoneEnv.next()
         assertEquals "POLYGON ((0 0, 0 8, 7 8, 7 0, 0 0))", zoneEnv.getGeometry(1).toText()
 
@@ -133,14 +133,14 @@ class LoaderTest extends AbstractOSMTest {
         zone = ds.getSpatialTable(r.zoneTableName)
         assertEquals 1, zone.rowCount
         assertEquals 1, zone.getColumnCount()
-        assertTrue zone.columnNames.contains("THE_GEOM")
+        assertTrue zone.columns.contains("THE_GEOM")
         zone.next()
         assertEquals "POLYGON ((0 0, 0 8, 7 8, 7 0, 0 0))", zone.getGeometry(1).toText()
 
         zoneEnv = ds.getSpatialTable(r.zoneEnvelopeTableName)
         assertEquals 1, zoneEnv.rowCount
         assertEquals 1, zoneEnv.getColumnCount()
-        assertTrue zoneEnv.columnNames.contains("THE_GEOM")
+        assertTrue zoneEnv.columns.contains("THE_GEOM")
         zoneEnv.next()
         assertEquals "POLYGON ((0 0, 0 8, 7 8, 7 0, 0 0))", zoneEnv.getGeometry(1).toText()
     }
@@ -187,14 +187,14 @@ class LoaderTest extends AbstractOSMTest {
         def zone = ds.getSpatialTable(r.zoneTableName)
         assertEquals 1, zone.rowCount
         assertEquals 1, zone.getColumnCount()
-        assertTrue zone.columnNames.contains("THE_GEOM")
+        assertTrue zone.columns.contains("THE_GEOM")
         zone.next()
         assertEquals "POLYGON ((0 0, 4 8, 7 5, 0 0))", zone.getGeometry(1).toText()
 
         def zoneEnv = ds.getSpatialTable(r.zoneEnvelopeTableName)
         assertEquals 1, zoneEnv.rowCount
         assertEquals 1, zoneEnv.getColumnCount()
-        assertTrue zoneEnv.columnNames.contains("THE_GEOM")
+        assertTrue zoneEnv.columns.contains("THE_GEOM")
         zoneEnv.next()
         assertEquals "POLYGON ((-5 -5, -5 13, 12 13, 12 -5, -5 -5))", zoneEnv.getGeometry(1).toText()
 
@@ -217,14 +217,14 @@ class LoaderTest extends AbstractOSMTest {
         zone = ds.getSpatialTable(r.zoneTableName)
         assertEquals 1, zone.rowCount
         assertEquals 1, zone.getColumnCount()
-        assertTrue zone.columnNames.contains("THE_GEOM")
+        assertTrue zone.columns.contains("THE_GEOM")
         zone.next()
         assertEquals "POLYGON ((0 0, 0 8, 7 8, 7 0, 0 0))", zone.getGeometry(1).toText()
 
         zoneEnv = ds.getSpatialTable(r.zoneEnvelopeTableName)
         assertEquals 1, zoneEnv.rowCount
         assertEquals 1, zoneEnv.getColumnCount()
-        assertTrue zoneEnv.columnNames.contains("THE_GEOM")
+        assertTrue zoneEnv.columns.contains("THE_GEOM")
         zoneEnv.next()
         assertEquals "POLYGON ((-5 -5, -5 13, 12 13, 12 -5, -5 -5))", zoneEnv.getGeometry(1).toText()
     }
@@ -264,8 +264,8 @@ class LoaderTest extends AbstractOSMTest {
         def zone = ds.getSpatialTable(r.zoneTableName)
         assertEquals 1, zone.rowCount
         assertEquals 2, zone.getColumnCount()
-        assertTrue zone.columnNames.contains("THE_GEOM")
-        assertTrue zone.columnNames.contains("ID_ZONE")
+        assertTrue zone.columns.contains("THE_GEOM")
+        assertTrue zone.columns.contains("ID_ZONE")
         zone.next()
         assertEquals "POLYGON ((0 0, 4 8, 7 5, 0 0))", zone.getGeometry(1).toText()
         assertEquals "  The place Name -toFind  ", zone.getString(2)
@@ -273,8 +273,8 @@ class LoaderTest extends AbstractOSMTest {
         def zoneEnv = ds.getSpatialTable(r.zoneEnvelopeTableName)
         assertEquals 1, zoneEnv.rowCount
         assertEquals 2, zoneEnv.getColumnCount()
-        assertTrue zoneEnv.columnNames.contains("THE_GEOM")
-        assertTrue zoneEnv.columnNames.contains("ID_ZONE")
+        assertTrue zoneEnv.columns.contains("THE_GEOM")
+        assertTrue zoneEnv.columns.contains("ID_ZONE")
         zoneEnv.next()
         assertEquals "POLYGON ((0 0, 0 8, 7 8, 7 0, 0 0))", zoneEnv.getGeometry(1).toText()
         assertEquals "  The place Name -toFind  ", zoneEnv.getString(2)
@@ -316,8 +316,8 @@ class LoaderTest extends AbstractOSMTest {
         def zone = ds.getSpatialTable(r.zoneTableName)
         assertEquals 1, zone.rowCount
         assertEquals 2, zone.getColumnCount()
-        assertTrue zone.columnNames.contains("THE_GEOM")
-        assertTrue zone.columnNames.contains("ID_ZONE")
+        assertTrue zone.columns.contains("THE_GEOM")
+        assertTrue zone.columns.contains("ID_ZONE")
         zone.next()
         assertEquals "POLYGON ((0 0, 4 8, 7 5, 0 0))", zone.getGeometry(1).toText()
         assertEquals "  The place Name -toFind  ", zone.getString(2)
@@ -325,8 +325,8 @@ class LoaderTest extends AbstractOSMTest {
         def zoneEnv = ds.getSpatialTable(r.zoneEnvelopeTableName)
         assertEquals 1, zoneEnv.rowCount
         assertEquals 2, zoneEnv.getColumnCount()
-        assertTrue zoneEnv.columnNames.contains("THE_GEOM")
-        assertTrue zoneEnv.columnNames.contains("ID_ZONE")
+        assertTrue zoneEnv.columns.contains("THE_GEOM")
+        assertTrue zoneEnv.columns.contains("ID_ZONE")
         zoneEnv.next()
         assertEquals "POLYGON ((-5 -5, -5 13, 12 13, 12 -5, -5 -5))", zoneEnv.getGeometry(1).toText()
         assertEquals "  The place Name -toFind  ", zoneEnv.getString(2)
@@ -467,7 +467,7 @@ class LoaderTest extends AbstractOSMTest {
         assertEquals 5, nodeTable.rowCount
         def arrayNode = ["ID_NODE", "THE_GEOM", "ELE", "USER_NAME", "UID", "VISIBLE", "VERSION", "CHANGESET",
                      "LAST_UPDATE", "NAME"] as String[]
-        assertArrayEquals(arrayNode, nodeTable.columnNames as String[])
+        assertArrayEquals(arrayNode, nodeTable.columns as String[])
         nodeTable.eachRow { row ->
             switch(row.row){
                 case 1:
@@ -545,7 +545,7 @@ class LoaderTest extends AbstractOSMTest {
         assertNotNull nodeMemberTable
         assertEquals 2, nodeMemberTable.rowCount
         def arrayNodeMember = ["ID_RELATION", "ID_NODE", "ROLE", "NODE_ORDER"] as String[]
-        assertArrayEquals(arrayNodeMember, nodeMemberTable.columnNames as String[])
+        assertArrayEquals(arrayNodeMember, nodeMemberTable.columns as String[])
         nodeMemberTable.eachRow { row ->
             switch(row.row){
                 case 1:
@@ -570,7 +570,7 @@ class LoaderTest extends AbstractOSMTest {
         assertNotNull nodeTagTable
         assertEquals 2, nodeTagTable.rowCount
         def arrayNodeTag = ["ID_NODE", "TAG_KEY", "TAG_VALUE"] as String[]
-        assertArrayEquals(arrayNodeTag, nodeTagTable.columnNames as String[])
+        assertArrayEquals(arrayNodeTag, nodeTagTable.columns as String[])
         nodeTagTable.eachRow { row ->
             switch(row.row){
                 case 1:
@@ -595,7 +595,7 @@ class LoaderTest extends AbstractOSMTest {
         assertEquals 1, wayTable.rowCount
         def arrayWay = ["ID_WAY", "USER_NAME", "UID", "VISIBLE", "VERSION", "CHANGESET",
                          "LAST_UPDATE", "NAME"] as String[]
-        assertArrayEquals(arrayWay, wayTable.columnNames as String[])
+        assertArrayEquals(arrayWay, wayTable.columns as String[])
         wayTable.eachRow { row ->
             switch(row.row){
                 case 1:
@@ -618,7 +618,7 @@ class LoaderTest extends AbstractOSMTest {
         assertNotNull wayMemberTable
         assertEquals 1, wayMemberTable.rowCount
         def arrayWayMember = ["ID_RELATION", "ID_WAY", "ROLE", "WAY_ORDER"] as String[]
-        assertArrayEquals(arrayWayMember, wayMemberTable.columnNames as String[])
+        assertArrayEquals(arrayWayMember, wayMemberTable.columns as String[])
         wayMemberTable.eachRow { row ->
             switch(row.row){
                 case 1:
@@ -637,7 +637,7 @@ class LoaderTest extends AbstractOSMTest {
         assertNotNull wayTagTable
         assertEquals 1, wayTagTable.rowCount
         def arrayWayTag = ["ID_WAY", "TAG_KEY", "TAG_VALUE"] as String[]
-        assertArrayEquals(arrayWayTag, wayTagTable.columnNames as String[])
+        assertArrayEquals(arrayWayTag, wayTagTable.columns as String[])
         wayTagTable.eachRow { row ->
             switch(row.row){
                 case 1:
@@ -655,7 +655,7 @@ class LoaderTest extends AbstractOSMTest {
         assertNotNull wayNodeTable
         assertEquals 3, wayNodeTable.rowCount
         def arrayWayNode = ["ID_WAY", "ID_NODE", "NODE_ORDER"] as String[]
-        assertArrayEquals(arrayWayNode, wayNodeTable.columnNames as String[])
+        assertArrayEquals(arrayWayNode, wayNodeTable.columns as String[])
         wayNodeTable.eachRow { row ->
             switch(row.row){
                 case 1:
@@ -685,7 +685,7 @@ class LoaderTest extends AbstractOSMTest {
         assertEquals 1, relationTable.rowCount
         def arrayRelation = ["ID_RELATION", "USER_NAME", "UID", "VISIBLE", "VERSION", "CHANGESET",
                         "LAST_UPDATE"] as String[]
-        assertArrayEquals(arrayRelation, relationTable.columnNames as String[])
+        assertArrayEquals(arrayRelation, relationTable.columns as String[])
         relationTable.eachRow { row ->
             switch(row.row){
                 case 1:
@@ -707,14 +707,14 @@ class LoaderTest extends AbstractOSMTest {
         assertNotNull relationMemberTable
         assertEquals 0, relationMemberTable.rowCount
         def arrayRelationMember = ["ID_RELATION", "ID_SUB_RELATION", "ROLE", "RELATION_ORDER"] as String[]
-        assertArrayEquals(arrayRelationMember, relationMemberTable.columnNames as String[])
+        assertArrayEquals(arrayRelationMember, relationMemberTable.columns as String[])
 
         //Test on RELATION_TAG table
         def relationTagTable = ds.getTable(tableArray[9])
         assertNotNull relationTagTable
         assertEquals 2, relationTagTable.rowCount
         def arrayRelationTag = ["ID_RELATION", "TAG_KEY", "TAG_VALUE"] as String[]
-        assertArrayEquals(arrayRelationTag, relationTagTable.columnNames as String[])
+        assertArrayEquals(arrayRelationTag, relationTagTable.columns as String[])
         relationTagTable.eachRow { row ->
             switch(row.row){
                 case 1:

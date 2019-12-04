@@ -2,8 +2,8 @@ package org.orbisgis.osm
 
 
 import org.junit.jupiter.api.Test
-import org.orbisgis.datamanager.h2gis.H2GIS
-import org.orbisgis.datamanagerapi.dataset.ISpatialTable
+import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
+import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 

@@ -7,7 +7,7 @@ import org.junit.jupiter.api.TestInfo
 import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.MultiLineString
 import org.locationtech.jts.geom.Polygon
-import org.orbisgis.datamanager.h2gis.H2GIS
+import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.osm.AbstractOSMTest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -479,10 +479,10 @@ class TransformUtilsTest extends AbstractOSMTest {
         assertNotNull ds.getTable("output").key1
         assertNotNull ds.getTable("output").key3
         assertNotNull ds.getTable("output").key4
-        assertFalse table.columnNames.contains("WATER")
-        assertFalse table.columnNames.contains("KEY2")
-        assertFalse table.columnNames.contains("HOUSE")
-        assertFalse table.columnNames.contains("VALUES")
+        assertFalse table.columns.contains("WATER")
+        assertFalse table.columns.contains("KEY2")
+        assertFalse table.columns.contains("HOUSE")
+        assertFalse table.columns.contains("VALUES")
 
         assertEquals 9, table.rowCount
         table.each {it ->
@@ -600,16 +600,16 @@ class TransformUtilsTest extends AbstractOSMTest {
         assertNotNull ds.getTable("output").the_geom
         assertNotNull ds.getTable("output").build
         assertNotNull ds.getTable("output").key1
-        assertFalse table.columnNames.contains("WATER")
-        assertFalse table.columnNames.contains("MATERIAL")
-        assertFalse table.columnNames.contains("ROAD")
-        assertFalse table.columnNames.contains("KEY")
-        assertFalse table.columnNames.contains("KEY2")
-        assertFalse table.columnNames.contains("KEY3")
-        assertFalse table.columnNames.contains("KEY4")
-        assertFalse table.columnNames.contains("HOUSE")
-        assertFalse table.columnNames.contains("BUILDING")
-        assertFalse table.columnNames.contains("VALUES")
+        assertFalse table.columns.contains("WATER")
+        assertFalse table.columns.contains("MATERIAL")
+        assertFalse table.columns.contains("ROAD")
+        assertFalse table.columns.contains("KEY")
+        assertFalse table.columns.contains("KEY2")
+        assertFalse table.columns.contains("KEY3")
+        assertFalse table.columns.contains("KEY4")
+        assertFalse table.columns.contains("HOUSE")
+        assertFalse table.columns.contains("BUILDING")
+        assertFalse table.columns.contains("VALUES")
 
         //Without tags and columns to keep
         assertTrue TransformUtils.extractNodesAsPoints(ds, prefix, epsgCode, outTable, null, [])

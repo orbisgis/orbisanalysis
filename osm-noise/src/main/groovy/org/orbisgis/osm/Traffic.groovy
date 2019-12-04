@@ -1,8 +1,8 @@
 package org.orbisgis.osm
 
 import groovy.transform.BaseScript
-import org.orbisgis.datamanager.JdbcDataSource
-import org.orbisgis.processmanagerapi.IProcess
+import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 
 
 @BaseScript OSMNoise osmNoise

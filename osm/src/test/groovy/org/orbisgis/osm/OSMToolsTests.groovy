@@ -10,10 +10,10 @@ import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.WKTReader
-import org.orbisgis.datamanager.JdbcDataSource
-import org.orbisgis.datamanager.h2gis.H2GIS
+import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
+import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.osm.utils.OSMElement
-import org.orbisgis.processmanagerapi.IProcess
+import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -110,7 +110,7 @@ class OSMToolsTests {
         def transform = OSMTools.Transform.toPoints()
         transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154, tags:['amenity'], columnsToKeep:['iut','operator', 'amenity', 'wheelchair'])
         assertEquals 223, h2GIS.getTable(transform.results.outputTableName).rowCount
-        assertEquals "ID_NODE,THE_GEOM,AMENITY,OPERATOR,WHEELCHAIR", h2GIS.getTable(transform.results.outputTableName).columnNames.join(",")
+        assertEquals "ID_NODE,THE_GEOM,AMENITY,OPERATOR,WHEELCHAIR", h2GIS.getTable(transform.results.outputTableName).columns.join(",")
     }
 
 
@@ -247,7 +247,7 @@ class OSMToolsTests {
         transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154, tags : ['building','building:levels'])
         assertNotNull(transform.results.outputTableName)
         assertEquals 1038, h2GIS.getTable(transform.results.outputTableName).rowCount
-        assertEquals "BUILDING,BUILDING:LEVELS,ID,THE_GEOM", h2GIS.getTable(transform.results.outputTableName).columnNames.join(",")
+        assertEquals "BUILDING,BUILDING:LEVELS,ID,THE_GEOM", h2GIS.getTable(transform.results.outputTableName).columns.join(",")
         def row = h2GIS.firstRow("SELECT * FROM $transform.results.outputTableName WHERE ID='w122538293'")
         assertEquals("retail", row.'BUILDING')
         assertEquals("0", row.'BUILDING:LEVELS')
@@ -313,7 +313,7 @@ class OSMToolsTests {
         transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154, tags : ['landcover', 'natural', 'landuse', 'water', 'waterway', 'leisure', 'aeroway', 'amenity', 'layer'])
         assertNotNull(transform.results.outputTableName)
         assertEquals (207, h2GIS.getTable(transform.results.outputTableName).rowCount)
-        assertEquals ("AMENITY,ID,LANDUSE,LAYER,LEISURE,NATURAL,THE_GEOM,WATER,WATERWAY", h2GIS.getTable(transform.results.outputTableName).columnNames.join(","))
+        assertEquals ("AMENITY,ID,LANDUSE,LAYER,LEISURE,NATURAL,THE_GEOM,WATER,WATERWAY", h2GIS.getTable(transform.results.outputTableName).columns.join(","))
         def row = h2GIS.firstRow("SELECT * FROM $transform.results.outputTableName WHERE ID='r278505'")
         assertEquals("meadow", row.'LANDUSE')
         assertNull(row.'LEISURE')
@@ -332,7 +332,7 @@ class OSMToolsTests {
         transform.execute( datasource:h2GIS, osmTablesPrefix:prefix, epsgCode :2154, tags : ['leisure'])
         assertNotNull(transform.results.outputTableName)
         assertEquals 6, h2GIS.getTable(transform.results.outputTableName).rowCount
-        assertEquals "ID,LEISURE,THE_GEOM", h2GIS.getTable(transform.results.outputTableName).columnNames.join(",")
+        assertEquals "ID,LEISURE,THE_GEOM", h2GIS.getTable(transform.results.outputTableName).columns.join(",")
         def row = h2GIS.firstRow("SELECT * FROM $transform.results.outputTableName WHERE ID='w717203616'")
         assertEquals("park", row.'LEISURE')
     }

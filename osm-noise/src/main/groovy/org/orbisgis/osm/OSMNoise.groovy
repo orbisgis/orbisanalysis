@@ -1,7 +1,7 @@
 package org.orbisgis.osm
 
 import groovy.json.JsonSlurper
-import org.orbisgis.processmanager.GroovyProcessFactory
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.regex.Pattern

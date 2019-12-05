@@ -2,6 +2,7 @@ package org.orbisgis.osm
 
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
+import org.cts.util.UTMUtils
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.SFSUtilities
 import org.locationtech.jts.geom.Coordinate
@@ -382,6 +383,43 @@ static def buildGeometryAndZone(Geometry geom, int distance, def datasource) {
     }
     return [geom :  geom, filterArea : filterArea]
 }
+
+/**
+ * This method is used to build a new geometry from the following input parameters :
+ * min Longitude , min Latitude , max Longitude , max Latitude
+ *
+ * @author Erwan Bocher (CNRS LAB-STICC)
+ * @author Elisabeth Le Saux (UBS LAB-STICC)
+ *
+ * @param geom The input geometry.
+ *
+ */
+static Geometry buildGeometry(def bbox) {
+    if(!bbox in Collection && !bbox){
+        error "The latitude and longitude values must be set as an array"
+        return
+    }
+    if(bbox.size==4){
+        def minLong = bbox[0]
+        def minLat = bbox[1]
+        def maxLong = bbox[2]
+        def maxLat =  bbox[3]
+        //Check values
+        if(UTMUtils.isValidLatitude(minLat) && UTMUtils.isValidLatitude(maxLat)
+                && UTMUtils.isValidLongitude(minLong)&& UTMUtils.isValidLongitude(maxLong)){
+            GeometryFactory geometryFactory = new GeometryFactory()
+            Geometry geom =  geometryFactory.toGeometry(new Envelope(minLong,maxLong,minLat,maxLat))
+            return geom.isValid()?geom:null
+
+        }else{
+        error("Invalid latitude longitude values")
+        return
+        }
+    }
+    error("The bbox must be defined with 4 values")
+    return
+}
+
 
 /**
  ** Function to drop the temp tables coming from the OSM extraction

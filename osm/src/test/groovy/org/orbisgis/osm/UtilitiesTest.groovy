@@ -105,4 +105,14 @@ class UtilitiesTest {
         assertNull OSMTools.Utilities.parsePolygon([[null]], new GeometryFactory())
         assertNull OSMTools.Utilities.parsePolygon(poly1, new GeometryFactory())
     }
+
+    @Test
+    void buildBoundingBox(){
+        assertEquals("POLYGON ((-0.489 51.28, -0.489 51.686, 0.236 51.686, 0.236 51.28, -0.489 51.28))",
+                OSMTools.Utilities.buildGeometry([-0.489,51.28,0.236,51.686]).toString())
+        assertNull  OSMTools.Utilities.buildGeometry([20000, 2510, 10, 10])
+        assertNull  OSMTools.Utilities.buildGeometry([])
+        assertNull  OSMTools.Utilities.buildGeometry()
+        assertNull  OSMTools.Utilities.buildGeometry([-0.489,51.28,0.236])
+    }
 }

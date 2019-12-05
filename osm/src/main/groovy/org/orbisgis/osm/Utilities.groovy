@@ -369,7 +369,9 @@ static def buildGeometryAndZone(Geometry geom, int distance, def datasource) {
         }
     }
     else {
-        geom = ST_Transform.ST_Transform(con, geom, epsg);
+        if(geom.SRID != epsg){
+            geom = ST_Transform.ST_Transform(con, geom, epsg)
+        }
         if(distance==0){
             filterArea = gf.toGeometry(geom.getEnvelopeInternal())
             filterArea.setSRID(epsg)
@@ -413,6 +415,7 @@ static def buildGeometryAndZone(Geometry geom, int distance, def datasource) {
                  && UTMUtils.isValidLongitude(minLong)&& UTMUtils.isValidLongitude(maxLong)){
              GeometryFactory geometryFactory = new GeometryFactory()
              Geometry geom =  geometryFactory.toGeometry(new Envelope(minLong,maxLong,minLat,maxLat))
+             geom.setSRID(4326)
              return geom.isValid()?geom:null
 
          }else{

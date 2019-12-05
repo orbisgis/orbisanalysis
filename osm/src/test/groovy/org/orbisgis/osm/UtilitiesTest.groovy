@@ -2,7 +2,10 @@ package org.orbisgis.osm
 
 import org.junit.jupiter.api.Test
 import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
+import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
+import org.orbisgis.osm.Utilities
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals
 import static org.junit.jupiter.api.Assertions.assertEquals
@@ -15,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue
  *
  * @author Sylvain PALOMINOS (UBS LAB-STICC 2019)
  */
-class UtilitiesTest {
+class UtilitiesTest extends AbstractOSMTest{
 
     @Test
     void arrayToCoordinateTest(){
@@ -114,5 +117,12 @@ class UtilitiesTest {
         assertNull  OSMTools.Utilities.buildGeometry([])
         assertNull  OSMTools.Utilities.buildGeometry()
         assertNull  OSMTools.Utilities.buildGeometry([-0.489,51.28,0.236])
+    }
+
+    @Test
+    void extractGeometryZone(){
+        H2GIS ds = RANDOM_DS()
+        Geometry geom =  OSMTools.Utilities.buildGeometry([-0.489, 51.28, 0.236, 51.686])
+        assertTrue(geom.equals(OSMTools.Utilities.buildGeometryAndZone(geom,  0, ds).geom))
     }
 }

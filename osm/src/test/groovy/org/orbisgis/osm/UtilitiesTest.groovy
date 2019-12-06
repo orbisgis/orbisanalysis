@@ -110,13 +110,29 @@ class UtilitiesTest extends AbstractOSMTest{
     }
 
     @Test
+    void buildBoundingBoxNominatim(){
+        assertEquals("POLYGON ((-3.29109 48.72223, -3.29109 48.83535, -2.80357 48.83535, -2.80357 48.72223, -3.29109 48.72223))",
+                OSMTools.Utilities.geometryFromNominatim([48.83535,-3.29109,48.72223,-2.80357]).toString())
+        assertNull  OSMTools.Utilities.geometryFromNominatim([20000, 2510, 10, 10])
+        assertNull  OSMTools.Utilities.geometryFromNominatim([])
+        assertNull  OSMTools.Utilities.geometryFromNominatim()
+        assertNull  OSMTools.Utilities.geometryFromNominatim([-0.489,51.28,0.236])
+    }
+
+    @Test
+    void buildBoundingBoxOverpass(){
+        assertEquals("POLYGON ((-3.29109 48.72223, -3.29109 48.83535, -2.80357 48.83535, -2.80357 48.72223, -3.29109 48.72223))",
+                OSMTools.Utilities.geometryFromOverpass([48.72223,-2.80357, 48.83535, -3.29109,]).toString())
+        assertNull  OSMTools.Utilities.geometryFromOverpass([20000, 2510, 10, 10])
+        assertNull  OSMTools.Utilities.geometryFromOverpass([])
+        assertNull  OSMTools.Utilities.geometryFromOverpass()
+        assertNull  OSMTools.Utilities.geometryFromOverpass([-0.489,51.28,0.236])
+    }
+
+    @Test
     void buildBoundingBox(){
-        assertEquals("POLYGON ((-0.489 51.28, -0.489 51.686, 0.236 51.686, 0.236 51.28, -0.489 51.28))",
-                OSMTools.Utilities.buildGeometry([-0.489,51.28,0.236,51.686]).toString())
-        assertNull  OSMTools.Utilities.buildGeometry([20000, 2510, 10, 10])
-        assertNull  OSMTools.Utilities.buildGeometry([])
-        assertNull  OSMTools.Utilities.buildGeometry()
-        assertNull  OSMTools.Utilities.buildGeometry([-0.489,51.28,0.236])
+        assertEquals("POLYGON ((-3.29109 48.72223, -3.29109 48.83535, -2.80357 48.83535, -2.80357 48.72223, -3.29109 48.72223))",
+                OSMTools.Utilities.buildGeometry([-3.29109,48.83535,-2.80357,48.72223]).toString())
     }
 
     @Test

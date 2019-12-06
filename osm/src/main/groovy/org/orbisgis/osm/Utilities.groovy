@@ -391,21 +391,12 @@ static def buildGeometryAndZone(Geometry geom, int distance, def datasource) {
  * min Longitude , min Latitude , max Longitude , max Latitude
  *
  * @author Erwan Bocher (CNRS LAB-STICC)
- * @author Elisabeth Le Saux (UBS LAB-STICC)
  *
- * @param geom The input geometry.
+ * @param bbox 4 values
+ * @return a JTS polygon
  *
  */
  Geometry buildGeometry(def bbox) {
-     if(!bbox){
-         error "The latitude and longitude values cannot be null or empty"
-         return
-     }
-     if(!bbox in Collection){
-         error "The latitude and longitude values must be set as an array"
-         return
-     }
-     if(bbox.size==4){
          def minLong = bbox[0]
          def minLat = bbox[1]
          def maxLong = bbox[2]
@@ -422,9 +413,70 @@ static def buildGeometryAndZone(Geometry geom, int distance, def datasource) {
              error("Invalid latitude longitude values")
              return
          }
-     }
-     error("The bbox must be defined with 4 values")
-     return
+}
+
+/**
+ * This method is used to build a geometry following the Nominatim bbox signature
+ * Nominatim API returns a boundingbox property of the form: 
+ * south Latitude, north Latitude, west Longitude, east Longitude
+ *  south : float -> southern latitude of bounding box
+ *  west : float  -> western longitude of bounding box
+ *  north : float -> northern latitude of bounding box
+ *  east : float  -> eastern longitude of bounding box
+ *
+ * @author Erwan Bocher (CNRS LAB-STICC)
+ *
+ * @param bbox 4 values
+ * @return a JTS polygon
+ */
+Geometry geometryFromNominatim(def bbox) {
+    if(!bbox){
+        error "The latitude and longitude values cannot be null or empty"
+        return
+    }
+    if(!bbox in Collection){
+        error "The latitude and longitude values must be set as an array"
+        return
+    }
+    if(bbox.size==4){
+        return  buildGeometry([bbox[1],bbox[0],bbox[3],bbox[2]]);
+    }
+    error("The bbox must be defined with 4 values")
+    return
+
+}
+
+/**
+ * This method is used to build a geometry following the overpass bbox signature.
+ * The order of values in the bounding box used by Overpass API is :
+ * south ,west, north, east
+ *
+ *  south : float -> southern latitude of bounding box
+ *  west : float  -> western longitude of bounding box
+ *  north : float -> northern latitude of bounding box
+ *  east : float  -> eastern longitude of bounding box
+ *
+ *  So : minimum latitude, minimum longitude, maximum latitude, maximum longitude
+ *
+ * @author Erwan Bocher (CNRS LAB-STICC)
+ *
+ * @param bbox 4 values
+ * @return a JTS polygon
+ */
+Geometry geometryFromOverpass(def bbox) {
+    if(!bbox){
+        error "The latitude and longitude values cannot be null or empty"
+        return
+    }
+    if(!bbox in Collection){
+        error "The latitude and longitude values must be set as an array"
+        return
+    }
+    if(bbox.size==4){
+        return  buildGeometry([bbox[1],bbox[0],bbox[3],bbox[2]]);
+    }
+    error("The bbox must be defined with 4 values")
+    return
 }
 
 

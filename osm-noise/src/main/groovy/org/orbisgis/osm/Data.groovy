@@ -2,17 +2,13 @@ package org.orbisgis.osm
 
 import groovy.transform.BaseScript
 import org.h2gis.functions.spatial.crs.ST_Transform
-import org.h2gis.utilities.SFSUtilities
-import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
-import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
+import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.osm.OSMTools
-
 
 @BaseScript OSMNoise osmNoise
 
@@ -341,9 +337,15 @@ IProcess download() {
                 }',$epsg), '$placeName');"""
 
                 Envelope envelope  = geomAndEnv.filterArea.getEnvelopeInternal()
-                def query =  "[maxsize:1073741824];((node(${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()}, ${envelope.getMaxX()});" +
-                        "way(${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()}, ${envelope.getMaxX()});" +
-                        "relation(${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()}, ${envelope.getMaxX()}););>;);out;"
+                def query =  "[maxsize:1073741824];" +
+                        "(" +
+                        "(" +
+                        "node(${envelopeToString(envelope)});" +
+                        "way(${envelopeToString(envelope)});" +
+                        "relation(${envelopeToString(envelope)});" +
+                        ");" +
+                        ">;);" +
+                        "out;"
 
                 def extract = OSMTools.Loader.extract()
                 if (extract.execute(overpassQuery: query)){
@@ -355,12 +357,20 @@ IProcess download() {
                     logger.error "Cannot extract the OSM data from the place  $placeName"
                 }
             }
-
         }
     })
 }
 
-
+private static String envelopeToString(Envelope env){
+    if(!env){
+        error "The envelope should not be null"
+        return null
+    }
+    return "${String.format(Locale.US, "%.12f", env.getMinY())}," +
+            "${String.format(Locale.US, "%.12f", env.getMinX())}," +
+            "${String.format(Locale.US, "%.12f", env.getMaxY())}," +
+            "${String.format(Locale.US, "%.12f", env.getMaxX())}"
+}
 
 /**
  * Return a maxspeed value expressed in kmh

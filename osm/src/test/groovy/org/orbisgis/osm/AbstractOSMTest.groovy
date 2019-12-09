@@ -26,6 +26,8 @@ abstract class AbstractOSMTest {
     protected static final def RANDOM_DS = { H2GIS.open(PATH + uuid() + DB_OPTION)}
     /** Regex for the string UUID. */
     protected static def uuidRegex = "[0-9a-f]{8}_[0-9a-f]{4}_[0-9a-f]{4}_[0-9a-f]{4}_[0-9a-f]{12}"
+    /** Return a random file path. **/
+    protected static def RANDOM_PATH = {"./target/file"+uuid()}
 
 
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
@@ -36,21 +38,64 @@ abstract class AbstractOSMTest {
     private static def extract
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
     private static def load
+    /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
+    private static def executeNominatimQuery
 
+    /**
+     * Preparation for test execution. Signature should not be changed ({@link org.junit.jupiter.api.BeforeEach}
+     * require non stattic void method.
+     */
     void beforeEach(){
         //Store the modified object
         executeOverPassQuery = OSMTools.Loader.&executeOverPassQuery
         extract = OSMTools.Loader.&extract
         load = OSMTools.Loader.&load
         getAreaFromPlace = OSMTools.Utilities.&getAreaFromPlace
+        executeNominatimQuery = OSMTools.Utilities.&executeNominatimQuery
     }
 
+    /**
+     * Preparation for test execution. Signature should not be changed ({@link org.junit.jupiter.api.AfterEach}
+     * require non stattic void method.
+     */
     void afterEach(){
         //Restore the modified object
         OSMTools.Loader.metaClass.static.executeOverPassQuery = executeOverPassQuery
         OSMTools.Loader.metaClass.static.extract = extract
         OSMTools.Loader.metaClass.static.load = load
         OSMTools.Utilities.metaClass.static.getAreaFromPlace = getAreaFromPlace
+        OSMTools.Utilities.metaClass.static.executeNominatimQuery = executeNominatimQuery
+    }
+
+    /**
+     * Override the 'executeNominatimQuery' methods to avoid the call to the server
+     */
+    protected static void sampleExecuteNominatimPolygonQueryOverride(){
+        OSMTools.Utilities.metaClass.static.executeNominatimQuery = {query, outputOSMFile ->
+            AbstractOSMTest.query = query
+            outputOSMFile << LoaderTest.getResourceAsStream("nominatimSamplePolygon.geojson").text
+            return true
+        }
+    }
+
+    /**
+     * Override the 'executeNominatimQuery' methods to avoid the call to the server
+     */
+    protected static void sampleExecuteNominatimMultipolygonQueryOverride(){
+        OSMTools.Utilities.metaClass.static.executeNominatimQuery = {query, outputOSMFile ->
+            AbstractOSMTest.query = query
+            outputOSMFile << LoaderTest.getResourceAsStream("nominatimSampleMultipolygon.geojson").text
+            return true
+        }
+    }
+
+    /**
+     * Override the 'executeNominatimQuery' methods to avoid the call to the server
+     */
+    protected static void badExecuteNominatimQueryOverride(){
+        OSMTools.Utilities.metaClass.static.executeNominatimQuery = {query, outputOSMFile ->
+            return false
+        }
     }
 
     /**
@@ -58,7 +103,7 @@ abstract class AbstractOSMTest {
      */
     protected static void sampleOverpassQueryOverride(){
         OSMTools.Loader.metaClass.static.executeOverPassQuery = {query, outputOSMFile ->
-            LoaderTest.query = query
+            AbstractOSMTest.query = query
             outputOSMFile << LoaderTest.getResourceAsStream("sample.osm").text
             return true
         }
@@ -69,7 +114,7 @@ abstract class AbstractOSMTest {
      */
     protected static void badOverpassQueryOverride(){
         OSMTools.Loader.metaClass.static.executeOverPassQuery = {query, outputOSMFile ->
-            LoaderTest.query = query
+            AbstractOSMTest.query = query
             return false
         }
     }

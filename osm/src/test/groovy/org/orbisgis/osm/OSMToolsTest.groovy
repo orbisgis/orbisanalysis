@@ -3,7 +3,6 @@ package org.orbisgis.osm
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.locationtech.jts.geom.Envelope
@@ -23,9 +22,9 @@ import static org.orbisgis.osm.utils.OSMElement.NODE
 import static org.orbisgis.osm.utils.OSMElement.RELATION
 import static org.orbisgis.osm.utils.OSMElement.WAY
 
-class OSMToolsTests {
+class OSMToolsTest {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(OSMToolsTests)
+    private static final Logger LOGGER = LoggerFactory.getLogger(OSMToolsTest)
 
     @BeforeEach
     final void beforeEach(TestInfo testInfo){

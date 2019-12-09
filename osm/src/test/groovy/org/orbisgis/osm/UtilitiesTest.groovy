@@ -573,13 +573,27 @@ class UtilitiesTest extends AbstractOSMTest {
         assertFalse OSMTools.Utilities.dropOSMTables(null, ds)
     }
 
+    /**
+     * Test the {@link Utilities#getAreaFromPlace(java.lang.Object)} method.
+     */
     @Test
-    void getAreaFromPlace(){
+    void getAreaFromPlaceTest(){
         sampleExecuteNominatimPolygonQueryOverride()
         assertEquals "POLYGON ((0 0, 0 2, 2 2, 2 2, 2 0, 0 0))", OSMTools.Utilities.getAreaFromPlace("Place name").toString()
         assertEquals "Place name", query
         sampleExecuteNominatimMultipolygonQueryOverride()
         assertEquals "MULTIPOLYGON (((0 0, 0 2, 2 2, 2 2, 2 0, 0 0)), ((3 3, 3 4, 4 4, 4 3, 3 3)))", OSMTools.Utilities.getAreaFromPlace("Place name").toString()
         assertEquals "Place name", query
+    }
+
+    /**
+     * Test the {@link Utilities#getAreaFromPlace(java.lang.Object)} method with bad data.
+     */
+    @Test
+    void badGetAreaFromPlaceTest(){
+        sampleExecuteNominatimPolygonQueryOverride()
+        assertNull OSMTools.Utilities.getAreaFromPlace(null)
+        badExecuteNominatimQueryOverride()
+        assertNull OSMTools.Utilities.getAreaFromPlace("place")
     }
 }

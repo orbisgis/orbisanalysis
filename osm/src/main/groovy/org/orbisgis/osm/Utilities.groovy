@@ -27,11 +27,16 @@ import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
  * @return a New geometry.
  */
 Geometry getAreaFromPlace(def placeName) {
+    if(!placeName){
+        error "The place name should not be null or empty."
+        return null
+    }
     def outputOSMFile = File.createTempFile("nominatim_osm", ".geojson")
     if (!executeNominatimQuery(placeName, outputOSMFile)) {
         if (!outputOSMFile.delete()) {
             warn "Unable to delete the file '$outputOSMFile'."
         }
+        warn "Unable to execute the Nominatim query."
         return null
     }
 
@@ -69,6 +74,9 @@ Geometry getAreaFromPlace(def placeName) {
             return true
         }
         return false
+    }
+    if (!outputOSMFile.delete()) {
+        warn "Unable to delete the file '$outputOSMFile'."
     }
     return area
 }
@@ -143,7 +151,7 @@ private Coordinate[] arrayToCoordinate(def coordinates){
  */
 boolean executeNominatimQuery(def query, def outputOSMFile) {
     if(!query){
-        error "The Nominatim query should not be null"
+        error "The Nominatim query should not be null."
         return false
     }
     if(!(outputOSMFile instanceof File)){

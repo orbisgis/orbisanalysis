@@ -87,7 +87,6 @@ IProcess fromArea() {
                 } else {
                     error "Cannot load the OSM data from the area $filterArea"
                 }
-
             } else {
                 error "Cannot download OSM data from the area $filterArea"
             }

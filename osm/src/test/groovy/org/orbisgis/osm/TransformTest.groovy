@@ -464,7 +464,7 @@ class TransformTest extends AbstractOSMTest {
         assertTrue extractWaysAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
         assertFalse extractWaysAsLines.results.isEmpty()
         def table = ds.getTable(extractWaysAsLines.results.outputTableName)
-        println table as Ascii
+
         assertEquals 1, table.rowCount
         table.each{
             switch(it.row){
@@ -547,7 +547,7 @@ class TransformTest extends AbstractOSMTest {
         assertTrue extractRelationsAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
         assertFalse extractRelationsAsLines.results.isEmpty()
         def table = ds.getTable(extractRelationsAsLines.results.outputTableName)
-        println table as Ascii
+
         assertEquals 1, table.rowCount
         table.each{
             switch(it.row){

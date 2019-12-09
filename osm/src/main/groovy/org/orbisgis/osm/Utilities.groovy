@@ -32,13 +32,13 @@ Geometry getAreaFromPlace(def placeName) {
         if (!outputOSMFile.delete()) {
             warn "Unable to delete the file '$outputOSMFile'."
         }
-        return
+        return null
     }
 
     def jsonRoot = new JsonSlurper().parse(outputOSMFile)
     if (jsonRoot == null) {
         error "Cannot find any data from the place $placeName."
-        return
+        return null
     }
 
     if (jsonRoot.features.size() == 0) {
@@ -46,7 +46,7 @@ Geometry getAreaFromPlace(def placeName) {
         if (!outputOSMFile.delete()) {
             warn "Unable to delete the file '$outputOSMFile'."
         }
-        return
+        return null
     }
 
     GeometryFactory geometryFactory = new GeometryFactory()
@@ -142,16 +142,22 @@ private Coordinate[] arrayToCoordinate(def coordinates){
  *
  */
 boolean executeNominatimQuery(def query, def outputOSMFile) {
+    if(!query){
+        error "The Nominatim query should not be null"
+        return false
+    }
+    if(!(outputOSMFile instanceof File)){
+        error "The OSM file should be an instance of File"
+        return false
+    }
     def apiUrl = " https://nominatim.openstreetmap.org/search?q="
     def request = "&limit=5&format=geojson&polygon_geojson=1"
 
     URL url = new URL(apiUrl + utf8ToUrl(query) + request)
     def connection = url.openConnection()
-
-    info url
-
     connection.requestMethod = "GET"
 
+    info url
     info "Executing query... $query"
     //Save the result in a file
     if (connection.responseCode == 200) {
@@ -176,11 +182,12 @@ boolean executeNominatimQuery(def query, def outputOSMFile) {
  * @return OSM bbox.
  */
 String toBBox(Geometry geometry) {
-    if (geometry != null) {
-        Envelope env = geometry.getEnvelopeInternal()
-        return "(bbox:${env.getMinY()},${env.getMinX()},${env.getMaxY()}, ${env.getMaxX()})".toString()
+    if (!geometry) {
+        error "Cannot convert to an overpass bounding box."
+        return null
     }
-    error "Cannot convert to an overpass bounding box."
+    def env = geometry.getEnvelopeInternal()
+    return "(bbox:${env.getMinY()},${env.getMinX()},${env.getMaxY()},${env.getMaxX()})".toString()
 }
 
 /**
@@ -195,21 +202,28 @@ String toBBox(Geometry geometry) {
  * @return The OSM polygon.
  */
 String toPoly(Geometry geometry) {
-    if (geometry != null) {
-        if (geometry instanceof Polygon) {
-            Coordinate[] coordinates = ((Polygon) geometry).getExteriorRing().getCoordinates()
-            def poly = "(poly:\""
-            for (i in 0.. coordinates.size()-3) {
-                Coordinate coord = coordinates[i]
-                poly += "${coord.getY()} ${coord.getX()} "
-            }
-            Coordinate coord = coordinates[coordinates.size()-2]
-            poly += "${coord.getY()} ${coord.getX()}"
-            return poly + "\")"
-        }
-        error "The input geometry must be polygon."
+    if(!geometry){
+        error "Cannot convert to an overpass poly filter."
+        return null
     }
-    error "Cannot convert to an overpass poly filter."
+    if (!(geometry instanceof Polygon)) {
+        error "The input geometry must be polygon."
+        return null
+    }
+    def poly = (Polygon) geometry
+    if (poly.isEmpty()) {
+        error "The input geometry must be polygon."
+        return null
+    }
+    Coordinate[] coordinates = poly.getExteriorRing().getCoordinates()
+    def polyStr = "(poly:\""
+    for (i in 0..coordinates.size()-3) {
+        def coord = coordinates[i]
+        polyStr += "${coord.getY()} ${coord.getX()} "
+    }
+    def coord = coordinates[coordinates.size()-2]
+    polyStr += "${coord.getY()} ${coord.getX()}"
+    return polyStr + "\")"
 }
 
 /**
@@ -225,22 +239,23 @@ String toPoly(Geometry geometry) {
  * @return A string representation of the OSM query.
  */
 String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElement) {
-    if (envelope != null) {
-        def query = "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()},${envelope.getMaxX()}];\n(\n"
-        osmElement.each { i ->
-            if(keys==null || keys.isEmpty()){
-                query += "\t${i.toString().toLowerCase()};\n"
-            }
-            else{
+    if(!envelope){
+        error "Cannot create the overpass query from the bbox $envelope."
+        return null
+    }
+    def query = "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()},${envelope.getMaxX()}];\n(\n"
+    osmElement.each { i ->
+        if(keys==null || keys.isEmpty()){
+            query += "\t${i.toString().toLowerCase()};\n"
+        }
+        else{
             keys.each {
                 query += "\t${i.toString().toLowerCase()}[\"${it.toLowerCase()}\"];\n"
             }
-            }
         }
-        query += ");\n(._;>;);\nout;"
-        return query
     }
-    error "Cannot create the overpass query from the bbox $envelope."
+    query += ");\n(._;>;);\nout;"
+    return query
 }
 
 /**
@@ -256,33 +271,38 @@ String buildOSMQuery(Envelope envelope, def keys, OSMElement... osmElement) {
  * @return A string representation of the OSM query.
  */
 String buildOSMQuery(Polygon polygon, def keys, OSMElement... osmElement) {
-    if (polygon != null || !polygon.isEmpty()) {
-        Envelope envelope = polygon.getEnvelopeInternal()
-        def query = "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()},${envelope.getMaxX()}];\n(\n"
-        String filterArea =  toPoly(polygon)
-        def  nokeys = false;
-        osmElement.each { i ->
-            if(keys==null || keys.isEmpty()){
-                query += "\t${i.toString().toLowerCase()}$filterArea;\n"
-                nokeys=true
-            }
-            else {
-                keys.each {
-                    query += "\t${i.toString().toLowerCase()}[\"${it.toLowerCase()}\"]$filterArea;\n"
-                    nokeys=false
-                }
-            }
-        }
-        if(nokeys){
-            query += ");\nout;"
-        }
-        else{
-            query += ");\n(._;>;);\nout;"
-        }
-
-        return query
+    if (polygon == null){
+        error "Cannot create the overpass query from a null polygon."
+        return null
     }
-    error "Cannot create the overpass query from the bbox $polygon."
+    if(polygon.isEmpty()) {
+        error "Cannot create the overpass query from an empty polygon."
+        return null
+    }
+    Envelope envelope = polygon.getEnvelopeInternal()
+    def query = "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()},${envelope.getMaxX()}];\n(\n"
+    String filterArea =  toPoly(polygon)
+    def  nokeys = false;
+    osmElement.each { i ->
+        if(keys==null || keys.isEmpty()){
+            query += "\t${i.toString().toLowerCase()}$filterArea;\n"
+            nokeys=true
+        }
+        else {
+            keys.each {
+                query += "\t${i.toString().toLowerCase()}[\"${it.toLowerCase()}\"]$filterArea;\n"
+                nokeys=false
+            }
+        }
+    }
+    if(nokeys){
+        query += ");\nout;"
+    }
+    else{
+        query += ");\n(._;>;);\nout;"
+    }
+
+    return query
 }
 
 /**
@@ -296,20 +316,31 @@ String buildOSMQuery(Polygon polygon, def keys, OSMElement... osmElement) {
  * @return A Map of parameters.
  */
 Map readJSONParameters(def jsonFile) {
-    if (jsonFile) {
-        if (new File(jsonFile).isFile()) {
-            def parsed = new JsonSlurper().parse(new File(jsonFile))
-            if (parsed in Map) {
-                return parsed
-            } else {
-                error "The json file doesn't contains only parameter."
-            }
-        } else {
+    if(!jsonFile) {
+        error "The given file should not be null"
+        return null
+    }
+    def file
+    if(jsonFile instanceof InputStream){
+        file = jsonFile
+    }
+    else {
+        file = new File(jsonFile)
+        if (!file.exists()) {
+            warn "No file named ${jsonFile} doesn't exists."
+            return null
+        }
+        if (!file.isFile()) {
             warn "No file named ${jsonFile} found."
+            return null
         }
     }
+    def parsed = new JsonSlurper().parse(file)
+    if (parsed in Map) {
+        return parsed
+    }
+    error "The json file doesn't contains only parameter."
 }
-
 
 /**
  * This method is used to build a new geometry and its envelope according an EPSG code and a distance
@@ -326,10 +357,13 @@ Map readJSONParameters(def jsonFile) {
  * system depending on the epsg code.
  * Note that the envelope of the geometry can be expanded according to the input distance value.
  */
-static def buildGeometryAndZone(Geometry geom, int distance, def datasource) {
+def buildGeometryAndZone(Geometry geom, int distance, def datasource) {
+    if(!geom){
+        error "The geometry should not be null"
+        return null
+    }
     return buildGeometryAndZone(geom, geom.SRID, distance, datasource)
 }
-
 
 /**
  * This method is used to build a new geometry and its envelope according an EPSG code and a distance
@@ -347,14 +381,28 @@ static def buildGeometryAndZone(Geometry geom, int distance, def datasource) {
  * system depending on the epsg code.
  * Note that the envelope of the geometry can be expanded according to the input distance value.
  */
-    static def buildGeometryAndZone(Geometry geom, int epsg, int distance, def datasource) {
+def buildGeometryAndZone(Geometry geom, int epsg, int distance, def datasource) {
+    if(!geom){
+        error "The geometry should not be null"
+        return null
+    }
+    if(!datasource){
+        error "The data source should not be null"
+        return null
+    }
     GeometryFactory gf = new GeometryFactory()
     def con = datasource.getConnection();
-    Polygon filterArea = null
-    if(epsg==-1 || epsg==0){
-        def interiorPoint = geom.getCentroid()
-        epsg = SFSUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
-        geom = ST_Transform.ST_Transform(con, geom, epsg);
+    Polygon filterArea
+    if(epsg <= -1 || epsg == 0){
+        if(geom.SRID > 0){
+            epsg = geom.SRID
+        }
+        else {
+            def interiorPoint = geom.getCentroid()
+            epsg = SFSUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
+            geom = geom.copy()
+            geom.setSRID(epsg)
+        }
         if(distance==0){
             Geometry tmpEnvGeom = gf.toGeometry(geom.getEnvelopeInternal())
             tmpEnvGeom.setSRID(epsg)
@@ -396,23 +444,33 @@ static def buildGeometryAndZone(Geometry geom, int distance, def datasource) {
  * @return a JTS polygon
  *
  */
- Geometry buildGeometry(def bbox) {
-         def minLong = bbox[0]
-         def minLat = bbox[1]
-         def maxLong = bbox[2]
-         def maxLat =  bbox[3]
-         //Check values
-         if(UTMUtils.isValidLatitude(minLat) && UTMUtils.isValidLatitude(maxLat)
-                 && UTMUtils.isValidLongitude(minLong)&& UTMUtils.isValidLongitude(maxLong)){
-             GeometryFactory geometryFactory = new GeometryFactory()
-             Geometry geom =  geometryFactory.toGeometry(new Envelope(minLong,maxLong,minLat,maxLat))
-             geom.setSRID(4326)
-             return geom.isValid()?geom:null
+Geometry buildGeometry(def bbox) {
+    if(!bbox){
+        error "The BBox should not be null"
+        return null
+    }
+    if(!bbox.class.isArray() && !(bbox instanceof Collection)){
+        error "The BBox should be an array"
+        return null
+    }
+    if(bbox.size != 4){
+        error "The BBox should be an array of 4 values"
+        return null
+    }
+    def minLong = bbox[0]
+    def minLat = bbox[1]
+    def maxLong = bbox[2]
+    def maxLat = bbox[3]
+    //Check values
+    if (UTMUtils.isValidLatitude(minLat) && UTMUtils.isValidLatitude(maxLat)
+            && UTMUtils.isValidLongitude(minLong) && UTMUtils.isValidLongitude(maxLong)) {
+        GeometryFactory geometryFactory = new GeometryFactory()
+        Geometry geom = geometryFactory.toGeometry(new Envelope(minLong, maxLong, minLat, maxLat))
+        geom.setSRID(4326)
+        return geom.isValid() ? geom : null
 
-         }else{
-             error("Invalid latitude longitude values")
-             return
-         }
+    }
+    error("Invalid latitude longitude values")
 }
 
 /**
@@ -429,21 +487,20 @@ static def buildGeometryAndZone(Geometry geom, int distance, def datasource) {
  * @param bbox 4 values
  * @return a JTS polygon
  */
+//TODO why ot merging methods
 Geometry geometryFromNominatim(def bbox) {
     if(!bbox){
         error "The latitude and longitude values cannot be null or empty"
-        return
+        return null
     }
-    if(!bbox in Collection){
+    if(!(bbox instanceof Collection) && !bbox.class.isArray()){
         error "The latitude and longitude values must be set as an array"
-        return
+        return null
     }
     if(bbox.size==4){
         return  buildGeometry([bbox[1],bbox[0],bbox[3],bbox[2]]);
     }
     error("The bbox must be defined with 4 values")
-    return
-
 }
 
 /**
@@ -466,17 +523,16 @@ Geometry geometryFromNominatim(def bbox) {
 Geometry geometryFromOverpass(def bbox) {
     if(!bbox){
         error "The latitude and longitude values cannot be null or empty"
-        return
+        return null
     }
-    if(!bbox in Collection){
+    if(!(bbox instanceof Collection)){
         error "The latitude and longitude values must be set as an array"
-        return
+        return null
     }
     if(bbox.size==4){
         return  buildGeometry([bbox[1],bbox[0],bbox[3],bbox[2]]);
     }
     error("The bbox must be defined with 4 values")
-    return
 }
 
 
@@ -489,8 +545,17 @@ Geometry geometryFromOverpass(def bbox) {
  * @param prefix Prefix of the OSM tables.
  * @param datasource Datasource where the OSM tables are.
  **/
-static boolean dropOSMTables (String prefix, JdbcDataSource datasource) {
-    return datasource.execute("""DROP TABLE IF EXISTS ${prefix}_NODE, ${prefix}_NODE_MEMBER, ${prefix}_NODE_TAG,
-    ${prefix}_RELATION,${prefix}_RELATION_MEMBER,${prefix}_RELATION_TAG, ${prefix}_WAY,
-    ${prefix}_WAY_MEMBER,${prefix}_WAY_NODE,${prefix}_WAY_TAG""")
+boolean dropOSMTables (String prefix, JdbcDataSource datasource) {
+    if(prefix == null){
+        error "The prefix should not be null"
+        return false
+    }
+    if(!datasource){
+        error "The data source should not be null"
+        return false
+    }
+    datasource.execute("DROP TABLE IF EXISTS ${prefix}_NODE, ${prefix}_NODE_MEMBER, ${prefix}_NODE_TAG," +
+            "${prefix}_RELATION,${prefix}_RELATION_MEMBER,${prefix}_RELATION_TAG, ${prefix}_WAY," +
+            "${prefix}_WAY_MEMBER,${prefix}_WAY_NODE,${prefix}_WAY_TAG")
+    return true
 }

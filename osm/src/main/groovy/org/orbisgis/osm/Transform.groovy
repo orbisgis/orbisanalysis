@@ -332,8 +332,8 @@ IProcess extractRelationsAsPolygons() {
                 info "Build all polygon relations"
                 def relationsMpHoles = "RELATIONS_MP_HOLES_$uuid"
                 datasource.execute """
-                        CREATE INDEX ON $relationsPolygonsOuterExploded (the_geom) USING RTREE;
-                        CREATE INDEX ON $relationsPolygonsInnerExploded(the_geom) USING RTREE;
+                        CREATE INDEX ON $relationsPolygonsOuterExploded USING RTREE (the_geom);
+                        CREATE INDEX ON $relationsPolygonsInnerExploded USING RTREE (the_geom);
                         CREATE INDEX ON $relationsPolygonsOuterExploded(id_relation);
                         CREATE INDEX ON $relationsPolygonsInnerExploded(id_relation);       
                         DROP TABLE IF EXISTS $relationsMpHoles;

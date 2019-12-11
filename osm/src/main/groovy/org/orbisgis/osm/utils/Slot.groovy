@@ -5,6 +5,8 @@ import java.time.ZoneId
 
 /**
  * Locked slot of the Overpass server which is free after a wait time.
+ *
+ * @author Sylvain PALOMINOS (Lab-STICC UBS 2019)
  */
 class Slot {
 
@@ -31,7 +33,7 @@ class Slot {
     Slot(String text){
         format.setTimeZone(TimeZone.getTimeZone("Etc/GMT+0"))
         local.setTimeZone(TimeZone.getTimeZone(ZoneId.systemDefault()))
-        String[] values = (text - SLOT_AVAILABLE_AFTER - SECONDS).split(IN)
+        def values = (text - SLOT_AVAILABLE_AFTER - SECONDS).split(IN)
         availibility = format.parse(values[0])
         waitSeconds = Long.decode(values[1])
     }

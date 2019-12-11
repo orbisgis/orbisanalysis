@@ -55,9 +55,8 @@ abstract class OSMTools extends GroovyProcessFactory {
     def error = { obj ->  getLogger(this).error(obj.toString()) }
 
     private static def getLogger(def source){
-        def clazz = source.class
-        if(clazz in LOGGER_MAP){
-            return LOGGER_MAP.get(clazz)
+        if(source != null && source.class in LOGGER_MAP){
+            return LOGGER_MAP.get(source.class)
         }
         else{
             return DEFAULT_LOGGER
@@ -133,6 +132,14 @@ abstract class OSMTools extends GroovyProcessFactory {
      * @author Elisabeth Lesaux (UBS LAB-STICC)
      */
     boolean executeOverPassQuery(def query, def outputOSMFile) {
+        if(!query){
+            error "The query should not be null or empty."
+            return false
+        }
+        if(!outputOSMFile){
+            error "The output file should not be null or empty."
+            return false
+        }
         outputOSMFile.delete()
         def queryUrl = new URL(OVERPASS_BASE_URL + utf8ToUrl(query))
         def connection = queryUrl.openConnection() as HttpURLConnection

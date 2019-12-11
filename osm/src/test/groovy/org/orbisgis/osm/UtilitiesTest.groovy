@@ -5,12 +5,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.locationtech.jts.geom.Coordinate
-import org.locationtech.jts.geom.Coordinates
 import org.locationtech.jts.geom.Envelope
-import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
-import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.osm.utils.OSMElement
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

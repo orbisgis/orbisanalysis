@@ -438,15 +438,11 @@ def buildGeometryAndZone(Geometry geom, int epsg, int distance, def datasource) 
     def con = datasource.getConnection();
     Polygon filterArea
     if(epsg <= -1 || epsg == 0){
-        if(geom.SRID > 0){
-            epsg = geom.SRID
-        }
-        else {
-            def interiorPoint = geom.getCentroid()
-            epsg = SFSUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
-            geom = geom.copy()
-            geom.setSRID(epsg)
-        }
+        def interiorPoint = geom.getCentroid()
+        epsg = SFSUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
+        geom = geom.copy()
+        geom.setSRID(epsg)
+
         if(distance==0){
             Geometry tmpEnvGeom = gf.toGeometry(geom.getEnvelopeInternal())
             tmpEnvGeom.setSRID(epsg)
@@ -531,7 +527,7 @@ Geometry buildGeometry(def bbox) {
  * @param bbox 4 values
  * @return a JTS polygon
  */
-//TODO why ot merging methods
+//TODO why not merging methods
 Geometry geometryFromNominatim(def bbox) {
     if(!bbox){
         error "The latitude and longitude values cannot be null or empty"

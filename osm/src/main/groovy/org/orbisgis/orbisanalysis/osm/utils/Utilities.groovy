@@ -440,6 +440,7 @@ def buildGeometryAndZone(Geometry geom, int epsg, int distance, def datasource) 
     if(epsg <= -1 || epsg == 0){
         def interiorPoint = geom.getCentroid()
         epsg = SFSUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
+        info "Detected SRID : $epsg"
         geom = geom.copy()
         geom.setSRID(epsg)
 

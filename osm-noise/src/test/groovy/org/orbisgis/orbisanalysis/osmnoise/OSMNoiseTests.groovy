@@ -55,7 +55,7 @@ class OSMNoiseTests {
     void downloadTest() {
         def h2GIS = H2GIS.open('./target/OSMNoise;AUTO_SERVER=TRUE')
         def process = OSMNoise.Data.download()
-        assertTrue process.execute(datasource: h2GIS, placeName: "Saint Jean La Poterie", epsg:4326)
+        assertTrue process.execute(datasource: h2GIS, placeName: "Saint Jean La Poterie")
         assertTrue(h2GIS.hasTable(process.results.zoneTableName))
         ISpatialTable zoneTable = h2GIS.getSpatialTable(process.results.zoneTableName)
         assertTrue(zoneTable.rowCount==1)
@@ -66,7 +66,7 @@ class OSMNoiseTests {
     void GISLayersTestFromApi() {
         def h2GIS = H2GIS.open('./target/OSMNoise;AUTO_SERVER=TRUE')
         def process = OSMNoise.Data.GISLayers()
-        assertTrue process.execute(datasource: h2GIS, placeName: "Saint Jean La Poterie", epsg:4326)
+        assertTrue process.execute(datasource: h2GIS, placeName: "Saint Jean La Poterie")
         assertTrue(h2GIS.hasTable(process.results.zoneTableName))
         ISpatialTable zoneTable = h2GIS.getSpatialTable(process.results.zoneTableName)
         assertTrue(zoneTable.rowCount==1)

@@ -89,7 +89,7 @@
         </plugins>
         <resources>
             <resource>
-                <directory>src/main/groovy/org/orbisgis/osm</directory>
+                <directory>src/main/groovy/org/orbisgis/orbisanalysis/osm</directory>
                 <includes>
                     <include>simplelogger.properties</include>
                 </includes>

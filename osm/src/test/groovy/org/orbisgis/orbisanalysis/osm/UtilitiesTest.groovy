@@ -42,6 +42,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Envelope
+import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.orbisanalysis.osm.utils.OSMElement
@@ -633,5 +634,27 @@ class UtilitiesTest extends AbstractOSMTest {
         assertNull OSMTools.Utilities.getAreaFromPlace(null)
         badExecuteNominatimQueryOverride()
         assertNull OSMTools.Utilities.getAreaFromPlace("place")
+    }
+
+    @Test
+    void getPlaceAndEPSG(){
+        def  placeName = "Boston"
+        def targetEPSG=-1
+        def ds = RANDOM_DS()
+        Geometry geom = OSMTools.Utilities.getAreaFromPlace(placeName);
+        assertNotNull(geom)
+        def geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, targetEPSG, 0, ds)
+        assertEquals(32619, geomAndEnv.geom.getSRID())
+        placeName = "Paimpol"
+        geom = OSMTools.Utilities.getAreaFromPlace(placeName);
+        assertNotNull(geom)
+        geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, targetEPSG, 0, ds)
+        assertEquals(32630, geomAndEnv.geom.getSRID())
+        placeName = "Paimpol"
+        geom = OSMTools.Utilities.getAreaFromPlace(placeName);
+        assertNotNull(geom)
+        geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, targetEPSG, 0, ds)
+        assertEquals(32630, geomAndEnv.geom.getSRID())
+
     }
 }

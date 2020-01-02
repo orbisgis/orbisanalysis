@@ -438,11 +438,15 @@ def buildGeometryAndZone(Geometry geom, int epsg, int distance, def datasource) 
     def con = datasource.getConnection();
     Polygon filterArea
     if(epsg <= -1 || epsg == 0){
-        def interiorPoint = geom.getCentroid()
-        epsg = SFSUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
-        info "Detected SRID : $epsg"
-        geom = geom.copy()
-        geom.setSRID(epsg)
+        if(geom.SRID > 0){
+            epsg = geom.SRID
+        }
+        else {
+            def interiorPoint = geom.getCentroid()
+            epsg = SFSUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
+            geom = geom.copy()
+            geom.setSRID(epsg)
+        }
 
         if(distance==0){
             Geometry tmpEnvGeom = gf.toGeometry(geom.getEnvelopeInternal())

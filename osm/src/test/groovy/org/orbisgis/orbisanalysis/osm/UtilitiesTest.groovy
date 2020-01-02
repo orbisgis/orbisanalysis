@@ -644,17 +644,17 @@ class UtilitiesTest extends AbstractOSMTest {
         Geometry geom = OSMTools.Utilities.getAreaFromPlace(placeName);
         assertNotNull(geom)
         def geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, targetEPSG, 0, ds)
-        assertEquals(32619, geomAndEnv.geom.getSRID())
+        assertEquals(4326, geomAndEnv.geom.getSRID())
         placeName = "Paimpol"
         geom = OSMTools.Utilities.getAreaFromPlace(placeName);
         assertNotNull(geom)
         geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, targetEPSG, 0, ds)
-        assertEquals(32630, geomAndEnv.geom.getSRID())
+        assertEquals(4326, geomAndEnv.geom.getSRID())
         placeName = "Paimpol"
         geom = OSMTools.Utilities.getAreaFromPlace(placeName);
         assertNotNull(geom)
         geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, targetEPSG, 0, ds)
-        assertEquals(32630, geomAndEnv.geom.getSRID())
+        assertEquals(4326, geomAndEnv.geom.getSRID())
 
     }
 }

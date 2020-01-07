@@ -160,8 +160,8 @@ abstract class AbstractOSMTest {
      */
     protected static void sampleGetAreaFromPlace(){
         OSMTools.Utilities.metaClass.static.getAreaFromPlace = {placeName ->
-            def coordinates = [new Coordinate(0, 0), new Coordinate(4, 8), new Coordinate(7, 5),
-                               new Coordinate(0, 0)] as Coordinate[]
+            def coordinates = [new Coordinate(-3.016, 48.82), new Coordinate(-3.016, 48.821), new Coordinate(-3.015 ,48.82),
+                               new Coordinate(-3.016 ,48.82)] as Coordinate[]
             def geom = new GeometryFactory().createPolygon(coordinates)
             geom.SRID = 4326
             return geom

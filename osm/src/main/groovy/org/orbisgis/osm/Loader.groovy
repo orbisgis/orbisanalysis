@@ -162,17 +162,17 @@ IProcess fromPlace() {
             }
             //Extract the OSM file from the envelope of the geometry
             def geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, distance, datasource)
-            def epsg = geomAndEnv.geom.SRID
+            def epsg = geomAndEnv.geomInMetric.SRID
 
             //Create table to store the geometry and the envelope of the extracted area
             datasource.execute "CREATE TABLE $outputZoneTable (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);" +
-                    "INSERT INTO $outputZoneTable VALUES (ST_GEOMFROMTEXT('${geomAndEnv.geom}', $epsg), '$placeName');"
+                    "INSERT INTO $outputZoneTable VALUES (ST_GEOMFROMTEXT('${geomAndEnv.geomInMetric}', $epsg), '$placeName');"
 
-            def text = ST_Transform.ST_Transform(datasource.getConnection(), geomAndEnv.filterArea, epsg)
+            def text = ST_Transform.ST_Transform(datasource.getConnection(), geomAndEnv.filterAreaInMetric, epsg)
             datasource.execute "CREATE TABLE $outputZoneEnvelopeTable (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);" +
                     "INSERT INTO $outputZoneEnvelopeTable VALUES (ST_GEOMFROMTEXT('$text',$epsg), '$placeName');"
 
-            def query = OSMTools.Utilities.buildOSMQuery(geomAndEnv.filterArea, [], NODE, WAY, RELATION)
+            def query = OSMTools.Utilities.buildOSMQuery(geomAndEnv.filterAreaInLatLong, [], NODE, WAY, RELATION)
 
             def extract = OSMTools.Loader.extract()
             if (extract(overpassQuery: query)) {

@@ -416,16 +416,18 @@ def buildGeometryAndZone(Geometry geom, int distance, def datasource) {
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  *
- * @param geom The input geometry.
- * @param epsg The input epsg code.
- * @param distance A value to expand the envelope of the geometry.
+ * @param geom The input geometry in the WGS84 system
+ * @param expectedEPSG Expected output epsg code.
  * @param datasource A connexion to the database.
  *
- * @return A map with the input geometry and the envelope of the input geometry. Both are projected in a new reference
- * system depending on the epsg code.
- * Note that the envelope of the geometry can be expanded according to the input distance value.
+ * @return A map with
+ * - the input geometry projected in a new reference system depending on the expected epsg code
+ * - the envelope of the the input geometry expanded according to the input distance value,
+ *   projected in a new reference system depending on the expected epsg code
+ * - the envelope of the the input geometry expanded according to the input distance value,
+ *   projected in WGS84
  */
-def buildGeometryAndZone(Geometry geom, int epsg, int distance, def datasource) {
+def buildGeometryAndZone(Geometry geom, def datasource) {
     if(!geom){
         error "The geometry should not be null"
         return null
@@ -436,42 +438,58 @@ def buildGeometryAndZone(Geometry geom, int epsg, int distance, def datasource) 
     }
     GeometryFactory gf = new GeometryFactory()
     def con = datasource.getConnection();
-    Polygon filterArea
-    if(epsg <= -1 || epsg == 0){
-        def interiorPoint = geom.getCentroid()
-        epsg = SFSUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
-        geom = geom.copy()
-        geom.setSRID(epsg)
+    def filterAreaInLatLong
+    def geomInMetric
+    def filterAreaInMetric
+    //The geometry must be in latitude and longitude coordinates
+    def interiorPoint = geom.getCentroid()
+    def latitude = interiorPoint.y
+    def longitude = interiorPoint.x
+    if((latitude >= -90.0F && latitude <= 90.0F) && (longitude >= -180.0F && longitude <= 180.0F)){
+            geom.setSRID(4326)
+            if(expectedEPSG <= -1 || expectedEPSG == 0) {
+            def utmEPSG = SFSUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
+               geomInMetric = ST_Transform.ST_Transform(con, geom, utmEPSG)
+            if (distance == 0) {
+                filterAreaInMetric = gf.toGeometry(geomInMetric.getEnvelopeInternal())
+                filterAreaInMetric.setSRID(utmEPSG)
+                filterAreaInLatLong = gf.toGeometry(geom.getEnvelopeInternal())
+                filterAreaInLatLong.setSRID(4326)
 
-        if(distance==0){
-            Geometry tmpEnvGeom = gf.toGeometry(geom.getEnvelopeInternal())
-            tmpEnvGeom.setSRID(epsg)
-            filterArea = ST_Transform.ST_Transform(con, tmpEnvGeom, 4326)
+            } else {
+                def env = geomInMetric.getEnvelopeInternal()
+                env.expandBy(distance)
+                filterAreaInMetric = gf.toGeometry(env)
+                filterAreaInMetric.setSRID(utmEPSG)
+                filterAreaInLatLong = ST_Transform.ST_Transform(con, filterAreaInMetric, 4326)
+            }
         }
         else {
-            def env = geom.getEnvelopeInternal()
-            env.expandBy(distance)
-            def tmpEnvGeom = gf.toGeometry(env)
-            tmpEnvGeom.setSRID(epsg)
-            filterArea = ST_Transform.ST_Transform(con, tmpEnvGeom, 4326)
+                if(expectedEPSG==4326){
+                    expectedEPSG = SFSUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
+                }
+                geomInMetric = ST_Transform.ST_Transform(con, geom, expectedEPSG)
+                if (distance == 0) {
+                    filterAreaInMetric = gf.toGeometry(geomInMetric.getEnvelopeInternal())
+                    filterAreaInMetric.setSRID(expectedEPSG)
+                    filterAreaInLatLong = gf.toGeometry(geom.getEnvelopeInternal())
+                    filterAreaInLatLong.setSRID(4326)
+
+                } else {
+                    def env = geomInMetric.getEnvelopeInternal()
+                    env.expandBy(distance)
+                    filterAreaInMetric = gf.toGeometry(env)
+                    filterAreaInMetric.setSRID(expectedEPSG)
+                    filterAreaInLatLong = ST_Transform.ST_Transform(con, filterAreaInMetric, 4326)
+                }
+
         }
     }
-    else {
-        if(geom.SRID != epsg){
-            geom = ST_Transform.ST_Transform(con, geom, epsg)
-        }
-        if(distance==0){
-            filterArea = gf.toGeometry(geom.getEnvelopeInternal())
-            filterArea.setSRID(epsg)
-        }
-        else {
-            def env = geom.getEnvelopeInternal()
-            env.expandBy(distance)
-            filterArea = gf.toGeometry(env)
-            filterArea.setSRID(epsg)
-        }
+    else{
+        error "The coordinates of the geometry must in latitude/longitude"
+        return null
     }
-    return [geom :  geom, filterArea : filterArea]
+    return [geomInMetric :  geomInMetric, filterAreaInMetric : filterAreaInMetric, filterAreaInLatLong : filterAreaInLatLong]
 }
 
 /**

@@ -38,6 +38,7 @@ package org.orbisgis.osm
 
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.locationtech.jts.geom.Geometry
@@ -54,6 +55,7 @@ import org.slf4j.LoggerFactory
 import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertFalse
 import static org.junit.jupiter.api.Assertions.assertTrue
+import static org.junit.jupiter.api.Assertions.assertNotNull
 
 import org.orbisgis.osm.utils.OSMElement
 
@@ -624,29 +626,24 @@ class TransformTest extends AbstractOSMTest {
         }
     }
 
-    @Test //disable. It uses for test purpose
+    /**
+     * It uses for test purpose
+     */
+    @Disabled
+    @Test
     void dev() {
         H2GIS h2GIS = RANDOM_DS()
-        Geometry geom = OSMTools.Utilities.getAreaFromPlace("Paimpol");
-
-        def geomAndFilter = OSMTools.Utilities.buildGeometryAndZone(geom, -1, 0, h2GIS)
-
-        geom = geomAndFilter.geom
-        def  epsg = geom.getSRID()
-        Geometry  filterArea =  geomAndFilter.filterArea
-
-        def query = OSMTools.Utilities.buildOSMQuery(filterArea.getEnvelopeInternal(), [], OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+        Geometry geom = OSMTools.Utilities.getAreaFromPlace("Boston");
+        def query = OSMTools.Utilities.buildOSMQuery(geom.getEnvelopeInternal(), [], OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
         def extract = OSMTools.Loader.extract()
         if (!query.isEmpty()) {
             if (extract.execute(overpassQuery: query)) {
                 def prefix = "OSM_FILE_${OSMTools.uuid}"
                 def load = OSMTools.Loader.load()
                 if (load(datasource: h2GIS, osmTablesPrefix: prefix, osmFilePath:extract.results.outputFilePath)) {
-
                     def tags = ['building']
-
                     def transform = OSMTools.Transform.toPolygons()
-                    transform.execute(datasource: h2GIS, osmTablesPrefix: prefix, epsgCode: epsg, tags: tags)
+                    transform.execute(datasource: h2GIS, osmTablesPrefix: prefix, tags: tags)
                     assertNotNull(transform.results.outputTableName)
                     h2GIS.getTable(transform.results.outputTableName).save("/tmp/${transform.results.outputTableName}.shp")
                 }

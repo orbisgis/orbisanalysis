@@ -250,7 +250,7 @@ class TransformUtils {
             error("Invalid null OSM table prefix")
             return false
         }
-        if(epsgCode < 0){
+        if(epsgCode ==-1){
             error("Invalid EPSG code")
             return false
         }

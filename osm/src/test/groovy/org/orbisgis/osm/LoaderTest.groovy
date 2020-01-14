@@ -42,6 +42,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.io.WKTReader
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -191,16 +192,17 @@ class LoaderTest extends AbstractOSMTest {
         def fromArea = OSMTools.Loader.fromArea()
         H2GIS ds = RANDOM_DS()
         def geomFacto = new GeometryFactory()
-        def dist = 5
+        def dist = 1000
         def polygon = geomFacto.createPolygon([new Coordinate(0, 0),
-                                               new Coordinate(4, 8),
-                                               new Coordinate(7, 5),
+                                               new Coordinate(2, 0),
+                                               new Coordinate(2, 2),
+                                               new Coordinate(0, 2),
                                                new Coordinate(0, 0)] as Coordinate[])
-        def overpassQuery = "[bbox:-5.0,-5.0,13.0,12.0];\n" +
+        def overpassQuery = "[bbox:-0.008983152841195214,-0.008988628470795009,2.008983152841195,2.008988628470795];\n" +
                 "(\n" +
-                "\tnode(poly:\"-5.0 -5.0 13.0 -5.0 13.0 12.0 -5.0 12.0\");\n" +
-                "\tway(poly:\"-5.0 -5.0 13.0 -5.0 13.0 12.0 -5.0 12.0\");\n" +
-                "\trelation(poly:\"-5.0 -5.0 13.0 -5.0 13.0 12.0 -5.0 12.0\");\n" +
+                "\tnode(poly:\"-0.008983152841195214 -0.008988628470795009 2.008983152841195 -0.008988628470795009 2.008983152841195 2.008988628470795 -0.008983152841195214 2.008988628470795\");\n" +
+                "\tway(poly:\"-0.008983152841195214 -0.008988628470795009 2.008983152841195 -0.008988628470795009 2.008983152841195 2.008988628470795 -0.008983152841195214 2.008988628470795\");\n" +
+                "\trelation(poly:\"-0.008983152841195214 -0.008988628470795009 2.008983152841195 -0.008988628470795009 2.008983152841195 2.008988628470795 -0.008983152841195214 2.008988628470795\");\n" +
                 ");\n" +
                 "out;"
         def env = polygon.getEnvelopeInternal()
@@ -216,8 +218,6 @@ class LoaderTest extends AbstractOSMTest {
         assertTrue Pattern.compile("ZONE_ENVELOPE_$uuidRegex").matcher(r.zoneEnvelopeTableName as String).matches()
         assertTrue r.containsKey("osmTablesPrefix")
         assertTrue Pattern.compile("OSM_DATA_$uuidRegex").matcher(r.osmTablesPrefix as String).matches()
-        assertTrue r.containsKey("epsg")
-        assertEquals 4326, r.epsg
         assertEquals overpassQuery, query
 
         def zone = ds.getSpatialTable(r.zoneTableName)
@@ -225,14 +225,14 @@ class LoaderTest extends AbstractOSMTest {
         assertEquals 1, zone.getColumnCount()
         assertTrue zone.columns.contains("THE_GEOM")
         zone.next()
-        assertEquals "POLYGON ((0 0, 4 8, 7 5, 0 0))", zone.getGeometry(1).toText()
+        assertEquals wktReader.read("POLYGON ((0 0, 2 0, 2 2, 0 2, 0 0))"), zone.getGeometry(1)
 
         def zoneEnv = ds.getSpatialTable(r.zoneEnvelopeTableName)
         assertEquals 1, zoneEnv.rowCount
         assertEquals 1, zoneEnv.getColumnCount()
         assertTrue zoneEnv.columns.contains("THE_GEOM")
         zoneEnv.next()
-        assertEquals "POLYGON ((-5 -5, -5 13, 12 13, 12 -5, -5 -5))", zoneEnv.getGeometry(1).toText()
+        assertEquals wktReader.read("POLYGON ((-0.008988628470795 -0.0089831528411952, -0.008988628470795 2.008983152841195, 2.008988628470795 2.008983152841195, 2.008988628470795 -0.0089831528411952, -0.008988628470795 -0.0089831528411952))"), zoneEnv.getGeometry(1)
 
 
         //With envelope
@@ -246,8 +246,6 @@ class LoaderTest extends AbstractOSMTest {
         assertTrue Pattern.compile("ZONE_ENVELOPE_$uuidRegex").matcher(r.zoneEnvelopeTableName as String).matches()
         assertTrue r.containsKey("osmTablesPrefix")
         assertTrue Pattern.compile("OSM_DATA_$uuidRegex").matcher(r.osmTablesPrefix as String).matches()
-        assertTrue r.containsKey("epsg")
-        assertEquals 4326, r.epsg
         assertEquals overpassQuery, query
 
         zone = ds.getSpatialTable(r.zoneTableName)
@@ -255,14 +253,14 @@ class LoaderTest extends AbstractOSMTest {
         assertEquals 1, zone.getColumnCount()
         assertTrue zone.columns.contains("THE_GEOM")
         zone.next()
-        assertEquals "POLYGON ((0 0, 0 8, 7 8, 7 0, 0 0))", zone.getGeometry(1).toText()
+        assertEquals wktReader.read("POLYGON ((0 0, 0 2, 2 2, 2 0, 0 0))"), zone.getGeometry(1)
 
         zoneEnv = ds.getSpatialTable(r.zoneEnvelopeTableName)
         assertEquals 1, zoneEnv.rowCount
         assertEquals 1, zoneEnv.getColumnCount()
         assertTrue zoneEnv.columns.contains("THE_GEOM")
         zoneEnv.next()
-        assertEquals "POLYGON ((-5 -5, -5 13, 12 13, 12 -5, -5 -5))", zoneEnv.getGeometry(1).toText()
+        assertEquals wktReader.read("POLYGON ((-0.008988628470795 -0.0089831528411952, -0.008988628470795 2.008983152841195, 2.008988628470795 2.008983152841195, 2.008988628470795 -0.0089831528411952, -0.008988628470795 -0.0089831528411952))"), zoneEnv.getGeometry(1)
     }
 
     /**
@@ -275,11 +273,11 @@ class LoaderTest extends AbstractOSMTest {
         def fromPlace = OSMTools.Loader.fromPlace()
         def placeName = "  The place Name -toFind  "
         def formattedPlaceName = "The_place_Name_toFind_"
-        def overpassQuery = "[bbox:0.0,0.0,8.0,7.0];\n" +
+        def overpassQuery = "[bbox:48.82,-3.016,48.821,-3.015];\n" +
                 "(\n" +
-                "\tnode(poly:\"0.0 0.0 8.0 0.0 8.0 7.0 0.0 7.0\");\n" +
-                "\tway(poly:\"0.0 0.0 8.0 0.0 8.0 7.0 0.0 7.0\");\n" +
-                "\trelation(poly:\"0.0 0.0 8.0 0.0 8.0 7.0 0.0 7.0\");\n" +
+                "\tnode(poly:\"48.82 -3.016 48.821 -3.016 48.821 -3.015 48.82 -3.015\");\n" +
+                "\tway(poly:\"48.82 -3.016 48.821 -3.016 48.821 -3.015 48.82 -3.015\");\n" +
+                "\trelation(poly:\"48.82 -3.016 48.821 -3.016 48.821 -3.015 48.82 -3.015\");\n" +
                 ");\n" +
                 "out;"
         H2GIS ds = RANDOM_DS()
@@ -293,8 +291,6 @@ class LoaderTest extends AbstractOSMTest {
         assertTrue Pattern.compile("ZONE_ENVELOPE_$formattedPlaceName$uuidRegex").matcher(r.zoneEnvelopeTableName as String).matches()
         assertTrue r.containsKey("osmTablesPrefix")
         assertTrue Pattern.compile("OSM_DATA_$formattedPlaceName$uuidRegex").matcher(r.osmTablesPrefix as String).matches()
-        assertTrue r.containsKey("epsg")
-        assertEquals 4326, r.epsg
         assertEquals overpassQuery, query
 
         def zone = ds.getSpatialTable(r.zoneTableName)
@@ -303,7 +299,7 @@ class LoaderTest extends AbstractOSMTest {
         assertTrue zone.columns.contains("THE_GEOM")
         assertTrue zone.columns.contains("ID_ZONE")
         zone.next()
-        assertEquals "POLYGON ((0 0, 4 8, 7 5, 0 0))", zone.getGeometry(1).toText()
+        assertEquals "POLYGON ((-3.016 48.82, -3.016 48.821, -3.015 48.821, -3.015 48.82, -3.016 48.82))", zone.getGeometry(1).toText()
         assertEquals "  The place Name -toFind  ", zone.getString(2)
 
         def zoneEnv = ds.getSpatialTable(r.zoneEnvelopeTableName)
@@ -312,7 +308,7 @@ class LoaderTest extends AbstractOSMTest {
         assertTrue zoneEnv.columns.contains("THE_GEOM")
         assertTrue zoneEnv.columns.contains("ID_ZONE")
         zoneEnv.next()
-        assertEquals "POLYGON ((0 0, 0 8, 7 8, 7 0, 0 0))", zoneEnv.getGeometry(1).toText()
+        assertEquals "POLYGON ((-3.016 48.82, -3.016 48.821, -3.015 48.821, -3.015 48.82, -3.016 48.82))", zoneEnv.getGeometry(1).toText()
         assertEquals "  The place Name -toFind  ", zoneEnv.getString(2)
     }
 
@@ -327,16 +323,14 @@ class LoaderTest extends AbstractOSMTest {
         def placeName = "  The place Name -toFind  "
         def dist = 5
         def formattedPlaceName = "The_place_Name_toFind_"
-        def overpassQuery = "[bbox:48.81995487656956,-3.016068448593508,48.8210451227315,-3.014931872070002];\n" +
+        def overpassQuery = "[bbox:48.819955084235794,-3.01606821815555,48.821044915764205,-3.0149317818444503];\n" +
                 "(\n" +
-                "\tnode(poly:\"48.81995487656956 -3.016068100149082 48.82104496995536 -3.016068448593508 48.8210451227315 -3.0149321958747803 48.819955029339845 -3.014931872070002\");\n" +
-                "\tway(poly:\"48.81995487656956 -3.016068100149082 48.82104496995536 -3.016068448593508 48.8210451227315 -3.0149321958747803 48.819955029339845 -3.014931872070002\");\n" +
-                "\trelation(poly:\"48.81995487656956 -3.016068100149082 48.82104496995536 -3.016068448593508 48.8210451227315 -3.0149321958747803 48.819955029339845 -3.014931872070002\");\n" +
+                "\tnode(poly:\"48.819955084235794 -3.01606821815555 48.821044915764205 -3.01606821815555 48.821044915764205 -3.0149317818444503 48.819955084235794 -3.0149317818444503\");\n" +
+                "\tway(poly:\"48.819955084235794 -3.01606821815555 48.821044915764205 -3.01606821815555 48.821044915764205 -3.0149317818444503 48.819955084235794 -3.0149317818444503\");\n" +
+                "\trelation(poly:\"48.819955084235794 -3.01606821815555 48.821044915764205 -3.01606821815555 48.821044915764205 -3.0149317818444503 48.819955084235794 -3.0149317818444503\");\n" +
                 ");\n" +
                 "out;"
         H2GIS ds = RANDOM_DS()
-
-
         assertTrue fromPlace(datasource: ds, placeName: placeName, distance: dist)
         def r = fromPlace.results
         assertFalse r.isEmpty()
@@ -346,8 +340,6 @@ class LoaderTest extends AbstractOSMTest {
         assertTrue Pattern.compile("ZONE_ENVELOPE_$formattedPlaceName$uuidRegex").matcher(r.zoneEnvelopeTableName as String).matches()
         assertTrue r.containsKey("osmTablesPrefix")
         assertTrue Pattern.compile("OSM_DATA_$formattedPlaceName$uuidRegex").matcher(r.osmTablesPrefix as String).matches()
-        assertTrue r.containsKey("epsg")
-        assertEquals 32630, r.epsg
         assertEquals overpassQuery, query
 
         def zone = ds.getSpatialTable(r.zoneTableName)
@@ -356,7 +348,7 @@ class LoaderTest extends AbstractOSMTest {
         assertTrue zone.columns.contains("THE_GEOM")
         assertTrue zone.columns.contains("ID_ZONE")
         zone.next()
-        assertEquals "POLYGON ((498825.50829178543 5407446.472716676, 498825.5316557315 5407557.634492434, 498898.9140233192 5407446.457770533, 498825.50829178543 5407446.472716676))", zone.getGeometry(1).toText()
+        assertEquals "POLYGON ((-3.016 48.82, -3.016 48.821, -3.015 48.821, -3.015 48.82, -3.016 48.82))", zone.getGeometry(1).toText()
         assertEquals "  The place Name -toFind  ", zone.getString(2)
 
         def zoneEnv = ds.getSpatialTable(r.zoneEnvelopeTableName)
@@ -365,7 +357,7 @@ class LoaderTest extends AbstractOSMTest {
         assertTrue zoneEnv.columns.contains("THE_GEOM")
         assertTrue zoneEnv.columns.contains("ID_ZONE")
         zoneEnv.next()
-        assertEquals "POLYGON ((498820.50829178543 5407441.457770533, 498820.50829178543 5407562.634492434, 498903.9140233192 5407562.634492434, 498903.9140233192 5407441.457770533, 498820.50829178543 5407441.457770533))", zoneEnv.getGeometry(1).toText()
+        assertEquals "POLYGON ((-3.01606821815555 48.819955084235794, -3.01606821815555 48.821044915764205, -3.0149317818444503 48.821044915764205, -3.0149317818444503 48.819955084235794, -3.01606821815555 48.819955084235794))", zoneEnv.getGeometry(1).toText()
         assertEquals "  The place Name -toFind  ", zoneEnv.getString(2)
     }
 

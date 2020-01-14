@@ -38,9 +38,6 @@ package org.orbisgis.osm
 
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
-import org.cts.util.UTMUtils
-import org.h2gis.functions.spatial.crs.ST_Transform
-import org.h2gis.utilities.SFSUtilities
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
@@ -49,6 +46,7 @@ import org.locationtech.jts.geom.LinearRing
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.osm.utils.OSMElement
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
+import org.cts.util.UTMUtils
 
 @BaseScript OSMTools osmTools
 
@@ -384,112 +382,6 @@ Map readJSONParameters(def jsonFile) {
         return parsed
     }
     error "The json file doesn't contains only parameter."
-}
-
-/**
- * This method is used to build a new geometry and its envelope according an EPSG code and a distance
- * The geometry and the envelope are set up in an UTM coordinate system when the epsg code is unknown.
- *
- * @author Erwan Bocher (CNRS LAB-STICC)
- * @author Elisabeth Le Saux (UBS LAB-STICC)
- *
- * @param geom The input geometry.
- * @param distance A value to expand the envelope of the geometry.
- * @param datasource A connexion to the database.
- *
- * @return a map with the input geometry and the envelope of the input geometry. Both are projected in a new reference
- * system depending on the epsg code.
- * Note that the envelope of the geometry can be expanded according to the input distance value.
- */
-def buildGeometryAndZone(Geometry geom, int distance, def datasource) {
-    if(!geom){
-        error "The geometry should not be null"
-        return null
-    }
-    return buildGeometryAndZone(geom, geom.SRID, distance, datasource)
-}
-
-/**
- * This method is used to build a new geometry and its envelope according an EPSG code and a distance
- * The geometry and the envelope are set up in an UTM coordinate system when the epsg code is unknown.
- *
- * @author Erwan Bocher (CNRS LAB-STICC)
- * @author Elisabeth Le Saux (UBS LAB-STICC)
- *
- * @param geom The input geometry in the WGS84 system
- * @param expectedEPSG Expected output epsg code.
- * @param datasource A connexion to the database.
- *
- * @return A map with
- * - the input geometry projected in a new reference system depending on the expected epsg code
- * - the envelope of the the input geometry expanded according to the input distance value,
- *   projected in a new reference system depending on the expected epsg code
- * - the envelope of the the input geometry expanded according to the input distance value,
- *   projected in WGS84
- */
-def buildGeometryAndZone(Geometry geom, def datasource) {
-    if(!geom){
-        error "The geometry should not be null"
-        return null
-    }
-    if(!datasource){
-        error "The data source should not be null"
-        return null
-    }
-    GeometryFactory gf = new GeometryFactory()
-    def con = datasource.getConnection();
-    def filterAreaInLatLong
-    def geomInMetric
-    def filterAreaInMetric
-    //The geometry must be in latitude and longitude coordinates
-    def interiorPoint = geom.getCentroid()
-    def latitude = interiorPoint.y
-    def longitude = interiorPoint.x
-    if((latitude >= -90.0F && latitude <= 90.0F) && (longitude >= -180.0F && longitude <= 180.0F)){
-            geom.setSRID(4326)
-            if(expectedEPSG <= -1 || expectedEPSG == 0) {
-            def utmEPSG = SFSUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
-               geomInMetric = ST_Transform.ST_Transform(con, geom, utmEPSG)
-            if (distance == 0) {
-                filterAreaInMetric = gf.toGeometry(geomInMetric.getEnvelopeInternal())
-                filterAreaInMetric.setSRID(utmEPSG)
-                filterAreaInLatLong = gf.toGeometry(geom.getEnvelopeInternal())
-                filterAreaInLatLong.setSRID(4326)
-
-            } else {
-                def env = geomInMetric.getEnvelopeInternal()
-                env.expandBy(distance)
-                filterAreaInMetric = gf.toGeometry(env)
-                filterAreaInMetric.setSRID(utmEPSG)
-                filterAreaInLatLong = ST_Transform.ST_Transform(con, filterAreaInMetric, 4326)
-            }
-        }
-        else {
-                if(expectedEPSG==4326){
-                    expectedEPSG = SFSUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
-                }
-                geomInMetric = ST_Transform.ST_Transform(con, geom, expectedEPSG)
-                if (distance == 0) {
-                    filterAreaInMetric = gf.toGeometry(geomInMetric.getEnvelopeInternal())
-                    filterAreaInMetric.setSRID(expectedEPSG)
-                    filterAreaInLatLong = gf.toGeometry(geom.getEnvelopeInternal())
-                    filterAreaInLatLong.setSRID(4326)
-
-                } else {
-                    def env = geomInMetric.getEnvelopeInternal()
-                    env.expandBy(distance)
-                    filterAreaInMetric = gf.toGeometry(env)
-                    filterAreaInMetric.setSRID(expectedEPSG)
-                    filterAreaInLatLong = ST_Transform.ST_Transform(con, filterAreaInMetric, 4326)
-                }
-
-        }
-    }
-    else{
-        error "The coordinates of the geometry must in latitude/longitude"
-        return null
-    }
-    return [geomInMetric :  geomInMetric, filterAreaInMetric : filterAreaInMetric, filterAreaInLatLong : filterAreaInLatLong]
 }
 
 /**

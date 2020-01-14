@@ -397,82 +397,6 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#buildGeometryAndZone(org.locationtech.jts.geom.Geometry, int, java.lang.Object)} and
-     * {@link Utilities#buildGeometryAndZone(org.locationtech.jts.geom.Geometry, int, int, java.lang.Object)} methods.
-     */
-    @Test
-    void buildGeometryAndZoneTest(){
-        def ds = RANDOM_DS()
-        WKTReader wktReader =  new WKTReader()
-        GeometryFactory gf = new GeometryFactory()
-        // Input geometry in WGS84
-        def polygonIn4326 = wktReader.read("POLYGON ((-3.0162996512745006 48.820485589787296, -3.0164426870106715 48.82105773273198, -3.016090206089393 48.82110881692347, -3.0155589304979 48.82111392534262, -3.015323943217047 48.820562216074535, -3.0157428335872627 48.82033744563198, -3.0157428335872627 48.82033744563198, -3.016059555574499 48.820168867800064, -3.016059555574499 48.820168867800064, -3.0162996512745006 48.820485589787296))")
-        def result = OSMTools.Utilities.buildGeometryAndZone(polygonIn4326, 0, ds)
-        assertEquals 3, result.size()
-        assertTrue result.containsKey("geomInMetric")
-        assertTrue result.containsKey("filterAreaInMetric")
-        assertTrue result.containsKey("filterAreaInLatLong")
-        assertTrue wktReader.read("POLYGON ((498803.5237285082 5407500.456403683, 498793.03792451497 5407564.05909038, 498818.9127002239 5407569.732171688, 498857.9106295072 5407570.291925942, 498875.14731501095 5407508.959441491, 498844.3935377365 5407483.979834437, 498844.3935377365 5407483.979834437, 498821.1405313526 5407465.245280385, 498821.1405313526 5407465.245280385, 498803.5237285082 5407500.456403683))").equals(result.geomInMetric)
-        assertTrue result.geomInMetric.getEnvelopeInternal().equals(result.filterAreaInMetric.getEnvelopeInternal())
-        assertTrue polygonIn4326.getEnvelopeInternal().equals(result.filterAreaInLatLong.getEnvelopeInternal())
-
-        // Bad input geometry
-        def polygonNotIn4326 = wktReader.read("POLYGON ((498800.6666666667 5407541.666666667, 498815 5407541.666666667, 498815 5407514.666666667, 498800.6666666667 5407514.666666667, 498800.6666666667 5407541.666666667))")
-        result = OSMTools.Utilities.buildGeometryAndZone(polygonNotIn4326, 0, ds)
-        assertNull(result)
-
-        // Input geometry in WGS84 plus distance
-        result = OSMTools.Utilities.buildGeometryAndZone(polygonIn4326, 100, ds)
-        assertEquals 3, result.size()
-        assertTrue result.containsKey("geomInMetric")
-        assertTrue result.containsKey("filterAreaInMetric")
-        assertTrue result.containsKey("filterAreaInLatLong")
-        assertTrue wktReader.read("POLYGON ((498803.5237285082 5407500.456403683, 498793.03792451497 5407564.05909038, 498818.9127002239 5407569.732171688, 498857.9106295072 5407570.291925942, 498875.14731501095 5407508.959441491, 498844.3935377365 5407483.979834437, 498844.3935377365 5407483.979834437, 498821.1405313526 5407465.245280385, 498821.1405313526 5407465.245280385, 498803.5237285082 5407500.456403683))").equals(result.geomInMetric)
-        def geomEnv = result.geomInMetric.getEnvelopeInternal()
-        geomEnv.expandBy(100)
-        assertTrue geomEnv.equals(result.filterAreaInMetric.getEnvelopeInternal())
-        assertTrue wktReader.read("POLYGON ((-3.0178043735867743 48.81926902159189, -3.0178053455549443 48.82201318989658, -3.0139620396939995 48.822013719431, -3.013961277526342 48.81926955107547, -3.0178043735867743 48.81926902159189))").equals(result.filterAreaInLatLong)
-
-
-        // Input geometry in EPSG 2154 plus distance
-        result = OSMTools.Utilities.buildGeometryAndZone(polygonIn4326, 2154, 100, ds)
-        assertEquals 3, result.size()
-        assertTrue result.containsKey("geomInMetric")
-        assertTrue result.containsKey("filterAreaInMetric")
-        assertTrue result.containsKey("filterAreaInLatLong")
-        assertTrue wktReader.read("POLYGON ((258682.89453413076 6874645.141617264, 258677.2652194511 6874709.373873287, 258703.50296784262 6874713.067557089, 258742.44127644302 6874710.664920253, 258754.97613136837 6874648.184352494, 258722.40631679696 6874625.605158827, 258722.40631679696 6874625.605158827, 258697.79179186112 6874608.685161716, 258697.79179186112 6874608.685161716, 258682.89453413076 6874645.141617264))").equals(result.geomInMetric)
-        geomEnv = result.geomInMetric.getEnvelopeInternal()
-        geomEnv.expandBy(100)
-        assertTrue geomEnv.equals(result.filterAreaInMetric.getEnvelopeInternal())
-        assertTrue wktReader.read("POLYGON ((-3.01759259242928 48.81918961082766, -3.017908217509856 48.821919127879745, -3.014136819140715 48.82210923114748, -3.0138213903284097 48.81937970460556, -3.01759259242928 48.81918961082766))").equals(result.filterAreaInLatLong)
-
-    }
-
-    /**
-     * Test the {@link Utilities#buildGeometryAndZone(org.locationtech.jts.geom.Geometry, int, java.lang.Object)} and
-     * {@link Utilities#buildGeometryAndZone(org.locationtech.jts.geom.Geometry, int, int, java.lang.Object)} methods
-     * with bad data.
-     */
-    @Test
-    void badBuildGeometryAndZoneTest(){
-        def ds = RANDOM_DS()
-        def factory = new GeometryFactory()
-        Coordinate[] coordinates = [
-                new Coordinate(0, 0),
-                new Coordinate(5, 0),
-                new Coordinate(5, 8),
-                new Coordinate(0, 8),
-                new Coordinate(0, 0)
-        ]
-        def ring = factory.createLinearRing(coordinates)
-        def polygon0 = factory.createPolygon(ring)
-        assertNull OSMTools.Utilities.buildGeometryAndZone(null, 0, ds)
-        assertNull OSMTools.Utilities.buildGeometryAndZone(polygon0, 0, null)
-        assertNull OSMTools.Utilities.buildGeometryAndZone(null, 0, 0, ds)
-        assertNull OSMTools.Utilities.buildGeometryAndZone(polygon0, 0, 0, null)
-    }
-
-    /**
      * Test the {@link Utilities#buildGeometry(java.lang.Object)} method.
      */
     @Test
@@ -611,18 +535,11 @@ class UtilitiesTest extends AbstractOSMTest {
         def ds = RANDOM_DS()
         Geometry geom = OSMTools.Utilities.getAreaFromPlace(placeName);
         assertNotNull(geom)
-        def geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, targetEPSG, 0, ds)
-        assertEquals(32619, geomAndEnv.geomInMetric.getSRID())
         placeName = "Paimpol"
         geom = OSMTools.Utilities.getAreaFromPlace(placeName);
         assertNotNull(geom)
-        geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, targetEPSG, 0, ds)
-        assertEquals(32630, geomAndEnv.geomInMetric.getSRID())
         placeName = "Paimpol"
         geom = OSMTools.Utilities.getAreaFromPlace(placeName);
         assertNotNull(geom)
-        geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, targetEPSG, 0, ds)
-        assertEquals(32630, geomAndEnv.geomInMetric.getSRID())
-
     }
 }

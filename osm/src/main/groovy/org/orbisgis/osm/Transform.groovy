@@ -306,9 +306,9 @@ IProcess extractRelationsAsPolygons() {
                 datasource.execute """
                         DROP TABLE IF EXISTS $relationsPolygonsOuter;
                         CREATE TABLE $relationsPolygonsOuter AS 
-                        SELECT ST_LINEMERGE(ST_ACCUM(the_geom)) the_geom, id_relation 
+                        SELECT ST_LINEMERGE(ST_ACCUM(the_geom)) as the_geom, id_relation 
                         FROM(
-                            SELECT ST_SETSRID(ST_MAKELINE(the_geom), 4326) the_geom, id_relation, role, id_way 
+                            SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(the_geom), 4326), $epsgCode) as  the_geom, id_relation, role, id_way 
                             FROM(
                                 SELECT(
                                     SELECT ST_ACCUM(the_geom) the_geom 
@@ -329,7 +329,7 @@ IProcess extractRelationsAsPolygons() {
                         CREATE TABLE $relationsPolygonsInner AS 
                         SELECT ST_LINEMERGE(ST_ACCUM(the_geom)) the_geom, id_relation 
                         FROM(
-                            SELECT ST_SETSRID(ST_MAKELINE(the_geom), 4326) the_geom, id_relation, role, id_way 
+                            SELECT  ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(the_geom), 4326), $epsgCode) as the_geom, id_relation, role, id_way 
                             FROM(     
                                 SELECT(
                                     SELECT ST_ACCUM(the_geom) the_geom 
@@ -374,7 +374,7 @@ IProcess extractRelationsAsPolygons() {
                         CREATE INDEX ON $relationsPolygonsInnerExploded(id_relation);       
                         DROP TABLE IF EXISTS $relationsMpHoles;
                         CREATE TABLE $relationsMpHoles AS (
-                            SELECT ST_TRANSFORM(ST_MAKEPOLYGON(ST_EXTERIORRING(a.the_geom), ST_ACCUM(b.the_geom)), $epsgCode) AS the_geom, a.ID_RELATION
+                            SELECT ST_MAKEPOLYGON(ST_EXTERIORRING(a.the_geom), ST_ACCUM(b.the_geom)) AS the_geom, a.ID_RELATION
                             FROM $relationsPolygonsOuterExploded AS a 
                             LEFT JOIN $relationsPolygonsInnerExploded AS b 
                             ON(

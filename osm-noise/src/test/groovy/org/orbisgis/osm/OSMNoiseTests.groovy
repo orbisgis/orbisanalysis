@@ -36,7 +36,7 @@
  */
 package org.orbisgis.osm
 
-
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
@@ -49,6 +49,7 @@ class OSMNoiseTests {
 
     private static final Logger logger = LoggerFactory.getLogger(OSMNoiseTests.class)
 
+    @Disabled
     @Test
     void downloadTest() {
         def h2GIS = H2GIS.open('./target/OSMNoise;AUTO_SERVER=TRUE')
@@ -60,6 +61,7 @@ class OSMNoiseTests {
         assertTrue(new File(process.results.osmFilePath).exists())
     }
 
+    @Disabled
     @Test
     void GISLayersTestFromApi() {
         def h2GIS = H2GIS.open('./target/OSMNoise;AUTO_SERVER=TRUE')
@@ -91,8 +93,7 @@ class OSMNoiseTests {
                 osmFilePath : new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath())
 
         def process = OSMNoise.Data.createBuildingLayer()
-        assertTrue process.execute(datasource: h2GIS, osmTablesPrefix: prefix,
-                epsg: 2154, outputTablePrefix : "redon")
+        assertTrue process.execute(datasource: h2GIS, osmTablesPrefix: prefix,epsg: 2154, outputTablePrefix : "redon")
         assertTrue(h2GIS.hasTable(process.results.outputTableName))
         ISpatialTable ouputTable = h2GIS.getSpatialTable(process.results.outputTableName)
         assertTrue(ouputTable.rowCount>1)
@@ -101,8 +102,7 @@ class OSMNoiseTests {
         assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.outputTableName} where HEIGHT_ROOF is null").count==0
 
         process = OSMNoise.Data.createRoadLayer()
-        assertTrue process.execute(datasource: h2GIS, osmTablesPrefix: prefix,
-                epsg: 2154, outputTablePrefix : "redon")
+        assertTrue process.execute(datasource: h2GIS, osmTablesPrefix: prefix, epsg: 2154,outputTablePrefix : "redon")
         assertTrue(h2GIS.hasTable(process.results.outputTableName))
         ouputTable = h2GIS.getSpatialTable(process.results.outputTableName)
         assertTrue(ouputTable.rowCount>1)

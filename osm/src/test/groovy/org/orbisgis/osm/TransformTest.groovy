@@ -269,7 +269,8 @@ class TransformTest extends AbstractOSMTest {
 
         assertTrue toPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
         assertFalse toPolygons.results.isEmpty()
-        def table = ds.getTable(toPolygons.results.outputTableName)
+        def table = ds.getSpatialTable(toPolygons.results.outputTableName)
+        table.save("/tmp/test.shp")
         assertEquals 2, table.rowCount
         table.each{
             switch(it.row){
@@ -413,7 +414,7 @@ class TransformTest extends AbstractOSMTest {
     @Test
     void extractRelationsAsPolygonsTest(){
         def extractRelationsAsPolygons = OSMTools.Transform.extractRelationsAsPolygons()
-        H2GIS ds = RANDOM_DS()
+        H2GIS ds = H2GIS.open('/tmp/testdb;AUTO_SERVER=TRUE')//RANDOM_DS()
         def prefix = uuid()
         def epsgCode = 2453
         def tags = [building:"house"]

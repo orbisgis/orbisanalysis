@@ -42,7 +42,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Envelope
-import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.orbisanalysis.osm.utils.OSMElement
@@ -399,110 +398,6 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#buildGeometryAndZone(org.locationtech.jts.geom.Geometry, int, java.lang.Object)} and
-     * {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#buildGeometryAndZone(org.locationtech.jts.geom.Geometry, int, int, java.lang.Object)} methods.
-     */
-    @Test
-    //TODO is point valid ? or just polygon
-    void buildGeometryAndZoneTest(){
-        def ds = RANDOM_DS()
-        def factory = new GeometryFactory()
-        Coordinate[] coordinates = [
-                new Coordinate(0, 0),
-                new Coordinate(5, 0),
-                new Coordinate(5, 8),
-                new Coordinate(0, 8),
-                new Coordinate(0, 0)
-        ]
-        def ring = factory.createLinearRing(coordinates)
-        def polygon0 = factory.createPolygon(ring)
-        def polygon_1 = factory.createPolygon(ring)
-        def polygon2025 = factory.createPolygon(ring)
-        polygon_1.setSRID(-1)
-        polygon2025.setSRID(2025)
-
-        def result = OSMTools.Utilities.buildGeometryAndZone(polygon0, 0, ds)
-        assertEquals 2, result.size()
-        assertTrue result.containsKey("geom")
-        assertTrue result.containsKey("filterArea")
-        assertEquals "POLYGON ((0 0, 5 0, 5 8, 0 8, 0 0))", result.geom.toString()
-        assertTrue result.filterArea instanceof Polygon
-        assertEquals 5, ((Polygon)result.filterArea).coordinates.length
-        def filterArea0 = (Polygon)result.filterArea
-
-        result = OSMTools.Utilities.buildGeometryAndZone(polygon_1, 0, ds)
-        assertEquals 2, result.size()
-        assertTrue result.containsKey("geom")
-        assertTrue result.containsKey("filterArea")
-        assertEquals "POLYGON ((0 0, 5 0, 5 8, 0 8, 0 0))", result.geom.toString()
-        assertTrue result.filterArea instanceof Polygon
-        assertEquals 5, ((Polygon)result.filterArea).coordinates.length
-        def filterArea_1 = (Polygon)result.filterArea
-
-        result = OSMTools.Utilities.buildGeometryAndZone(polygon0, 100, ds)
-        assertEquals 2, result.size()
-        assertTrue result.containsKey("geom")
-        assertTrue result.containsKey("filterArea")
-        assertEquals "POLYGON ((0 0, 5 0, 5 8, 0 8, 0 0))", result.geom.toString()
-        assertTrue result.filterArea instanceof Polygon
-        assertEquals 5, ((Polygon)result.filterArea).coordinates.length
-        assertTrue filterArea0.length < ((Polygon)result.filterArea).length
-        assertTrue filterArea0.area < ((Polygon)result.filterArea).area
-
-        result = OSMTools.Utilities.buildGeometryAndZone(polygon_1, 100, ds)
-        assertEquals 2, result.size()
-        assertTrue result.containsKey("geom")
-        assertTrue result.containsKey("filterArea")
-        assertEquals "POLYGON ((0 0, 5 0, 5 8, 0 8, 0 0))", result.geom.toString()
-        assertTrue result.filterArea instanceof Polygon
-        assertEquals 5, ((Polygon)result.filterArea).coordinates.length
-        assertTrue filterArea_1.length < ((Polygon)result.filterArea).length
-        assertTrue filterArea_1.area < ((Polygon)result.filterArea).area
-
-        result = OSMTools.Utilities.buildGeometryAndZone(polygon2025, 2026, 100, ds)
-        assertEquals 2, result.size()
-        assertTrue result.containsKey("geom")
-        assertTrue result.containsKey("filterArea")
-        assertTrue result.geom instanceof Polygon
-        assertEquals 5, ((Polygon)result.geom).coordinates.length
-        assertTrue result.filterArea instanceof Polygon
-        assertEquals 5, ((Polygon)result.filterArea).coordinates.length
-
-        result = OSMTools.Utilities.buildGeometryAndZone(polygon2025, 2026, 0, ds)
-        assertEquals 2, result.size()
-        assertTrue result.containsKey("geom")
-        assertTrue result.containsKey("filterArea")
-        assertTrue result.geom instanceof Polygon
-        assertEquals 5, ((Polygon)result.geom).coordinates.length
-        assertTrue result.filterArea instanceof Polygon
-        assertEquals 5, ((Polygon)result.filterArea).coordinates.length
-    }
-
-    /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#buildGeometryAndZone(org.locationtech.jts.geom.Geometry, int, java.lang.Object)} and
-     * {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#buildGeometryAndZone(org.locationtech.jts.geom.Geometry, int, int, java.lang.Object)} methods
-     * with bad data.
-     */
-    @Test
-    void badBuildGeometryAndZoneTest(){
-        def ds = RANDOM_DS()
-        def factory = new GeometryFactory()
-        Coordinate[] coordinates = [
-                new Coordinate(0, 0),
-                new Coordinate(5, 0),
-                new Coordinate(5, 8),
-                new Coordinate(0, 8),
-                new Coordinate(0, 0)
-        ]
-        def ring = factory.createLinearRing(coordinates)
-        def polygon0 = factory.createPolygon(ring)
-        assertNull OSMTools.Utilities.buildGeometryAndZone(null, 0, ds)
-        assertNull OSMTools.Utilities.buildGeometryAndZone(polygon0, 0, null)
-        assertNull OSMTools.Utilities.buildGeometryAndZone(null, 0, 0, ds)
-        assertNull OSMTools.Utilities.buildGeometryAndZone(polygon0, 0, 0, null)
-    }
-
-    /**
      * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#buildGeometry(java.lang.Object)} method.
      */
     @Test
@@ -617,6 +512,7 @@ class UtilitiesTest extends AbstractOSMTest {
     void getAreaFromPlaceTest(){
         def pattern = Pattern.compile("^POLYGON \\(\\((?>-?\\d+(?>\\.\\d+)? -?\\d+(?>\\.\\d+)?(?>, )?)*\\)\\)\$")
         assertTrue pattern.matcher(OSMTools.Utilities.getAreaFromPlace("Paimpol").toString()).matches()
+        assertTrue pattern.matcher(OSMTools.Utilities.getAreaFromPlace("Boston").toString()).matches()
         sampleExecuteNominatimPolygonQueryOverride()
         assertEquals "POLYGON ((0 0, 0 2, 2 2, 2 2, 2 0, 0 0))", OSMTools.Utilities.getAreaFromPlace("Place name").toString()
         assertEquals "Place name", query
@@ -634,27 +530,5 @@ class UtilitiesTest extends AbstractOSMTest {
         assertNull OSMTools.Utilities.getAreaFromPlace(null)
         badExecuteNominatimQueryOverride()
         assertNull OSMTools.Utilities.getAreaFromPlace("place")
-    }
-
-    @Test
-    void getPlaceAndEPSG(){
-        def  placeName = "Boston"
-        def targetEPSG=-1
-        def ds = RANDOM_DS()
-        Geometry geom = OSMTools.Utilities.getAreaFromPlace(placeName);
-        assertNotNull(geom)
-        def geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, targetEPSG, 0, ds)
-        assertEquals(32619, geomAndEnv.geom.getSRID())
-        placeName = "Paimpol"
-        geom = OSMTools.Utilities.getAreaFromPlace(placeName);
-        assertNotNull(geom)
-        geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, targetEPSG, 0, ds)
-        assertEquals(32630, geomAndEnv.geom.getSRID())
-        placeName = "Paimpol"
-        geom = OSMTools.Utilities.getAreaFromPlace(placeName);
-        assertNotNull(geom)
-        geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, targetEPSG, 0, ds)
-        assertEquals(32630, geomAndEnv.geom.getSRID())
-
     }
 }

@@ -38,6 +38,7 @@ package org.orbisgis.orbisanalysis.osm
 
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.io.WKTReader
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 
@@ -66,6 +67,8 @@ abstract class AbstractOSMTest {
     /** Return a random file path. **/
     protected static def RANDOM_PATH = {"./target/file"+uuid()}
 
+    /**WKTReader*/
+    protected static def wktReader = new WKTReader();
 
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
     private static def executeOverPassQuery
@@ -161,8 +164,11 @@ abstract class AbstractOSMTest {
      */
     protected static void sampleGetAreaFromPlace(){
         OSMTools.Utilities.metaClass.static.getAreaFromPlace = {placeName ->
-            def coordinates = [new Coordinate(0, 0), new Coordinate(4, 8), new Coordinate(7, 5),
-                               new Coordinate(0, 0)] as Coordinate[]
+            def coordinates = [new Coordinate(-3.016, 48.82),
+                               new Coordinate(-3.016, 48.821),
+                               new Coordinate(-3.015 ,48.821),
+                               new Coordinate(-3.015 ,48.82),
+                               new Coordinate(-3.016 ,48.82)] as Coordinate[]
             def geom = new GeometryFactory().createPolygon(coordinates)
             geom.SRID = 4326
             return geom

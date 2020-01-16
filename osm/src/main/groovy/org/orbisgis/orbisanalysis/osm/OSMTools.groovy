@@ -37,8 +37,8 @@
 package org.orbisgis.orbisanalysis.osm
 
 import org.orbisgis.orbisanalysis.osm.utils.OverpassStatus
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.orbisgis.orbisanalysis.osm.utils.Utilities
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -73,7 +73,7 @@ abstract class OSMTools extends GroovyProcessFactory {
     public static Loader = new Loader()
     /** {@link Transform} script with its {@link Process}. */
     public static Transform = new Transform()
-    /** {@link org.orbisgis.orbisanalysis.osm.utils.Utilities} script with its {@link Process}. */
+    /** {@link Utilities} script with its {@link Process}. */
     public static Utilities = new Utilities()
 
     /* *********************** */

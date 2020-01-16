@@ -36,8 +36,8 @@
  */
 package org.orbisgis.orbisanalysis.osm.utils
 
-import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisanalysis.osm.OSMTools
+import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -250,7 +250,7 @@ class TransformUtils {
             error("Invalid null OSM table prefix")
             return false
         }
-        if(epsgCode < 0){
+        if(epsgCode == -1){
             error("Invalid EPSG code")
             return false
         }

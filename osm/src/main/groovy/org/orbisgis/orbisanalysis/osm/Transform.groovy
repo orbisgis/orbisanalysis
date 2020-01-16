@@ -40,13 +40,7 @@ import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 
-import static org.orbisgis.orbisanalysis.osm.utils.TransformUtils.buildIndexes
-import static org.orbisgis.orbisanalysis.osm.utils.TransformUtils.createTagList
-import static org.orbisgis.orbisanalysis.osm.utils.TransformUtils.createWhereFilter
-import static org.orbisgis.orbisanalysis.osm.utils.TransformUtils.extractNodesAsPoints
-import static org.orbisgis.orbisanalysis.osm.utils.TransformUtils.getColumnSelector
-import static org.orbisgis.orbisanalysis.osm.utils.TransformUtils.getCountTagsQuery
-import static org.orbisgis.orbisanalysis.osm.utils.TransformUtils.toPolygonOrLine
+import static org.orbisgis.orbisanalysis.osm.utils.TransformUtils.*
 
 @BaseScript OSMTools osmTools
 
@@ -68,7 +62,7 @@ import static org.orbisgis.orbisanalysis.osm.utils.TransformUtils.toPolygonOrLin
 IProcess toPoints() {
     return create({
             title "Transform all OSM features as points"
-            inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: int, tags: [], columnsToKeep: []
+            inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags: [], columnsToKeep: []
             outputs outputTableName: String
             run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
                 String outputTableName = "OSM_POINTS_$uuid"
@@ -112,7 +106,7 @@ IProcess toPoints() {
 IProcess toLines() {
     return create({
             title "Transform all OSM features as lines"
-            inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: int, tags : [], columnsToKeep:[]
+            inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags : [], columnsToKeep:[]
             outputs outputTableName: String
             run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
                 return toPolygonOrLine("LINES", datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep)
@@ -135,7 +129,7 @@ IProcess toLines() {
 IProcess toPolygons() {
     return create({
         title "Transform all OSM features as polygons"
-        inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: int, tags: [], columnsToKeep: []
+        inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags: [], columnsToKeep: []
         outputs outputTableName: String
         run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
             return toPolygonOrLine("POLYGONS", datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep)
@@ -162,7 +156,7 @@ IProcess toPolygons() {
 IProcess extractWaysAsPolygons() {
     return create({
             title "Transform all OSM ways as polygons"
-            inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: int, tags: [], columnsToKeep: []
+            inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags: [], columnsToKeep: []
             outputs outputTableName: String
             run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
                 if(!datasource){
@@ -258,7 +252,7 @@ IProcess extractWaysAsPolygons() {
 IProcess extractRelationsAsPolygons() {
     create({
             title "Transform all OSM ways as polygons"
-            inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: -1, tags :[], columnsToKeep: []
+            inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags :[], columnsToKeep: []
             outputs outputTableName: String
             run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
                 if(!datasource){
@@ -312,9 +306,9 @@ IProcess extractRelationsAsPolygons() {
                 datasource.execute """
                         DROP TABLE IF EXISTS $relationsPolygonsOuter;
                         CREATE TABLE $relationsPolygonsOuter AS 
-                        SELECT ST_LINEMERGE(ST_ACCUM(the_geom)) the_geom, id_relation 
+                        SELECT ST_LINEMERGE(ST_ACCUM(the_geom)) as the_geom, id_relation 
                         FROM(
-                            SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(the_geom), 4326), $epsgCode) the_geom, id_relation, role, id_way 
+                            SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(the_geom), 4326), $epsgCode) AS  the_geom, id_relation, role, id_way 
                             FROM(
                                 SELECT(
                                     SELECT ST_ACCUM(the_geom) the_geom 
@@ -335,7 +329,7 @@ IProcess extractRelationsAsPolygons() {
                         CREATE TABLE $relationsPolygonsInner AS 
                         SELECT ST_LINEMERGE(ST_ACCUM(the_geom)) the_geom, id_relation 
                         FROM(
-                            SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(the_geom), 4326), $epsgCode) the_geom, id_relation, role, id_way 
+                            SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(the_geom), 4326), $epsgCode) AS the_geom, id_relation, role, id_way 
                             FROM(     
                                 SELECT(
                                     SELECT ST_ACCUM(the_geom) the_geom 
@@ -438,7 +432,7 @@ IProcess extractRelationsAsPolygons() {
 IProcess extractWaysAsLines() {
     return create({
             title "Transform all OSM ways as lines"
-            inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: int, tags: [], columnsToKeep: []
+            inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags: [], columnsToKeep: []
             outputs outputTableName: String
             run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
                 if(!datasource){
@@ -529,7 +523,7 @@ IProcess extractWaysAsLines() {
 IProcess extractRelationsAsLines() {
     return create({
             title "Transform all OSM ways as lines"
-            inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: int, tags: [], columnsToKeep: []
+            inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags: [], columnsToKeep: []
             outputs outputTableName: String
             run { datasource, osmTablesPrefix, epsgCode, tags,columnsToKeep ->
                 if(!datasource){

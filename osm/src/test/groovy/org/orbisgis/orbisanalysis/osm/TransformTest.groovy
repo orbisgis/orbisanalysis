@@ -36,21 +36,13 @@
  */
 package org.orbisgis.orbisanalysis.osm
 
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInfo
-import org.locationtech.jts.geom.MultiLineString
-import org.locationtech.jts.geom.Point
-import org.locationtech.jts.geom.LineString
-import org.locationtech.jts.geom.Polygon
+import org.junit.jupiter.api.*
+import org.locationtech.jts.geom.*
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertFalse
-import static org.junit.jupiter.api.Assertions.assertTrue
+import static org.junit.jupiter.api.Assertions.*
 
 /**
  * Test class for the processes in {@link Transform}
@@ -263,7 +255,7 @@ class TransformTest extends AbstractOSMTest {
 
         assertTrue toPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
         assertFalse toPolygons.results.isEmpty()
-        def table = ds.getTable(toPolygons.results.outputTableName)
+        def table = ds.getSpatialTable(toPolygons.results.outputTableName)
         assertEquals 2, table.rowCount
         table.each{
             switch(it.row){
@@ -616,6 +608,31 @@ class TransformTest extends AbstractOSMTest {
                     assertEquals "house", it.building
                     assertEquals "lake", it.water
                     break
+            }
+        }
+    }
+
+    /**
+     * It uses for test purpose
+     */
+    @Disabled
+    @Test
+    void dev() {
+        H2GIS h2GIS = RANDOM_DS()
+        Geometry geom = OSMTools.Utilities.getAreaFromPlace("Boston");
+        def query = OSMTools.Utilities.buildOSMQuery(geom.getEnvelopeInternal(), [], OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+        def extract = OSMTools.Loader.extract()
+        if (!query.isEmpty()) {
+            if (extract.execute(overpassQuery: query)) {
+                def prefix = "OSM_FILE_${OSMTools.uuid}"
+                def load = OSMTools.Loader.load()
+                if (load(datasource: h2GIS, osmTablesPrefix: prefix, osmFilePath:extract.results.outputFilePath)) {
+                    def tags = ['building']
+                    def transform = OSMTools.Transform.toPolygons()
+                    transform.execute(datasource: h2GIS, osmTablesPrefix: prefix, tags: tags)
+                    assertNotNull(transform.results.outputTableName)
+                    h2GIS.getTable(transform.results.outputTableName).save("/tmp/${transform.results.outputTableName}.shp")
+                }
             }
         }
     }

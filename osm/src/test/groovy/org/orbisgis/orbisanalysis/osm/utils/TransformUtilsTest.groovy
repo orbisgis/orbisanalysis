@@ -34,7 +34,7 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.orbisgis.osm.utils
+package org.orbisgis.orbisanalysis.osm.utils
 
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -43,16 +43,17 @@ import org.junit.jupiter.api.TestInfo
 import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.MultiLineString
 import org.locationtech.jts.geom.Polygon
+import org.orbisgis.orbisanalysis.osm.AbstractOSMTest
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
-import org.orbisgis.osm.AbstractOSMTest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import static org.junit.jupiter.api.Assertions.*
 
 /**
- * Test class for the processes in {@link org.orbisgis.osm.Transform}
+ * Test class for the processes in {@link org.orbisgis.orbisanalysis.osm.Transform}
  *
+ * @author Erwan Bocher (CNRS)
  * @author Sylvain PALOMINOS (UBS LAB-STICC 2019)
  */
 class TransformUtilsTest extends AbstractOSMTest {
@@ -72,7 +73,7 @@ class TransformUtilsTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.utils.TransformUtils#createWhereFilter(java.lang.Object)}
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#createWhereFilter(java.lang.Object)}
      * method.
      */
     @Test
@@ -145,7 +146,7 @@ class TransformUtilsTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.utils.TransformUtils#createWhereFilter(java.lang.Object)}
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#createWhereFilter(java.lang.Object)}
      * method with bad data.
      */
     @Test
@@ -157,7 +158,7 @@ class TransformUtilsTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.utils.TransformUtils#getColumnSelector(java.lang.Object, java.lang.Object, java.lang.Object)}
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#getColumnSelector(java.lang.Object, java.lang.Object, java.lang.Object)}
      * method with bad data.
      */
     @Test
@@ -170,7 +171,7 @@ class TransformUtilsTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.utils.TransformUtils#getColumnSelector(java.lang.Object, java.lang.Object, java.lang.Object)}
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#getColumnSelector(java.lang.Object, java.lang.Object, java.lang.Object)}
      * method.
      */
     @Test
@@ -196,7 +197,7 @@ class TransformUtilsTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.utils.TransformUtils#getCountTagsQuery(java.lang.Object, java.lang.Object)}
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#getCountTagsQuery(java.lang.Object, java.lang.Object)}
      * method.
      */
     @Test
@@ -215,7 +216,7 @@ class TransformUtilsTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.utils.TransformUtils#getCountTagsQuery(java.lang.Object, java.lang.Object)}
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#getCountTagsQuery(java.lang.Object, java.lang.Object)}
      * method with bad data.
      */
     @Test
@@ -225,7 +226,7 @@ class TransformUtilsTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.utils.TransformUtils#createTagList(java.lang.Object, java.lang.Object)}
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#createTagList(java.lang.Object, java.lang.Object)}
      * method.
      */
     @Test
@@ -258,7 +259,7 @@ class TransformUtilsTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.utils.TransformUtils#createTagList(java.lang.Object, java.lang.Object)}
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#createTagList(java.lang.Object, java.lang.Object)}
      * method with bad data.
      */
     @Test
@@ -278,7 +279,7 @@ class TransformUtilsTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.utils.TransformUtils#buildIndexes(org.orbisgis.datamanager.JdbcDataSource, java.lang.String)}
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#buildIndexes(org.orbisgis.datamanager.JdbcDataSource, java.lang.String)}
      * method with bad data.
      */
     @Test
@@ -295,7 +296,7 @@ class TransformUtilsTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.utils.TransformUtils#buildIndexes(org.orbisgis.datamanager.JdbcDataSource, java.lang.String)}
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#buildIndexes(org.orbisgis.datamanager.JdbcDataSource, java.lang.String)}
      * method.
      */
     @Test
@@ -368,7 +369,7 @@ class TransformUtilsTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.utils.TransformUtils#arrayUnion(boolean, java.util.Collection[])}
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#arrayUnion(boolean, java.util.Collection[])}
      * method with bad data.
      */
     @Test
@@ -380,7 +381,7 @@ class TransformUtilsTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.utils.TransformUtils#arrayUnion(boolean, java.util.Collection[])}
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#arrayUnion(boolean, java.util.Collection[])}
      * method.
      */
     @Test
@@ -409,7 +410,7 @@ class TransformUtilsTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.utils.TransformUtils#extractNodesAsPoints(org.orbisgis.datamanager.JdbcDataSource, java.lang.String, int, java.lang.String, java.lang.Object, java.lang.Object)}
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#extractNodesAsPoints(org.orbisgis.datamanager.JdbcDataSource, java.lang.String, int, java.lang.String, java.lang.Object, java.lang.Object)}
      * method with bad data.
      */
     @Test
@@ -480,7 +481,7 @@ class TransformUtilsTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.utils.TransformUtils#extractNodesAsPoints(org.orbisgis.datamanager.JdbcDataSource, java.lang.String, int, java.lang.String, java.lang.Object, java.lang.Object)}
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#extractNodesAsPoints(org.orbisgis.datamanager.JdbcDataSource, java.lang.String, int, java.lang.String, java.lang.Object, java.lang.Object)}
      * method.
      */
     @Test
@@ -916,7 +917,7 @@ class TransformUtilsTest extends AbstractOSMTest {
     }
 
     /**
-     * test the {@link org.orbisgis.osm.utils.TransformUtils#toPolygonOrLine(java.lang.String, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object)}
+     * test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#toPolygonOrLine(java.lang.String, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object)}
      * method with bad data.
      */
     @Test
@@ -947,7 +948,7 @@ class TransformUtilsTest extends AbstractOSMTest {
     }
 
     /**
-     * test the {@link org.orbisgis.osm.utils.TransformUtils#toPolygonOrLine(java.lang.String, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object)}
+     * test the {@link org.orbisgis.orbisanalysis.osm.utils.TransformUtils#toPolygonOrLine(java.lang.String, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object, java.lang.Object)}
      * method.
      */
     @Test

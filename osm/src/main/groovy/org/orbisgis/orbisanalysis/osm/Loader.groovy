@@ -34,22 +34,19 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.orbisgis.osm
+package org.orbisgis.orbisanalysis.osm
 
 import groovy.transform.BaseScript
+import org.h2gis.utilities.jts_utils.GeographyUtils
 import org.locationtech.jts.geom.Envelope
-import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.h2gis.utilities.jts_utils.GeographyUtils
 
 import java.util.regex.Pattern
 
-import static org.orbisgis.osm.utils.OSMElement.NODE
-import static org.orbisgis.osm.utils.OSMElement.RELATION
-import static org.orbisgis.osm.utils.OSMElement.WAY
+import static org.orbisgis.orbisanalysis.osm.utils.OSMElement.*
 
 @BaseScript OSMTools osmTools
 
@@ -92,16 +89,14 @@ IProcess fromArea() {
                 return
             }
 
-            int  epsg   = DEFAULT_SRID
-
+            def epsg = DEFAULT_SRID
             def env = GeographyUtils.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance)
 
             //Create table to store the geometry and the envelope of the extracted area
             datasource.execute "CREATE TABLE $outputZoneTable (the_geom GEOMETRY(POLYGON, $epsg));" +
                     " INSERT INTO $outputZoneTable VALUES (ST_GEOMFROMTEXT('${geom}', $epsg));"
 
-            GeometryFactory geometryFactory = new GeometryFactory()
-
+            def geometryFactory = new GeometryFactory()
             def geomEnv = geometryFactory.toGeometry(env)
 
             datasource.execute "CREATE TABLE $outputZoneEnvelopeTable (the_geom GEOMETRY(POLYGON, $epsg));" +
@@ -109,7 +104,6 @@ IProcess fromArea() {
                         "(ST_GEOMFROMTEXT('$geomEnv',$epsg));"
 
             def query = OSMTools.Utilities.buildOSMQuery(geomEnv, [], NODE, WAY, RELATION)
-
             def extract = OSMTools.Loader.extract()
             if (extract(overpassQuery: query)) {
                 info "Downloading OSM data from the area $filterArea"
@@ -156,7 +150,7 @@ IProcess fromPlace() {
             def outputZoneTable = "ZONE_$formatedPlaceName$uuid"
             def outputZoneEnvelopeTable = "ZONE_ENVELOPE_$formatedPlaceName$uuid"
             def osmTablesPrefix = "OSM_DATA_$formatedPlaceName$uuid"
-            int epsg = DEFAULT_SRID
+            def epsg = DEFAULT_SRID
 
             def geom = OSMTools.Utilities.getAreaFromPlace(placeName);
             if (!geom) {
@@ -169,14 +163,12 @@ IProcess fromPlace() {
             datasource.execute "CREATE TABLE $outputZoneTable (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);" +
                     "INSERT INTO $outputZoneTable VALUES (ST_GEOMFROMTEXT('${geom}', $epsg), '$placeName');"
 
-            GeometryFactory geometryFactory = new GeometryFactory()
-
-            Geometry geomEnv = geometryFactory.toGeometry(env)
+            def geometryFactory = new GeometryFactory()
+            def geomEnv = geometryFactory.toGeometry(env)
             datasource.execute "CREATE TABLE $outputZoneEnvelopeTable (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);" +
                     "INSERT INTO $outputZoneEnvelopeTable VALUES (ST_GEOMFROMTEXT('$geomEnv',$epsg), '$placeName');"
 
             def query = OSMTools.Utilities.buildOSMQuery(geomEnv, [], NODE, WAY, RELATION)
-
             def extract = OSMTools.Loader.extract()
             if (extract(overpassQuery: query)) {
                 info "Downloading OSM data from the place $placeName"
@@ -260,7 +252,7 @@ IProcess load() {
                 error "Please set a valid osm file path."
                 return
             }
-            File osmFile = new File(osmFilePath)
+            def osmFile = new File(osmFilePath)
             if (!osmFile.exists()) {
                 error "The input OSM file does not exist."
                 return

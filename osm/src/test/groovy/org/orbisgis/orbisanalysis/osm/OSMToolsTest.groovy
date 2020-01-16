@@ -34,7 +34,7 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.orbisgis.osm
+package org.orbisgis.orbisanalysis.osm
 
 
 import org.junit.jupiter.api.AfterEach
@@ -66,11 +66,11 @@ class OSMToolsTest {
     @Test
     void getLoggerTest(){
         assertNotNull OSMTools.getLogger(null)
-        assertEquals "org.orbisgis.osm.OSMTools", OSMTools.getLogger(null).getName()
+        assertEquals "org.orbisgis.orbisanalysis.osm.OSMTools", OSMTools.getLogger(null).getName()
         assertNotNull OSMTools.getLogger("null")
-        assertEquals "org.orbisgis.osm.OSMTools", OSMTools.getLogger("null").getName()
+        assertEquals "org.orbisgis.orbisanalysis.osm.OSMTools", OSMTools.getLogger("null").getName()
         assertNotNull OSMTools.getLogger(OSMTools.Utilities)
-        assertEquals "org.orbisgis.osm.Utilities", OSMTools.getLogger(OSMTools.Utilities).getName()
+        assertEquals "org.orbisgis.orbisanalysis.osm.utils.Utilities", OSMTools.getLogger(OSMTools.Utilities).getName()
     }
 
     /**

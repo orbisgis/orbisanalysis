@@ -34,15 +34,15 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.orbisgis.osm.utils
+package org.orbisgis.orbisanalysis.osm.utils
 
+import org.orbisgis.orbisanalysis.osm.OSMTools
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
-import org.orbisgis.osm.OSMTools
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 /**
- * Class containing utility methods for the {@link org.orbisgis.osm.Transform} script to keep only processes inside
+ * Class containing utility methods for the {@link org.orbisgis.orbisanalysis.osm.Transform} script to keep only processes inside
  * the groovy script.
  */
 class TransformUtils {
@@ -250,7 +250,7 @@ class TransformUtils {
             error("Invalid null OSM table prefix")
             return false
         }
-        if(epsgCode ==-1){
+        if(epsgCode == -1){
             error("Invalid EPSG code")
             return false
         }

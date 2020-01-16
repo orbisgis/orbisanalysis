@@ -34,13 +34,13 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.orbisgis.osm
+package org.orbisgis.orbisanalysis.osm
 
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 
-import static org.orbisgis.osm.utils.TransformUtils.*
+import static org.orbisgis.orbisanalysis.osm.utils.TransformUtils.*
 
 @BaseScript OSMTools osmTools
 
@@ -308,7 +308,7 @@ IProcess extractRelationsAsPolygons() {
                         CREATE TABLE $relationsPolygonsOuter AS 
                         SELECT ST_LINEMERGE(ST_ACCUM(the_geom)) as the_geom, id_relation 
                         FROM(
-                            SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(the_geom), 4326), $epsgCode) as  the_geom, id_relation, role, id_way 
+                            SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(the_geom), 4326), $epsgCode) AS  the_geom, id_relation, role, id_way 
                             FROM(
                                 SELECT(
                                     SELECT ST_ACCUM(the_geom) the_geom 
@@ -329,7 +329,7 @@ IProcess extractRelationsAsPolygons() {
                         CREATE TABLE $relationsPolygonsInner AS 
                         SELECT ST_LINEMERGE(ST_ACCUM(the_geom)) the_geom, id_relation 
                         FROM(
-                            SELECT  ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(the_geom), 4326), $epsgCode) as the_geom, id_relation, role, id_way 
+                            SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(the_geom), 4326), $epsgCode) AS the_geom, id_relation, role, id_way 
                             FROM(     
                                 SELECT(
                                     SELECT ST_ACCUM(the_geom) the_geom 

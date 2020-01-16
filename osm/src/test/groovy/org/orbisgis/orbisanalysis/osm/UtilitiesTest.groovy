@@ -15,7 +15,7 @@
  *
  * OSM is distributed under LGPL 3 license.
  *
- * Copyright (C) 2019 CNRS (Lab-STICC UMR CNRS 6285)
+ * Copyright (C) 2019-2020 CNRS (Lab-STICC UMR CNRS 6285)
  *
  *
  * OSM is free software: you can redistribute it and/or modify it under the
@@ -34,7 +34,7 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.orbisgis.osm
+package org.orbisgis.orbisanalysis.osm
 
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -42,20 +42,21 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Envelope
-import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
-import org.locationtech.jts.io.WKTReader
-import org.orbisgis.osm.utils.OSMElement
+import org.orbisgis.orbisanalysis.osm.utils.OSMElement
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+
+import java.util.regex.Pattern
 
 import static org.junit.jupiter.api.Assertions.*
 
 /**
- * Test class for {@link Utilities}
+ * Test class for {@link org.orbisgis.orbisanalysis.osm.utils.Utilities}
  *
- * @author Sylvain PALOMINOS (UBS LAB-STICC 2019)
+ * @author Erwan Bocher (CNRS)
+ * @author Sylvain PALOMINOS (UBS LAB-STICC 2019-2020)
  */
 class UtilitiesTest extends AbstractOSMTest {
 
@@ -74,7 +75,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#arrayToCoordinate(java.lang.Object)} method.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#arrayToCoordinate(java.lang.Object)} method.
      */
     @Test
     void arrayToCoordinateTest(){
@@ -95,7 +96,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#arrayToCoordinate(java.lang.Object)} method with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#arrayToCoordinate(java.lang.Object)} method with bad data.
      */
     @Test
     void badArrayToCoordinateTest(){
@@ -117,7 +118,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#parsePolygon(java.lang.Object, org.locationtech.jts.geom.GeometryFactory)}
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#parsePolygon(java.lang.Object, org.locationtech.jts.geom.GeometryFactory)}
      * method.
      */
     @Test
@@ -156,7 +157,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#parsePolygon(java.lang.Object, org.locationtech.jts.geom.GeometryFactory)}
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#parsePolygon(java.lang.Object, org.locationtech.jts.geom.GeometryFactory)}
      * method with bad data.
      */
     @Test
@@ -177,7 +178,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#executeNominatimQuery(java.lang.Object, java.lang.Object)} method.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#executeNominatimQuery(java.lang.Object, java.lang.Object)} method.
      * This test performs a web request to the Nominatim service.
      */
     @Test
@@ -190,7 +191,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#executeNominatimQuery(java.lang.Object, java.lang.Object)} method.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#executeNominatimQuery(java.lang.Object, java.lang.Object)} method.
      */
     @Test
     void badGetExecuteNominatimQueryTest(){
@@ -203,7 +204,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#toBBox(org.locationtech.jts.geom.Geometry)} method.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#toBBox(org.locationtech.jts.geom.Geometry)} method.
      */
     @Test
     void toBBoxTest(){
@@ -223,7 +224,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#toBBox(org.locationtech.jts.geom.Geometry)} method with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#toBBox(org.locationtech.jts.geom.Geometry)} method with bad data.
      */
     @Test
     void badToBBoxTest(){
@@ -231,7 +232,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#toPoly(org.locationtech.jts.geom.Geometry)} method.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#toPoly(org.locationtech.jts.geom.Geometry)} method.
      */
     @Test
     void toPolyTest(){
@@ -247,7 +248,7 @@ class UtilitiesTest extends AbstractOSMTest {
         }
 
     /**
-     * Test the {@link Utilities#toPoly(org.locationtech.jts.geom.Geometry)} method with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#toPoly(org.locationtech.jts.geom.Geometry)} method with bad data.
      */
     @Test
     void badToPolyTest(){
@@ -258,7 +259,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#buildOSMQuery(org.locationtech.jts.geom.Envelope, java.lang.Object, org.orbisgis.osm.utils.OSMElement[])}
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#buildOSMQuery(org.locationtech.jts.geom.Envelope, java.lang.Object, org.orbisgis.orbisanalysis.osm.utils.OSMElement[])}
      * method.
      */
     @Test
@@ -298,7 +299,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#buildOSMQuery(org.locationtech.jts.geom.Envelope, java.lang.Object, org.orbisgis.osm.utils.OSMElement[])}
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#buildOSMQuery(org.locationtech.jts.geom.Envelope, java.lang.Object, org.orbisgis.orbisanalysis.osm.utils.OSMElement[])}
      * method with bad data.
      */
     @Test
@@ -307,7 +308,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#buildOSMQuery(org.locationtech.jts.geom.Polygon, java.lang.Object, org.orbisgis.osm.utils.OSMElement[])}
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#buildOSMQuery(org.locationtech.jts.geom.Polygon, java.lang.Object, org.orbisgis.orbisanalysis.osm.utils.OSMElement[])}
      * method.
      */
     @Test
@@ -355,7 +356,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#buildOSMQuery(org.locationtech.jts.geom.Polygon, java.lang.Object, org.orbisgis.osm.utils.OSMElement[])}
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#buildOSMQuery(org.locationtech.jts.geom.Polygon, java.lang.Object, org.orbisgis.orbisanalysis.osm.utils.OSMElement[])}
      * method with bad data.
      */
     @Test
@@ -365,7 +366,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#readJSONParameters(java.lang.String)} method.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#readJSONParameters(java.lang.String)} method.
      */
     @Test
     void readJSONParametersTest(){
@@ -384,7 +385,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#readJSONParameters(java.lang.Object)} method with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#readJSONParameters(java.lang.Object)} method with bad data.
      */
     @Test
     void badReadJSONParametersTest(){
@@ -397,7 +398,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#buildGeometry(java.lang.Object)} method.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#buildGeometry(java.lang.Object)} method.
      */
     @Test
     void buildGeometryTest(){
@@ -406,7 +407,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#buildGeometry(java.lang.Object)} method with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#buildGeometry(java.lang.Object)} method with bad data.
      */
     @Test
     void badBuildGeometryTest(){
@@ -421,7 +422,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#geometryFromNominatim(java.lang.Object)} method.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#geometryFromNominatim(java.lang.Object)} method.
      */
     @Test
     void geometryFromNominatimTest(){
@@ -430,7 +431,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#geometryFromNominatim(java.lang.Object)} method with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#geometryFromNominatim(java.lang.Object)} method with bad data.
      */
     @Test
     void badGeometryFromNominatimTest(){
@@ -441,7 +442,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#geometryFromOverpass(java.lang.Object)} method.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#geometryFromOverpass(java.lang.Object)} method.
      */
     @Test
     void geometryFromOverpassTest(){
@@ -450,7 +451,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#geometryFromOverpass(java.lang.Object)} method with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#geometryFromOverpass(java.lang.Object)} method with bad data.
      */
     @Test
     void badGeometryFromOverpassTest(){
@@ -461,7 +462,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#dropOSMTables(java.lang.String, org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource)}
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#dropOSMTables(java.lang.String, org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource)}
      * method.
      */
     @Test
@@ -494,7 +495,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#dropOSMTables(java.lang.String, org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource)}
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#dropOSMTables(java.lang.String, org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource)}
      * method with bad data.
      */
     @Test
@@ -505,10 +506,13 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#getAreaFromPlace(java.lang.Object)} method.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#getAreaFromPlace(java.lang.Object)} method.
      */
     @Test
     void getAreaFromPlaceTest(){
+        def pattern = Pattern.compile("^POLYGON \\(\\((?>-?\\d+(?>\\.\\d+)? -?\\d+(?>\\.\\d+)?(?>, )?)*\\)\\)\$")
+        assertTrue pattern.matcher(OSMTools.Utilities.getAreaFromPlace("Paimpol").toString()).matches()
+        assertTrue pattern.matcher(OSMTools.Utilities.getAreaFromPlace("Boston").toString()).matches()
         sampleExecuteNominatimPolygonQueryOverride()
         assertEquals "POLYGON ((0 0, 0 2, 2 2, 2 2, 2 0, 0 0))", OSMTools.Utilities.getAreaFromPlace("Place name").toString()
         assertEquals "Place name", query
@@ -518,7 +522,7 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link Utilities#getAreaFromPlace(java.lang.Object)} method with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#getAreaFromPlace(java.lang.Object)} method with bad data.
      */
     @Test
     void badGetAreaFromPlaceTest(){
@@ -526,20 +530,5 @@ class UtilitiesTest extends AbstractOSMTest {
         assertNull OSMTools.Utilities.getAreaFromPlace(null)
         badExecuteNominatimQueryOverride()
         assertNull OSMTools.Utilities.getAreaFromPlace("place")
-    }
-
-    @Test
-    void getPlaceAndEPSG(){
-        def  placeName = "Boston"
-        def targetEPSG=-1
-        def ds = RANDOM_DS()
-        Geometry geom = OSMTools.Utilities.getAreaFromPlace(placeName);
-        assertNotNull(geom)
-        placeName = "Paimpol"
-        geom = OSMTools.Utilities.getAreaFromPlace(placeName);
-        assertNotNull(geom)
-        placeName = "Paimpol"
-        geom = OSMTools.Utilities.getAreaFromPlace(placeName);
-        assertNotNull(geom)
     }
 }

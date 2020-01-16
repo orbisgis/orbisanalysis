@@ -34,7 +34,7 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.orbisgis.osm
+package org.orbisgis.orbisanalysis.osm
 
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
@@ -47,7 +47,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals
 /**
  * Abstract for OSM tests. It contains some utilities methods and static variable in order to simplify test write.
  *
- * @author Sylvain PALOMINOS (UBS LAB-STICC 2019
+ * @author Erwan Bocher (CNRS)
+ * @author Sylvain PALOMINOS (UBS LAB-STICC 2019)
  */
 abstract class AbstractOSMTest {
     /** Main path for the databases. */

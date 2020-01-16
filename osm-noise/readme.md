@@ -28,7 +28,7 @@ Put the following script and run it to extract OSM data from a place name and tr
 @Grab(group='org.orbisgis', module='osm-noise', version='1.0.0-SNAPSHOT')
 
 import org.orbisgis.datamanager.h2gis.H2GIS
-import org.orbisgis.osm.OSMNoise
+import org.orbisgis.orbisanalysis.osm.OSMNoise
 
 //Create a local H2GIS database
 def h2GIS = H2GIS.open('/tmp/osmdb;AUTO_SERVER=TRUE')
@@ -52,7 +52,7 @@ Use the next script to generate default traffic data using the WG-AEN road cater
 @Grab(group='org.orbisgis', module='osm-noise', version='1.0.0-SNAPSHOT')
 
 import org.orbisgis.datamanager.h2gis.H2GIS
-import org.orbisgis.osm.OSMNoise
+import org.orbisgis.orbisanalysis.osm.OSMNoise
 
 //Create a local H2GIS database
 def h2GIS = H2GIS.open('/tmp/osmdb;AUTO_SERVER=TRUE')

@@ -34,20 +34,17 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.orbisgis.osm.utils
+package org.orbisgis.orbisanalysis.osm.utils
 
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInfo
+import org.junit.jupiter.api.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 import java.text.SimpleDateFormat
 import java.time.ZoneId
 
-import static org.junit.jupiter.api.Assertions.*
+import static org.junit.jupiter.api.Assertions.assertEquals
+import static org.junit.jupiter.api.Assertions.assertTrue
 
 /**
  * Test class dedicated to the {@link OverpassStatus} class.

@@ -34,9 +34,10 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.orbisgis.osm
+package org.orbisgis.orbisanalysis.osm
 
-import org.orbisgis.osm.utils.OverpassStatus
+import org.orbisgis.orbisanalysis.osm.utils.OverpassStatus
+import org.orbisgis.orbisanalysis.osm.utils.Utilities
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

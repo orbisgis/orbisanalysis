@@ -34,34 +34,20 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.orbisgis.osm
+package org.orbisgis.orbisanalysis.osm
 
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInfo
-import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.geom.GeometryFactory
-import org.locationtech.jts.geom.MultiLineString
-import org.locationtech.jts.geom.Point
-import org.locationtech.jts.geom.LineString
-import org.locationtech.jts.geom.Polygon
+import org.junit.jupiter.api.*
+import org.locationtech.jts.geom.*
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
-import org.orbisgis.osm.OSMTools
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import static org.junit.jupiter.api.Assertions.assertEquals
-import static org.junit.jupiter.api.Assertions.assertFalse
-import static org.junit.jupiter.api.Assertions.assertTrue
-import static org.junit.jupiter.api.Assertions.assertNotNull
-
-import org.orbisgis.osm.utils.OSMElement
+import static org.junit.jupiter.api.Assertions.*
 
 /**
  * Test class for the processes in {@link Transform}
  *
+ * @author Erwan Bocher (CNRS)
  * @author Sylvain PALOMINOS (UBS LAB-STICC 2019)
  */
 class TransformTest extends AbstractOSMTest {
@@ -81,7 +67,7 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.Transform#toPoints()} process with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#toPoints()} process with bad data.
      */
     @Test
     void badToPointsTest(){
@@ -110,7 +96,7 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.Transform#toPoints()} process.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#toPoints()} process.
      */
     @Test
     void toPointsTest(){
@@ -153,7 +139,7 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.Transform#toLines()} process with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#toLines()} process with bad data.
      */
     @Test
     void badToLinesTest(){
@@ -182,7 +168,7 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.Transform#toLines()} process.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#toLines()} process.
      */
     @Test
     void toLinesTest(){
@@ -225,7 +211,7 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.Transform#toPolygons()} process with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#toPolygons()} process with bad data.
      */
     @Test
     void badToPolygonsTest(){
@@ -254,7 +240,7 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.Transform#toPolygons()} process.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#toPolygons()} process.
      */
     @Test
     void toPolygonsTest(){
@@ -270,7 +256,6 @@ class TransformTest extends AbstractOSMTest {
         assertTrue toPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
         assertFalse toPolygons.results.isEmpty()
         def table = ds.getSpatialTable(toPolygons.results.outputTableName)
-        table.save("/tmp/test.shp")
         assertEquals 2, table.rowCount
         table.each{
             switch(it.row){
@@ -298,7 +283,7 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.Transform#extractWaysAsPolygons()} process with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractWaysAsPolygons()} process with bad data.
      */
     @Test
     void badExtractWaysAsPolygonsTest(){
@@ -327,7 +312,7 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.Transform#extractWaysAsPolygons()} process.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractWaysAsPolygons()} process.
      */
     @Test
     void extractWaysAsPolygonsTest(){
@@ -380,7 +365,7 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.Transform#extractRelationsAsPolygons()} process with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractRelationsAsPolygons()} process with bad data.
      */
     @Test
     void badExtractRelationsAsPolygonsTest(){
@@ -409,7 +394,7 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.Transform#extractRelationsAsPolygons()} process.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractRelationsAsPolygons()} process.
      */
     @Test
     void extractRelationsAsPolygonsTest(){
@@ -462,7 +447,7 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.Transform#extractWaysAsLines()} process with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractWaysAsLines()} process with bad data.
      */
     @Test
     void badExtractWaysAsLinesTest(){
@@ -491,7 +476,7 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.Transform#extractWaysAsLines()} process.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractWaysAsLines()} process.
      */
     @Test
     void extractWaysAsLinesTest(){
@@ -545,7 +530,7 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.Transform#extractRelationsAsLines()} process with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractRelationsAsLines()} process with bad data.
      */
     @Test
     void badExtractRelationsAsLinesTest(){
@@ -574,7 +559,7 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.osm.Transform#extractRelationsAsLines()} process.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractRelationsAsLines()} process.
      */
     @Test
     void extractRelationsAsLinesTest(){

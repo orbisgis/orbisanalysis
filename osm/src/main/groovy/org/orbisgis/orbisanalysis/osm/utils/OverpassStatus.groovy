@@ -34,7 +34,7 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.orbisgis.osm.utils
+package org.orbisgis.orbisanalysis.osm.utils
 
 import java.text.SimpleDateFormat
 import java.time.ZoneId

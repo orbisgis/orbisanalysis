@@ -38,9 +38,6 @@ package org.orbisgis.orbisanalysis.osm.utils
 
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
-import org.cts.util.UTMUtils
-import org.h2gis.functions.spatial.crs.ST_Transform
-import org.h2gis.utilities.SFSUtilities
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
@@ -49,6 +46,7 @@ import org.locationtech.jts.geom.LinearRing
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.orbisanalysis.osm.OSMTools
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
+import org.cts.util.UTMUtils
 
 @BaseScript OSMTools osmTools
 
@@ -384,94 +382,6 @@ Map readJSONParameters(def jsonFile) {
         return parsed
     }
     error "The json file doesn't contains only parameter."
-}
-
-/**
- * This method is used to build a new geometry and its envelope according an EPSG code and a distance
- * The geometry and the envelope are set up in an UTM coordinate system when the epsg code is unknown.
- *
- * @author Erwan Bocher (CNRS LAB-STICC)
- * @author Elisabeth Le Saux (UBS LAB-STICC)
- *
- * @param geom The input geometry.
- * @param distance A value to expand the envelope of the geometry.
- * @param datasource A connexion to the database.
- *
- * @return a map with the input geometry and the envelope of the input geometry. Both are projected in a new reference
- * system depending on the epsg code.
- * Note that the envelope of the geometry can be expanded according to the input distance value.
- */
-def buildGeometryAndZone(Geometry geom, int distance, def datasource) {
-    if(!geom){
-        error "The geometry should not be null"
-        return null
-    }
-    return buildGeometryAndZone(geom, geom.SRID, distance, datasource)
-}
-
-/**
- * This method is used to build a new geometry and its envelope according an EPSG code and a distance
- * The geometry and the envelope are set up in an UTM coordinate system when the epsg code is unknown.
- *
- * @author Erwan Bocher (CNRS LAB-STICC)
- * @author Elisabeth Le Saux (UBS LAB-STICC)
- *
- * @param geom The input geometry.
- * @param epsg The input epsg code.
- * @param distance A value to expand the envelope of the geometry.
- * @param datasource A connexion to the database.
- *
- * @return A map with the input geometry and the envelope of the input geometry. Both are projected in a new reference
- * system depending on the epsg code.
- * Note that the envelope of the geometry can be expanded according to the input distance value.
- */
-def buildGeometryAndZone(Geometry geom, int epsg, int distance, def datasource) {
-    if(!geom){
-        error "The geometry should not be null"
-        return null
-    }
-    if(!datasource){
-        error "The data source should not be null"
-        return null
-    }
-    GeometryFactory gf = new GeometryFactory()
-    def con = datasource.getConnection();
-    Polygon filterArea
-    if(epsg <= -1 || epsg == 0){
-        def interiorPoint = geom.getCentroid()
-        epsg = SFSUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
-        geom = geom.copy()
-        geom.setSRID(epsg)
-
-        if(distance==0){
-            Geometry tmpEnvGeom = gf.toGeometry(geom.getEnvelopeInternal())
-            tmpEnvGeom.setSRID(epsg)
-            filterArea = ST_Transform.ST_Transform(con, tmpEnvGeom, 4326)
-        }
-        else {
-            def env = geom.getEnvelopeInternal()
-            env.expandBy(distance)
-            def tmpEnvGeom = gf.toGeometry(env)
-            tmpEnvGeom.setSRID(epsg)
-            filterArea = ST_Transform.ST_Transform(con, tmpEnvGeom, 4326)
-        }
-    }
-    else {
-        if(geom.SRID != epsg){
-            geom = ST_Transform.ST_Transform(con, geom, epsg)
-        }
-        if(distance==0){
-            filterArea = gf.toGeometry(geom.getEnvelopeInternal())
-            filterArea.setSRID(epsg)
-        }
-        else {
-            def env = geom.getEnvelopeInternal()
-            env.expandBy(distance)
-            filterArea = gf.toGeometry(env)
-            filterArea.setSRID(epsg)
-        }
-    }
-    return [geom :  geom, filterArea : filterArea]
 }
 
 /**

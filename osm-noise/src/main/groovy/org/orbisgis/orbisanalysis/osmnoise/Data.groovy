@@ -46,6 +46,8 @@ import org.orbisgis.orbisanalysis.osm.OSMTools
 import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.h2gis.functions.spatial.crs.ST_Transform
+import org.h2gis.utilities.SFSUtilities
 
 @BaseScript OSMNoise osmNoise
 
@@ -64,13 +66,18 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
 IProcess GISLayers() {
     return create({
         title "Download and transform the OSM data to a set of GIS layers"
-        inputs datasource: JdbcDataSource, placeName: String, epsg:-1
+        inputs datasource: JdbcDataSource, placeName: String
         outputs buildingTableName: String, roadTableName:String,
-                zoneTableName:String,zoneEnvelopeTableName:String, epsg: int
-        run { datasource, placeName, epsg ->
+                zoneTableName:String,zoneEnvelopeTableName:String
+        run { datasource, placeName->
+            if(!datasource){
+                error "Please set a valid database connection"
+                return
+            }
+
             String formatedPlaceName = placeName.trim().split("\\s*(,|\\s)\\s*").join("_");
             IProcess downloadData = download()
-            if(downloadData.execute(datasource: datasource, placeName: placeName, epsg:epsg)){
+            if(downloadData.execute(datasource: datasource, placeName: placeName)){
                 epsg = downloadData.results.epsg
                 def prefix = "OSM_DATA_$uuid"
                 def load = OSMTools.Loader.load()
@@ -79,6 +86,7 @@ IProcess GISLayers() {
                     def outputBuildingTableName =null
                     def outputRoadTableName =null
                     def outputRailTableName =null
+                    def epsg = datasource.getSpatialTable(downloadData.results.zoneTableName).srid
                     IProcess buildingFormating = createBuildingLayer()
                     if (buildingFormating.execute(datasource: datasource, osmTablesPrefix: prefix,epsg:epsg,
                             outputTablePrefix :formatedPlaceName)){
@@ -105,8 +113,7 @@ IProcess GISLayers() {
                     [buildingTableName  : outputBuildingTableName,
                      roadTableName      : outputRoadTableName,
                      zoneTableName      : downloadData.results.zoneTableName,
-                     zoneEnvelopeTableName: downloadData.results.zoneEnvelopeTableName,
-                     epsg: epsg]
+                     zoneEnvelopeTableName: downloadData.results.zoneEnvelopeTableName]
 
                 }
                 else{
@@ -328,22 +335,20 @@ IProcess createRoadLayer() {
  *
  * @param datasource A connexion to a DB to load the OSM file
  * @param placeName the name of the place to extract the data
- * @param epsg code to reproject the GIS layers, default is -1
  * @return The name of the resulting GIS tables : zoneTableName, zoneEnvelopeTableName
  *  , the epsg of the processed zone and the path where the OSM file is stored
  */
 IProcess download() {
     return create({
         title "Download the OSM data from a place name"
-        inputs datasource: JdbcDataSource, placeName: String, epsg:-1
-        outputs zoneTableName: String, zoneEnvelopeTableName: String, epsg :int, osmFilePath : String
-        run { datasource, placeName, epsg ->
+        inputs datasource: JdbcDataSource, placeName: String
+        outputs zoneTableName: String, zoneEnvelopeTableName: String, osmFilePath : String
+        run { datasource, placeName ->
             def outputZoneTable = "ZONE_$uuid"
             def outputZoneEnvelopeTable = "ZONE_ENVELOPE_$uuid"
-
-            if (datasource == null) {
-                logger.error('The datasource cannot be null')
-                return null
+            if(!datasource){
+                error "Please set a valid database connection"
+                return
             }
             Geometry geom = OSMTools.Utilities.getAreaFromPlace(placeName);
 
@@ -360,20 +365,19 @@ IProcess download() {
                 /**
                  * Extract the OSM file from the envelope of the geometry
                  */
-                def geomAndEnv = OSMTools.Utilities.buildGeometryAndZone(geom, epsg, 0, datasource)
-                epsg = geomAndEnv.geom.getSRID()
+                Envelope envelope  = geom.getEnvelopeInternal()
+                def con = datasource.getConnection();
+                def interiorPoint = envelope.centre()
+                def epsg = SFSUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
+                Geometry geomUTM = ST_Transform.ST_Transform(con, geom, epsg)
 
                 datasource.execute """create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);
-            INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${
-                    geomAndEnv.geom.toString()
-                }', $epsg), '$placeName');"""
+            INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${geomUTM.toString()}', $epsg), '$placeName');"""
 
                 datasource.execute """create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
-            INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${
-                    ST_Transform.ST_Transform(datasource.getConnection(), geomAndEnv.filterArea, epsg).toString()
+            INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${geomUTM.getFactory().toGeometry(geomUTM.getEnvelopeInternal()).toString()
                 }',$epsg), '$placeName');"""
 
-                Envelope envelope  = geomAndEnv.filterArea.getEnvelopeInternal()
                 def query =  "[maxsize:1073741824];" +
                         "(" +
                         "(" +
@@ -388,7 +392,6 @@ IProcess download() {
                 if (extract.execute(overpassQuery: query)){
                     [zoneTableName      : outputZoneTable,
                      zoneEnvelopeTableName: outputZoneEnvelopeTable,
-                     epsg: epsg,
                      osmFilePath: extract.results.outputFilePath]
                 } else {
                     logger.error "Cannot extract the OSM data from the place  $placeName"

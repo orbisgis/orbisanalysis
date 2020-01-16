@@ -36,8 +36,8 @@
  */
 package org.orbisgis.orbisanalysis.osm.utils
 
-import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisanalysis.osm.OSMTools
+import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 

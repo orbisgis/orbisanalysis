@@ -42,7 +42,7 @@ import org.junit.jupiter.api.Test
 import java.text.SimpleDateFormat
 import java.time.ZoneId
 
-import static org.junit.jupiter.api.Assertions.*
+import static org.junit.jupiter.api.Assertions.assertEquals
 
 /**
  * Test class for {@link Utilities}

@@ -40,8 +40,8 @@ import groovy.json.JsonSlurper
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.regex.Pattern
 
+import java.util.regex.Pattern
 
 /**
  * Main script to access to all processes used to extract, transform and prepare OSM data

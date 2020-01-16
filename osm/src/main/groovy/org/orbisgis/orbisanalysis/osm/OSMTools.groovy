@@ -37,8 +37,8 @@
 package org.orbisgis.orbisanalysis.osm
 
 import org.orbisgis.orbisanalysis.osm.utils.OverpassStatus
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.orbisgis.orbisanalysis.osm.utils.Utilities
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 

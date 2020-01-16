@@ -37,19 +37,16 @@
 package org.orbisgis.orbisanalysis.osm
 
 import groovy.transform.BaseScript
+import org.h2gis.utilities.jts_utils.GeographyUtils
 import org.locationtech.jts.geom.Envelope
-import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.h2gis.utilities.jts_utils.GeographyUtils
 
 import java.util.regex.Pattern
 
-import static org.orbisgis.orbisanalysis.osm.utils.OSMElement.NODE
-import static org.orbisgis.orbisanalysis.osm.utils.OSMElement.RELATION
-import static org.orbisgis.orbisanalysis.osm.utils.OSMElement.WAY
+import static org.orbisgis.orbisanalysis.osm.utils.OSMElement.*
 
 @BaseScript OSMTools osmTools
 

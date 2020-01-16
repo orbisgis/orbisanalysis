@@ -38,15 +38,10 @@ package org.orbisgis.orbisanalysis.osm.utils
 
 import groovy.json.JsonSlurper
 import groovy.transform.BaseScript
-import org.locationtech.jts.geom.Coordinate
-import org.locationtech.jts.geom.Envelope
-import org.locationtech.jts.geom.Geometry
-import org.locationtech.jts.geom.GeometryFactory
-import org.locationtech.jts.geom.LinearRing
-import org.locationtech.jts.geom.Polygon
+import org.cts.util.UTMUtils
+import org.locationtech.jts.geom.*
 import org.orbisgis.orbisanalysis.osm.OSMTools
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
-import org.cts.util.UTMUtils
 
 @BaseScript OSMTools osmTools
 

@@ -40,13 +40,7 @@ import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 
-import static org.orbisgis.orbisanalysis.osm.utils.TransformUtils.buildIndexes
-import static org.orbisgis.orbisanalysis.osm.utils.TransformUtils.createTagList
-import static org.orbisgis.orbisanalysis.osm.utils.TransformUtils.createWhereFilter
-import static org.orbisgis.orbisanalysis.osm.utils.TransformUtils.extractNodesAsPoints
-import static org.orbisgis.orbisanalysis.osm.utils.TransformUtils.getColumnSelector
-import static org.orbisgis.orbisanalysis.osm.utils.TransformUtils.getCountTagsQuery
-import static org.orbisgis.orbisanalysis.osm.utils.TransformUtils.toPolygonOrLine
+import static org.orbisgis.orbisanalysis.osm.utils.TransformUtils.*
 
 @BaseScript OSMTools osmTools
 

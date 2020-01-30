@@ -39,7 +39,7 @@ process.execute(datasource: h2GIS, placeName: "Paimpol")
  
  //Save the GIS layers in a shapeFile        
  process.getResults().each {it ->
-        if(it.value!=null && it.key!="epsg"){
+        if(it.value!=null){
                 h2GIS.getTable(it.value).save("/tmp/${it.value}.shp")
             }
         }

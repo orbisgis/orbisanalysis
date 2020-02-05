@@ -649,7 +649,7 @@ class TransformTest extends AbstractOSMTest {
     /**
      * It uses for test purpose
      */
-    //@Disabled
+    @Disabled
     @Test
     void dev() {
         H2GIS h2GIS = RANDOM_DS()

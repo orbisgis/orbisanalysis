@@ -41,6 +41,7 @@ import org.locationtech.jts.geom.*
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.orbisgis.orbisanalysis.osm.utils.OSMElement
 
 import static org.junit.jupiter.api.Assertions.*
 
@@ -342,8 +343,8 @@ class TransformTest extends AbstractOSMTest {
 
         //Test not existing tags
         extractWaysAsPolygons = OSMTools.Transform.extractWaysAsPolygons()
-        assertFalse extractWaysAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[toto:"tata"], columnsToKeep:[])
-        assertTrue extractWaysAsPolygons.results.isEmpty()
+        assertTrue extractWaysAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[toto:"tata"], columnsToKeep:[])
+        assertTrue ds.getTable(extractWaysAsPolygons.results.outputTableName).isEmpty()
 
         //Test no tags
         extractWaysAsPolygons = OSMTools.Transform.extractWaysAsPolygons()
@@ -424,8 +425,8 @@ class TransformTest extends AbstractOSMTest {
 
         //Test not existing tags
         extractRelationsAsPolygons = OSMTools.Transform.extractRelationsAsPolygons()
-        assertFalse extractRelationsAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[toto:"tata"], columnsToKeep:[])
-        assertTrue extractRelationsAsPolygons.results.isEmpty()
+        assertTrue extractRelationsAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[toto:"tata"], columnsToKeep:[])
+        assertTrue ds.getTable(extractRelationsAsPolygons.results.outputTableName).isEmpty()
 
         //Test no tags
         extractRelationsAsPolygons = OSMTools.Transform.extractRelationsAsPolygons()
@@ -507,8 +508,8 @@ class TransformTest extends AbstractOSMTest {
 
         //Test not existing tags
         extractWaysAsLines = OSMTools.Transform.extractWaysAsLines()
-        assertFalse extractWaysAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[toto:"tata"], columnsToKeep:[])
-        assertTrue extractWaysAsLines.results.isEmpty()
+        assertTrue extractWaysAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[toto:"tata"], columnsToKeep:[])
+        assertTrue ds.getTable(extractWaysAsLines.results.outputTableName).isEmpty()
 
         //Test no tags
         extractWaysAsLines = OSMTools.Transform.extractWaysAsLines()
@@ -590,8 +591,8 @@ class TransformTest extends AbstractOSMTest {
 
         //Test not existing tags
         extractRelationsAsLines = OSMTools.Transform.extractRelationsAsLines()
-        assertFalse extractRelationsAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[toto:"tata"], columnsToKeep:[])
-        assertTrue extractRelationsAsLines.results.isEmpty()
+        assertTrue extractRelationsAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[toto:"tata"], columnsToKeep:[])
+        assertTrue ds.getTable(extractRelationsAsLines.results.outputTableName).isEmpty()
 
         //Test no tags
         extractRelationsAsLines = OSMTools.Transform.extractRelationsAsLines()
@@ -613,13 +614,46 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractWaysAsLines()} process.
+     */
+    @Test
+    void extractWaysAsLinesWithoutResultsTest(){
+        def extractWaysAsLines = OSMTools.Transform.extractWaysAsLines()
+        H2GIS ds = RANDOM_DS()
+        def prefix = uuid()
+        def epsgCode = 2453
+        def tags = [building:"house"]
+        def columnsToKeep = ["landscape"]
+        createData(ds, prefix)
+        assertTrue extractWaysAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
+        assertTrue ds.getTable(extractWaysAsLines.results.outputTableName).isEmpty()
+    }
+
+    /**
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#toPoints()} process.
+     */
+    @Test
+    void toPointsTestWithoutResults(){
+        def toPoints = OSMTools.Transform.toPoints()
+        H2GIS ds = RANDOM_DS()
+        def prefix = uuid()
+        def epsgCode = 2453
+        def tags = [building:"house"]
+        def columnsToKeep = ["landcover"]
+        createData(ds, prefix)
+        assertTrue toPoints(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
+        assertTrue ds.getTable(toPoints.results.outputTableName).isEmpty()
+    }
+
+
+    /**
      * It uses for test purpose
      */
-    @Disabled
+    //@Disabled
     @Test
     void dev() {
         H2GIS h2GIS = RANDOM_DS()
-        Geometry geom = OSMTools.Utilities.getAreaFromPlace("Boston");
+        Geometry geom = OSMTools.Utilities.getAreaFromPlace("Agadir");
         def query = OSMTools.Utilities.buildOSMQuery(geom.getEnvelopeInternal(), [], OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
         def extract = OSMTools.Loader.extract()
         if (!query.isEmpty()) {
@@ -636,4 +670,5 @@ class TransformTest extends AbstractOSMTest {
             }
         }
     }
+
 }

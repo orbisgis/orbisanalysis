@@ -266,8 +266,10 @@ class TransformUtils {
 
         if (datasource.firstRow(countTagsQuery).count <= 0) {
             info("No keys or values found in the nodes. An empty table will be returned.")
-            datasource.execute """ DROP TABLE IF EXISTS $outputNodesPoints;
-                        CREATE TABLE $outputNodesPoints (the_geom GEOMETRY(POINT,4326));"""
+            datasource.execute """
+                    DROP TABLE IF EXISTS $outputNodesPoints;
+                    CREATE TABLE $outputNodesPoints (the_geom GEOMETRY(POINT,4326));
+            """
             return false
         }
         info "Build nodes as points"
@@ -275,8 +277,10 @@ class TransformUtils {
         if (tagsFilter.isEmpty()) {
             if (columnsToKeep) {
                 if (datasource.firstRow("select count(*) as count from $tableNodeTag where TAG_KEY in ('${columnsToKeep.join("','")}')")[0] < 1) {
-                    datasource.execute """ DROP TABLE IF EXISTS $outputNodesPoints;
-                        CREATE TABLE $outputNodesPoints (the_geom GEOMETRY(POINT,4326));"""
+                    datasource.execute """
+                            DROP TABLE IF EXISTS $outputNodesPoints;
+                            CREATE TABLE $outputNodesPoints (the_geom GEOMETRY(POINT,4326));
+                    """
                     return true
                 }
             }
@@ -291,8 +295,10 @@ class TransformUtils {
         } else {
             if(columnsToKeep){
                 if(datasource.firstRow("select count(*) as count from $tableNodeTag where TAG_KEY in ('${columnsToKeep.join("','")}')")[0]<1){
-                    datasource.execute """ DROP TABLE IF EXISTS $outputNodesPoints;
-                        CREATE TABLE $outputNodesPoints (the_geom GEOMETRY(POINT,4326));"""
+                    datasource.execute """
+                            DROP TABLE IF EXISTS $outputNodesPoints;
+                            CREATE TABLE $outputNodesPoints (the_geom GEOMETRY(POINT,4326));
+                    """
                     return true
                 }
             }
@@ -309,7 +315,6 @@ class TransformUtils {
                     AND a.id_node=c.id_node
                     GROUP BY a.id_node;
             """
-
         }
         return true
     }

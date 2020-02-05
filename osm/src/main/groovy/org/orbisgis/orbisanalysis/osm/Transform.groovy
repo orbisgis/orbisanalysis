@@ -175,8 +175,12 @@ IProcess extractWaysAsPolygons() {
                 def tagsFilter = createWhereFilter(tags)
 
                 if (datasource.firstRow(countTagsQuery).count <= 0) {
-                    warn "No keys or values found to extract ways."
-                    return
+                    warn "No keys or values found to extract ways. An empty table will be returned."
+                    datasource.execute """ 
+                            DROP TABLE IF EXISTS $outputTableName;
+                            CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
+                    """
+                    return [outputTableName: outputTableName]
                 }
 
                 info "Build way polygons"
@@ -196,6 +200,20 @@ IProcess extractWaysAsPolygons() {
                 else{
                     idWaysPolygons = osmTableTag
                 }
+
+                if(columnsToKeep){
+                    if(datasource.firstRow("""
+                            SELECT count(*) AS count 
+                            FROM $idWaysPolygons AS a, ${osmTablesPrefix}_WAY_TAG AS b 
+                            WHERE a.ID_WAY = b.ID_WAY AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')
+                    """)[0] < 1) {
+                        info "Any columns to keep. Cannot create any geometry polygons. An empty table will be returned."
+                        datasource.execute """
+                                DROP TABLE IF EXISTS $outputTableName;
+                                CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
+                        """
+                        return [outputTableName: outputTableName]
+                    }}
 
                 datasource.execute """
                         CREATE TABLE $waysPolygonTmp AS
@@ -270,8 +288,12 @@ IProcess extractRelationsAsPolygons() {
                 def tagsFilter = createWhereFilter(tags)
 
                 if (datasource.firstRow(countTagsQuery).count <= 0) {
-                    warn "No keys or values found in the relations."
-                    return
+                    warn "No keys or values found in the relations. An empty table will be returned."
+                    datasource.execute """
+                            DROP TABLE IF EXISTS $outputTableName;
+                            CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
+                    """
+                    return [outputTableName: outputTableName]
                 }
                 info "Build outer polygons"
                 def relationsPolygonsOuter = "RELATIONS_POLYGONS_OUTER_$uuid"
@@ -291,6 +313,21 @@ IProcess extractRelationsAsPolygons() {
                                 WHERE $tagsFilter;
                             CREATE INDEX ON $relationFilteredKeys(id_relation);
                     """
+
+                    if(columnsToKeep){
+                        if(datasource.firstRow("""
+                                SELECT count(*) AS count 
+                                FROM $relationFilteredKeys AS a, ${osmTablesPrefix}_RELATION_TAG AS b 
+                                WHERE a.ID_RELATION = b.ID_RELATION AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')
+                        """)[0]<1){
+                            info "Any columns to keep. Cannot create any geometry polygons. An empty table will be returned."
+                            datasource.execute """
+                                    DROP TABLE IF EXISTS $outputTableName;
+                                    CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
+                            """
+                            return [outputTableName: outputTableName]
+                        }}
+
                     outer_condition = """, $relationFilteredKeys g 
                             WHERE br.id_relation=g.id_relation
                             AND w.id_way = br.id_way
@@ -451,8 +488,10 @@ IProcess extractWaysAsLines() {
                 def tagsFilter = createWhereFilter(tags)
 
                 if (datasource.firstRow(countTagsQuery).count <= 0) {
-                    info "No keys or values found in the ways."
-                    return
+                    info "No keys or values found in the ways. An empty table will be returned."
+                    datasource.execute """ DROP TABLE IF EXISTS $outputTableName;
+                        CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));"""
+                    return [outputTableName: outputTableName]
                 }
                 info "Build ways as lines"
                 def waysLinesTmp = "WAYS_LINES_TMP_$uuid"
@@ -470,6 +509,21 @@ IProcess extractWaysAsLines() {
                             CREATE INDEX ON $idWaysTable(id_way);
                     """
                 }
+
+                if(columnsToKeep){
+                    if(datasource.firstRow("""
+                            SELECT count(*) AS count 
+                            FROM $idWaysTable AS a, ${osmTablesPrefix}_WAY_TAG AS b 
+                            WHERE a.ID_WAY = b.ID_WAY AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')
+                    """)[0] < 1){
+                        info "Any columns to keep. Cannot create any geometry lines. An empty table will be returned."
+                        datasource.execute """
+                                DROP TABLE IF EXISTS $outputTableName;
+                                CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
+                        """
+                        return [outputTableName: outputTableName]
+                    }}
+
 
                 datasource.execute """
                         DROP TABLE IF EXISTS $waysLinesTmp; 
@@ -541,8 +595,12 @@ IProcess extractRelationsAsLines() {
                 def tagsFilter = createWhereFilter(tags)
 
                 if (datasource.firstRow(countTagsQuery).count <= 0) {
-                    warn "No keys or values found in the relations."
-                    return
+                    warn "No keys or values found in the relations. An empty table will be returned."
+                    datasource.execute """
+                            DROP TABLE IF EXISTS $outputTableName;
+                            CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
+                    """
+                    return [outputTableName: outputTableName]
                 }
                 def relationsLinesTmp = "RELATIONS_LINES_TMP_$uuid"
                 def RelationsFilteredKeys = "RELATION_FILTERED_KEYS_$uuid"
@@ -560,6 +618,18 @@ IProcess extractRelationsAsLines() {
                             CREATE INDEX ON $RelationsFilteredKeys(id_relation);
                     """
                 }
+
+                if(columnsToKeep){
+                    if(datasource.firstRow("""
+                            SELECT count(*) AS count 
+                            FROM $RelationsFilteredKeys AS a, ${osmTablesPrefix}_RELATION_TAG AS b 
+                            WHERE a.ID_RELATION = b.ID_RELATION AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')
+                        """)[0] < 1){
+                        info "Any columns to keep. Cannot create any geometry lines. An empty table will be returned."
+                        datasource.execute """ DROP TABLE IF EXISTS $outputTableName;
+                        CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));"""
+                        return [outputTableName: outputTableName]
+                    }}
 
                 datasource.execute """
                         DROP TABLE IF EXISTS $relationsLinesTmp;

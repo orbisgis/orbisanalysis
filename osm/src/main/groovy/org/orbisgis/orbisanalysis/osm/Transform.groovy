@@ -176,8 +176,10 @@ IProcess extractWaysAsPolygons() {
 
                 if (datasource.firstRow(countTagsQuery).count <= 0) {
                     warn "No keys or values found to extract ways. An empty table will be returned."
-                    datasource.execute """ DROP TABLE IF EXISTS $outputTableName;
-                        CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));"""
+                    datasource.execute """ 
+                            DROP TABLE IF EXISTS $outputTableName;
+                            CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
+                    """
                     return [outputTableName: outputTableName]
                 }
 
@@ -200,11 +202,16 @@ IProcess extractWaysAsPolygons() {
                 }
 
                 if(columnsToKeep){
-                    if(datasource.firstRow("""SELECT count(*) as count FROM $idWaysPolygons AS a, 
-                ${osmTablesPrefix}_WAY_TAG AS b WHERE a.ID_WAY = b.ID_WAY AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')""")[0]<1){
+                    if(datasource.firstRow("""
+                            SELECT count(*) AS count 
+                            FROM $idWaysPolygons AS a, ${osmTablesPrefix}_WAY_TAG AS b 
+                            WHERE a.ID_WAY = b.ID_WAY AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')
+                    """)[0] < 1) {
                         info "Any columns to keep. Cannot create any geometry polygons. An empty table will be returned."
-                        datasource.execute """ DROP TABLE IF EXISTS $outputTableName;
-                        CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));"""
+                        datasource.execute """
+                                DROP TABLE IF EXISTS $outputTableName;
+                                CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
+                        """
                         return [outputTableName: outputTableName]
                     }}
 
@@ -282,8 +289,10 @@ IProcess extractRelationsAsPolygons() {
 
                 if (datasource.firstRow(countTagsQuery).count <= 0) {
                     warn "No keys or values found in the relations. An empty table will be returned."
-                    datasource.execute """ DROP TABLE IF EXISTS $outputTableName;
-                        CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));"""
+                    datasource.execute """
+                            DROP TABLE IF EXISTS $outputTableName;
+                            CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
+                    """
                     return [outputTableName: outputTableName]
                 }
                 info "Build outer polygons"
@@ -306,11 +315,16 @@ IProcess extractRelationsAsPolygons() {
                     """
 
                     if(columnsToKeep){
-                        if(datasource.firstRow("""SELECT count(*) as count FROM $relationFilteredKeys AS a, 
-                ${osmTablesPrefix}_RELATION_TAG AS b WHERE a.ID_RELATION = b.ID_RELATION AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')""")[0]<1){
+                        if(datasource.firstRow("""
+                                SELECT count(*) AS count 
+                                FROM $relationFilteredKeys AS a, ${osmTablesPrefix}_RELATION_TAG AS b 
+                                WHERE a.ID_RELATION = b.ID_RELATION AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')
+                        """)[0]<1){
                             info "Any columns to keep. Cannot create any geometry polygons. An empty table will be returned."
-                            datasource.execute """ DROP TABLE IF EXISTS $outputTableName;
-                        CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));"""
+                            datasource.execute """
+                                    DROP TABLE IF EXISTS $outputTableName;
+                                    CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
+                            """
                             return [outputTableName: outputTableName]
                         }}
 
@@ -497,11 +511,16 @@ IProcess extractWaysAsLines() {
                 }
 
                 if(columnsToKeep){
-                    if(datasource.firstRow("""SELECT count(*) as count FROM $idWaysTable AS a, 
-                ${osmTablesPrefix}_WAY_TAG AS b WHERE a.ID_WAY = b.ID_WAY AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')""")[0]<1){
+                    if(datasource.firstRow("""
+                            SELECT count(*) AS count 
+                            FROM $idWaysTable AS a, ${osmTablesPrefix}_WAY_TAG AS b 
+                            WHERE a.ID_WAY = b.ID_WAY AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')
+                    """)[0] < 1){
                         info "Any columns to keep. Cannot create any geometry lines. An empty table will be returned."
-                        datasource.execute """ DROP TABLE IF EXISTS $outputTableName;
-                        CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));"""
+                        datasource.execute """
+                                DROP TABLE IF EXISTS $outputTableName;
+                                CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
+                        """
                         return [outputTableName: outputTableName]
                     }}
 

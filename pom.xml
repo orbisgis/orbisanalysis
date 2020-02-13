@@ -26,7 +26,6 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
         <site.basedir>${project.basedir}</site.basedir>
-        <groovy-version>3.0.0-rc-2</groovy-version>
     </properties>
 
     <!-- Build Settings -->

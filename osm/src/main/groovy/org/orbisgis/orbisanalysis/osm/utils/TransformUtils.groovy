@@ -265,12 +265,25 @@ class TransformUtils {
         def tagsFilter = createWhereFilter(tags)
 
         if (datasource.firstRow(countTagsQuery).count <= 0) {
-            info("No keys or values found in the nodes")
+            info("No keys or values found in the nodes. An empty table will be returned.")
+            datasource.execute """
+                    DROP TABLE IF EXISTS $outputNodesPoints;
+                    CREATE TABLE $outputNodesPoints (the_geom GEOMETRY(POINT,4326));
+            """
             return false
         }
         info "Build nodes as points"
         def tagList = createTagList datasource, columnsSelector
         if (tagsFilter.isEmpty()) {
+            if (columnsToKeep) {
+                if (datasource.firstRow("select count(*) as count from $tableNodeTag where TAG_KEY in ('${columnsToKeep.join("','")}')")[0] < 1) {
+                    datasource.execute """
+                            DROP TABLE IF EXISTS $outputNodesPoints;
+                            CREATE TABLE $outputNodesPoints (the_geom GEOMETRY(POINT,4326));
+                    """
+                    return true
+                }
+            }
             datasource.execute """
                 DROP TABLE IF EXISTS $outputNodesPoints;
                 CREATE TABLE $outputNodesPoints AS
@@ -278,7 +291,17 @@ class TransformUtils {
                     FROM $tableNode AS a, $tableNodeTag b
                     WHERE a.id_node = b.id_node GROUP BY a.id_node;
             """
+
         } else {
+            if(columnsToKeep){
+                if(datasource.firstRow("select count(*) as count from $tableNodeTag where TAG_KEY in ('${columnsToKeep.join("','")}')")[0]<1){
+                    datasource.execute """
+                            DROP TABLE IF EXISTS $outputNodesPoints;
+                            CREATE TABLE $outputNodesPoints (the_geom GEOMETRY(POINT,4326));
+                    """
+                    return true
+                }
+            }
             def filteredNodes = "FILTERED_NODES_" + uuid()
             datasource.execute """
                 CREATE TABLE $filteredNodes AS

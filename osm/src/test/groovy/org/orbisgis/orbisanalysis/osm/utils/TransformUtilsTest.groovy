@@ -1096,9 +1096,9 @@ class TransformUtilsTest extends AbstractOSMTest {
         ds.execute "CREATE TABLE ${prefix}_relation_tag (id_relation int, tag_key varchar, tag_value varchar)"
 
         result = TransformUtils.toPolygonOrLine(polygonType, ds, prefix, epsgCode, tags, columnsToKeep)
-        assertNull result
+        assertNotNull result
 
         result = TransformUtils.toPolygonOrLine(lineType, ds, prefix, epsgCode, tags, columnsToKeep)
-        assertNull result
+        assertNotNull result
     }
 }

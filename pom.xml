@@ -11,7 +11,7 @@
         <version>1.0.3-RC1</version>
     </parent>
     <artifactId>orbisanalysis</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>1.0.0-RC1</version>
     <packaging>pom</packaging>
     <modules>
         <module>osm</module>

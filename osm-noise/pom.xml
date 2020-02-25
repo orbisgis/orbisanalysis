@@ -5,7 +5,7 @@
     <parent>
         <artifactId>orbisanalysis</artifactId>
         <groupId>org.orbisgis</groupId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.0.0-RC1</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -21,9 +21,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.orbisgis</groupId>
+            <groupId>org.orbisgis.orbisanalysis</groupId>
             <artifactId>osm</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.codehaus.groovy</groupId>

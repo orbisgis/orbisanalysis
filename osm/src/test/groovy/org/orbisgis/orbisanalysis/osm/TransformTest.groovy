@@ -131,17 +131,17 @@ class TransformTest extends AbstractOSMTest {
             }
         }
 
+        //Test column to keep absent
+        toPoints = OSMTools.Transform.toPoints()
+        assertTrue toPoints(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:["landcover"])
+        assertTrue ds.getTable(toPoints.results.outputTableName).isEmpty()
+
         //Test no points
         toPoints = OSMTools.Transform.toPoints()
         ds.execute "DROP TABLE ${prefix}_node_tag"
         ds.execute "CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar)"
         assertFalse toPoints(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
         assertTrue toPoints.results.isEmpty()
-        
-        //Test column to keep absent
-        toPoints = OSMTools.Transform.toPoints()
-        assertTrue toPoints(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:["landcover"])
-        assertTrue ds.getTable(toPoints.results.outputTableName).isEmpty()
     }
 
     /**
@@ -208,16 +208,18 @@ class TransformTest extends AbstractOSMTest {
             }
         }
 
-        //Test no lines
-        toLines = OSMTools.Transform.toLines()
-        ds.execute "DROP TABLE ${prefix}_node_tag"
-        ds.execute "CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar)"
-        assertFalse toLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
-        assertTrue toLines.results.isEmpty()
-        
         //Test column to keep absent
         toLines = OSMTools.Transform.toLines()
         assertTrue toLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:["landcover"])
+        assertTrue ds.getTable(toLines.results.outputTableName).isEmpty()
+
+        //Test no lines
+        toLines = OSMTools.Transform.toLines()
+        ds.execute "DROP TABLE ${prefix}_way_tag"
+        ds.execute "CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar)"
+        ds.execute "DROP TABLE ${prefix}_relation_tag"
+        ds.execute "CREATE TABLE ${prefix}_relation_tag (id_relation int, tag_key varchar, tag_value varchar)"
+        assertTrue toLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
         assertTrue ds.getTable(toLines.results.outputTableName).isEmpty()
     }
 
@@ -285,16 +287,18 @@ class TransformTest extends AbstractOSMTest {
             }
         }
 
-        //Test no polygons
-        toPolygons = OSMTools.Transform.toPolygons()
-        ds.execute "DROP TABLE ${prefix}_node_tag"
-        ds.execute "CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar)"
-        assertFalse toPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
-        assertTrue toPolygons.results.isEmpty()
-        
         //Test column to keep absent
         toPolygons = OSMTools.Transform.toPolygons()
         assertTrue toPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:["landcover"])
+        assertTrue ds.getTable(toPolygons.results.outputTableName).isEmpty()
+
+        //Test no polygons
+        toPolygons = OSMTools.Transform.toPolygons()
+        ds.execute "DROP TABLE ${prefix}_relation"
+        ds.execute "CREATE TABLE ${prefix}_relation(id_relation int)"
+        ds.execute "DROP TABLE ${prefix}_way"
+        ds.execute "CREATE TABLE ${prefix}_way(id_way int)"
+        assertTrue toPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
         assertTrue ds.getTable(toPolygons.results.outputTableName).isEmpty()
     }
 
@@ -536,6 +540,11 @@ class TransformTest extends AbstractOSMTest {
         assertTrue extractWaysAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[toto:"tata"], columnsToKeep:[])
         assertTrue ds.getTable(extractWaysAsLines.results.outputTableName).isEmpty()
 
+        //Test column to keep absent
+        extractWaysAsLines = OSMTools.Transform.extractWaysAsLines()
+        assertTrue extractWaysAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:["landscape"])
+        assertTrue ds.getTable(extractWaysAsLines.results.outputTableName).isEmpty()
+
         //Test no tags
         extractWaysAsLines = OSMTools.Transform.extractWaysAsLines()
         ds.execute "DROP TABLE ${prefix}_node_tag"
@@ -553,11 +562,6 @@ class TransformTest extends AbstractOSMTest {
                     break
             }
         }
-        
-        //Test column to keep absent
-        extractWaysAsLines = OSMTools.Transform.extractWaysAsLines()
-        assertTrue extractWaysAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:["landscape"])
-        assertTrue ds.getTable(extractWaysAsLines.results.outputTableName).isEmpty()
     }
 
     /**

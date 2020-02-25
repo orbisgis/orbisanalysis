@@ -7,13 +7,13 @@ OSM-Noise is library to extract and transform OSM data to a set of GIS layers re
 
 OSM-Noise is avalaible as a Maven artifact from the repository http://nexus.orbisgis.org
 
-To use the current snapshot add in the `pom`
+To use the current version add in the `pom`
 
 ```xml
 <dependency>
   <groupId>org.orbisgis</groupId>
   <artifactId>osm-noise</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.0-RC1</version>
 </dependency>
 ```
 # How to use
@@ -25,7 +25,7 @@ Put the following script and run it to extract OSM data from a place name and tr
 ```groovy
 // Declaration of the maven repository
 @GrabResolver(name='orbisgis', root='http://nexus-ng.orbisgis.org/repository/orbisgis/')
-@Grab(group='org.orbisgis', module='osm-noise', version='1.0.0-SNAPSHOT')
+@Grab(group='org.orbisgis', module='osm-noise', version='1.0.0-RC1')
 
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.orbisanalysis.osm.OSMNoise
@@ -49,7 +49,7 @@ Use the next script to generate default traffic data using the WG-AEN road cater
 ```groovy
 // Declaration of the maven repository
 @GrabResolver(name='orbisgis', root='http://nexus-ng.orbisgis.org/repository/orbisgis/')
-@Grab(group='org.orbisgis', module='osm-noise', version='1.0.0-SNAPSHOT')
+@Grab(group='org.orbisgis', module='osm-noise', version='1.0.0-RC1')
 
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.orbisanalysis.osm.OSMNoise

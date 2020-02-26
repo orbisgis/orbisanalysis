@@ -13,7 +13,7 @@ To use the current version add in the `pom`
 <dependency>
   <groupId>org.orbisgis</groupId>
   <artifactId>osm-noise</artifactId>
-  <version>1.0.0-RC1</version>
+  <version>1.0.0-SNAPSHOT</version>
 </dependency>
 ```
 # How to use
@@ -25,7 +25,7 @@ Put the following script and run it to extract OSM data from a place name and tr
 ```groovy
 // Declaration of the maven repository
 @GrabResolver(name='orbisgis', root='http://nexus-ng.orbisgis.org/repository/orbisgis/')
-@Grab(group='org.orbisgis', module='osm-noise', version='1.0.0-RC1')
+@Grab(group='org.orbisgis', module='osm-noise', version='1.0.0-SNAPSHOT')
 
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.orbisanalysis.osm.OSMNoise
@@ -49,7 +49,7 @@ Use the next script to generate default traffic data using the WG-AEN road cater
 ```groovy
 // Declaration of the maven repository
 @GrabResolver(name='orbisgis', root='http://nexus-ng.orbisgis.org/repository/orbisgis/')
-@Grab(group='org.orbisgis', module='osm-noise', version='1.0.0-RC1')
+@Grab(group='org.orbisgis', module='osm-noise', version='1.0.0-SNAPSHOT')
 
 import org.orbisgis.datamanager.h2gis.H2GIS
 import org.orbisgis.orbisanalysis.osm.OSMNoise

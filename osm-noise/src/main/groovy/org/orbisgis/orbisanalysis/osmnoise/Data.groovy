@@ -38,7 +38,8 @@ package org.orbisgis.orbisanalysis.osmnoise
 
 import groovy.transform.BaseScript
 import org.h2gis.functions.spatial.crs.ST_Transform
-import org.h2gis.utilities.SFSUtilities
+import org.h2gis.utilities.GeographyUtilities
+import org.h2gis.utilities.GeometryTableUtilities
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.MultiPolygon
@@ -367,7 +368,7 @@ IProcess download() {
                 Envelope envelope  = geom.getEnvelopeInternal()
                 def con = datasource.getConnection();
                 def interiorPoint = envelope.centre()
-                def epsg = SFSUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
+                def epsg = GeographyUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
                 Geometry geomUTM = ST_Transform.ST_Transform(con, geom, epsg)
 
                 datasource.execute """create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);

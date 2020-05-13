@@ -37,7 +37,7 @@
 package org.orbisgis.orbisanalysis.osm
 
 import groovy.transform.BaseScript
-import org.h2gis.utilities.jts_utils.GeographyUtils
+import org.h2gis.utilities.GeographyUtilities
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
@@ -90,7 +90,7 @@ IProcess fromArea() {
             }
 
             def epsg = DEFAULT_SRID
-            def env = GeographyUtils.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance)
+            def env = GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance)
 
             //Create table to store the geometry and the envelope of the extracted area
             datasource.execute "CREATE TABLE $outputZoneTable (the_geom GEOMETRY(POLYGON, $epsg));" +
@@ -157,7 +157,7 @@ IProcess fromPlace() {
                 error("Cannot find an area from the place name $placeName")
                 return
             }
-            def env = GeographyUtils.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance)
+            def env = GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance)
 
             //Create table to store the geometry and the envelope of the extracted area
             datasource.execute "CREATE TABLE $outputZoneTable (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);" +

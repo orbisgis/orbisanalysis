@@ -36,8 +36,9 @@
  */
 package org.orbisgis.orbisanalysis.osm.utils
 
-import org.orbisgis.orbisanalysis.osm.OSMTools
+import org.orbisgis.orbisanalysis.osm.OSMTools as OSM
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -58,6 +59,8 @@ class TransformUtils {
     static def warn = { obj -> LOGGER.warn(obj.toString()) }
     /** {@link Closure} logging with ERROR level the given {@link Object} {@link String} representation. */
     static def error = { obj -> LOGGER.error(obj.toString()) }
+
+    def static OSMTools = GroovyProcessManager.load(OSM)
 
     /**
      * Merge arrays into one.
@@ -90,14 +93,18 @@ class TransformUtils {
      *
      * @return The name for the table that contains all polygons/lines
      */
-    static def toPolygonOrLine(String type, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep) {
+    static def toPolygonOrLine(Types type, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep) {
         //Check if parameters a good
         if (!datasource) {
             error "Please set a valid database connection"
             return
         }
-        if (epsgCode == -1) {
+        if (!epsgCode || epsgCode == -1) {
             error "Invalid EPSG code : $epsgCode"
+            return
+        }
+        if(!tags && ! columnsToKeep){
+            error "No tags nor columns to keep"
             return
         }
 
@@ -105,22 +112,22 @@ class TransformUtils {
         def waysProcess
         def relationsProcess
         switch (type) {
-            case "POLYGONS":
-                waysProcess = OSMTools.Transform.extractWaysAsPolygons()
-                relationsProcess = OSMTools.Transform.extractRelationsAsPolygons()
+            case Types.POLYGONS:
+                waysProcess = OSMTools.Transform.extractWaysAsPolygons
+                relationsProcess = OSMTools.Transform.extractRelationsAsPolygons
                 break
-            case "LINES":
-                waysProcess = OSMTools.Transform.extractWaysAsLines()
-                relationsProcess = OSMTools.Transform.extractRelationsAsLines()
+            case Types.LINES:
+                waysProcess = OSMTools.Transform.extractWaysAsLines
+                relationsProcess = OSMTools.Transform.extractRelationsAsLines
                 break
             default:
-                error "Wrong type '$type'."
+                error "Wrong type '${type}'."
                 return
         }
 
         //Start the transformation
-        def outputTableName = "OSM_${type}_" + uuid()
-        info "Start ${type.toLowerCase()} transformation"
+        def outputTableName = "OSM_${type.name()}_" + uuid()
+        info "Start ${type.name().toLowerCase()} transformation"
         info "Indexing osm tables..."
         buildIndexes(datasource, osmTablesPrefix)
 
@@ -162,15 +169,15 @@ class TransformUtils {
                                 FROM $outputRelation;
                             DROP TABLE IF EXISTS $outputWay, $outputRelation;
             """
-            info "The way and relation $type have been built."
+            info "The way and relation ${type.name()} have been built."
         } else if (outputWay) {
             datasource.execute "ALTER TABLE $outputWay RENAME TO $outputTableName"
-            info "The way $type have been built."
+            info "The way ${type.name()} have been built."
         } else if (outputRelation) {
             datasource.execute "ALTER TABLE $outputRelation RENAME TO $outputTableName"
-            info "The relation $type have been built."
+            info "The relation ${type.name()} have been built."
         } else {
-            warn "Cannot extract any $type."
+            warn "Cannot extract any ${type.name()}."
             return
         }
         [outputTableName: outputTableName]
@@ -247,15 +254,15 @@ class TransformUtils {
             return false
         }
         if(osmTablesPrefix == null){
-            error("Invalid null OSM table prefix")
+            error "Invalid null OSM table prefix"
             return false
         }
         if(epsgCode == -1){
-            error("Invalid EPSG code")
+            error "Invalid EPSG code"
             return false
         }
         if(outputNodesPoints == null){
-            error("Invalid null output node points table name")
+            error "Invalid null output node points table name"
             return false
         }
         def tableNode = "${osmTablesPrefix}_node"
@@ -265,7 +272,7 @@ class TransformUtils {
         def tagsFilter = createWhereFilter(tags)
 
         if (datasource.firstRow(countTagsQuery).count <= 0) {
-            info("No keys or values found in the nodes. An empty table will be returned.")
+            info "No keys or values found in the nodes. An empty table will be returned."
             datasource.execute """
                     DROP TABLE IF EXISTS $outputNodesPoints;
                     CREATE TABLE $outputNodesPoints (the_geom GEOMETRY(POINT,4326));
@@ -438,4 +445,6 @@ class TransformUtils {
         """
         return true
     }
+
+    enum Types {LINES, POLYGONS}
 }

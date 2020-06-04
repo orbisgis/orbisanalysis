@@ -36,6 +36,7 @@
  */
 package org.orbisgis.orbisanalysis.osm.utils
 
+import org.h2.jdbc.JdbcSQLSyntaxErrorException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -923,9 +924,9 @@ class TransformUtilsTest extends AbstractOSMTest {
     @Test
     void badToPolygonOrLineTest(){
         def badType = "notAType"
-        def lineType = "lines"
+        def lineType = TransformUtils.Types.LINES
         H2GIS ds = RANDOM_DS()
-        def prefix = uuid()
+        def prefix = "OSM_"+uuid()
         def epsgCode = 2145
         def badEpsgCode = -1
         def tags = [:]
@@ -933,8 +934,6 @@ class TransformUtilsTest extends AbstractOSMTest {
 
         LOGGER.warn("An error will be thrown next")
         assertNull TransformUtils.toPolygonOrLine(null, ds, prefix, epsgCode, tags, columnsToKeep)
-        LOGGER.warn("An error will be thrown next")
-        assertNull TransformUtils.toPolygonOrLine(badType, ds, prefix, epsgCode, tags, columnsToKeep)
         LOGGER.warn("An error will be thrown next")
         assertNull TransformUtils.toPolygonOrLine(lineType, null, prefix, epsgCode, tags, columnsToKeep)
         LOGGER.warn("An error will be thrown next")
@@ -953,10 +952,10 @@ class TransformUtilsTest extends AbstractOSMTest {
      */
     @Test
     void toPolygonOrLineTest() {
-        def lineType = "LINES"
-        def polygonType = "POLYGONS"
+        def lineType = TransformUtils.Types.LINES
+        def polygonType = TransformUtils.Types.POLYGONS
         H2GIS ds = RANDOM_DS()
-        def prefix = uuid()
+        def prefix = "OSM_" + uuid()
         def epsgCode = 2145
         def tags = ["building": ["house"]]
         def columnsToKeep = ["water"]

@@ -34,7 +34,7 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.orbisgis.orbisanalysis.osm
+package org.orbisgis.orbisanalysis.osm.utils
 
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -44,7 +44,7 @@ import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
-import org.orbisgis.orbisanalysis.osm.utils.OSMElement
+import org.orbisgis.orbisanalysis.osm.AbstractOSMTest
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -62,15 +62,20 @@ class UtilitiesTest extends AbstractOSMTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UtilitiesTest)
 
+    /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
+    private static def executeOverPassQuery
+    /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
+    private static def getAreaFromPlace
+    /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
+    private static def executeNominatimQuery
+
     @BeforeEach
     final void beforeEach(TestInfo testInfo){
         LOGGER.info("@ ${testInfo.testMethod.get().name}()")
-        super.beforeEach()
     }
 
     @AfterEach
     final void afterEach(TestInfo testInfo){
-        super.afterEach()
         LOGGER.info("# ${testInfo.testMethod.get().name}()")
     }
 
@@ -86,7 +91,7 @@ class UtilitiesTest extends AbstractOSMTest {
         outer << [0.0, 10.0]
         outer << [0.0, 0.0, 0.0]
 
-        def coordinates = OSMTools.Utilities.arrayToCoordinate(outer)
+        def coordinates = Utilities.arrayToCoordinate(outer)
         assertEquals 5, coordinates.size()
         assertEquals "(0.0, 0.0, 0.0)", coordinates[0].toString()
         assertEquals "(10.0, 0.0, NaN)", coordinates[1].toString()
@@ -100,19 +105,19 @@ class UtilitiesTest extends AbstractOSMTest {
      */
     @Test
     void badArrayToCoordinateTest(){
-        def array1 = OSMTools.Utilities.arrayToCoordinate(null)
+        def array1 = Utilities.arrayToCoordinate(null)
         assertNotNull array1
         assertEquals 0, array1.length
 
-        def array2 = OSMTools.Utilities.arrayToCoordinate([])
+        def array2 = Utilities.arrayToCoordinate([])
         assertNotNull array2
         assertEquals 0, array2.length
 
-        def array3 = OSMTools.Utilities.arrayToCoordinate([[0]])
+        def array3 = Utilities.arrayToCoordinate([[0]])
         assertNotNull array3
         assertEquals 0, array3.length
 
-        def array4 = OSMTools.Utilities.arrayToCoordinate([[0, 1, 2, 3]])
+        def array4 = Utilities.arrayToCoordinate([[0, 1, 2, 3]])
         assertNotNull array4
         assertEquals 0, array4.length
     }
@@ -150,10 +155,10 @@ class UtilitiesTest extends AbstractOSMTest {
         poly2 << hole2
 
         assertEquals "POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))",
-                OSMTools.Utilities.parsePolygon(poly1, new GeometryFactory()).toString()
+                Utilities.parsePolygon(poly1, new GeometryFactory()).toString()
 
         assertEquals "POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0), (2 2, 8 2, 8 3, 2 2), (2 5, 8 5, 8 7, 2 5))",
-                OSMTools.Utilities.parsePolygon(poly2, new GeometryFactory()).toString()
+                Utilities.parsePolygon(poly2, new GeometryFactory()).toString()
     }
 
     /**
@@ -170,11 +175,11 @@ class UtilitiesTest extends AbstractOSMTest {
         def poly1 = []
         poly1 << outer
 
-        assertNull OSMTools.Utilities.parsePolygon(null, new GeometryFactory())
-        assertNull OSMTools.Utilities.parsePolygon([], new GeometryFactory())
-        assertNull OSMTools.Utilities.parsePolygon([[]], new GeometryFactory())
-        assertNull OSMTools.Utilities.parsePolygon([[null]], new GeometryFactory())
-        assertNull OSMTools.Utilities.parsePolygon(poly1, new GeometryFactory())
+        assertNull Utilities.parsePolygon(null, new GeometryFactory())
+        assertNull Utilities.parsePolygon([], new GeometryFactory())
+        assertNull Utilities.parsePolygon([[]], new GeometryFactory())
+        assertNull Utilities.parsePolygon([[null]], new GeometryFactory())
+        assertNull Utilities.parsePolygon(poly1, new GeometryFactory())
     }
 
     /**
@@ -185,7 +190,7 @@ class UtilitiesTest extends AbstractOSMTest {
     void getExecuteNominatimQueryTest(){
         def path = RANDOM_PATH()
         def file = new File(path)
-        assertTrue OSMTools.Utilities.executeNominatimQuery("vannes", file)
+        assertTrue Utilities.executeNominatimQuery("vannes", file)
         assertTrue file.exists()
         assertFalse file.text.isEmpty()
     }
@@ -196,11 +201,9 @@ class UtilitiesTest extends AbstractOSMTest {
     @Test
     void badGetExecuteNominatimQueryTest(){
         def file = new File(RANDOM_PATH())
-        assertFalse OSMTools.Utilities.executeNominatimQuery(null, file)
-        assertFalse OSMTools.Utilities.executeNominatimQuery("", file)
-        assertFalse OSMTools.Utilities.executeNominatimQuery("query", file.getAbsolutePath())
-        badExecuteNominatimQueryOverride()
-        assertFalse OSMTools.Utilities.executeNominatimQuery("query", file)
+        assertFalse Utilities.executeNominatimQuery(null, file)
+        assertFalse Utilities.executeNominatimQuery("", file)
+        assertFalse Utilities.executeNominatimQuery("query", file.getAbsolutePath())
     }
 
     /**
@@ -218,9 +221,9 @@ class UtilitiesTest extends AbstractOSMTest {
         def ring = factory.createLinearRing(coordinates)
         def polygon = factory.createPolygon(ring)
 
-        assertEquals "(bbox:7.7,1.3,7.7,1.3)", OSMTools.Utilities.toBBox(point)
-        assertEquals "(bbox:2.0,2.0,4.0,4.0)", OSMTools.Utilities.toBBox(ring)
-        assertEquals "(bbox:2.0,2.0,4.0,4.0)", OSMTools.Utilities.toBBox(polygon)
+        assertEquals "(bbox:7.7,1.3,7.7,1.3)", Utilities.toBBox(point)
+        assertEquals "(bbox:2.0,2.0,4.0,4.0)", Utilities.toBBox(ring)
+        assertEquals "(bbox:2.0,2.0,4.0,4.0)", Utilities.toBBox(polygon)
     }
 
     /**
@@ -228,7 +231,7 @@ class UtilitiesTest extends AbstractOSMTest {
      */
     @Test
     void badToBBoxTest(){
-        assertNull OSMTools.Utilities.toBBox(null)
+        assertNull Utilities.toBBox(null)
     }
 
     /**
@@ -244,7 +247,7 @@ class UtilitiesTest extends AbstractOSMTest {
                                     new Coordinate(2.0, 2.0)]
         def ring = factory.createLinearRing(coordinates)
         def poly = factory.createPolygon(ring)
-        assertGStringEquals "(poly:\"2.0 2.0 2.0 4.0 4.0 4.0 4.0 2.0\")", OSMTools.Utilities.toPoly(poly)
+        assertGStringEquals "(poly:\"2.0 2.0 2.0 4.0 4.0 4.0 4.0 2.0\")", Utilities.toPoly(poly)
         }
 
     /**
@@ -253,9 +256,9 @@ class UtilitiesTest extends AbstractOSMTest {
     @Test
     void badToPolyTest(){
         def factory = new GeometryFactory()
-        assertNull OSMTools.Utilities.toPoly(null)
-        assertNull OSMTools.Utilities.toPoly(factory.createPoint(new Coordinate(0.0, 0.0)))
-        assertNull OSMTools.Utilities.toPoly(factory.createPolygon())
+        assertNull Utilities.toPoly(null)
+        assertNull Utilities.toPoly(factory.createPoint(new Coordinate(0.0, 0.0)))
+        assertNull Utilities.toPoly(factory.createPolygon())
     }
 
     /**
@@ -273,29 +276,29 @@ class UtilitiesTest extends AbstractOSMTest {
                 "\tway[\"water\"];\n" +
                 ");\n" +
                 "(._;>;);\n" +
-                "out;", OSMTools.Utilities.buildOSMQuery(enveloppe, ["building", "water"], OSMElement.NODE, OSMElement.WAY)
+                "out;", Utilities.buildOSMQuery(enveloppe, ["building", "water"], OSMElement.NODE, OSMElement.WAY)
         assertEquals "[bbox:7.6,0.0,8.9,2.3];\n" +
                 "(\n" +
                 ");\n" +
                 "(._;>;);\n" +
-                "out;", OSMTools.Utilities.buildOSMQuery(enveloppe, ["building", "water"])
+                "out;", Utilities.buildOSMQuery(enveloppe, ["building", "water"])
         assertEquals "[bbox:7.6,0.0,8.9,2.3];\n" +
                 "(\n" +
                 ");\n" +
                 "(._;>;);\n" +
-                "out;", OSMTools.Utilities.buildOSMQuery(enveloppe, ["building", "water"], null)
+                "out;", Utilities.buildOSMQuery(enveloppe, ["building", "water"], null)
         assertEquals "[bbox:7.6,0.0,8.9,2.3];\n" +
                 "(\n" +
                 ");\n" +
                 "(._;>;);\n" +
-                "out;", OSMTools.Utilities.buildOSMQuery(enveloppe, ["building", "water"], null)
+                "out;", Utilities.buildOSMQuery(enveloppe, ["building", "water"], null)
         assertEquals "[bbox:7.6,0.0,8.9,2.3];\n" +
                 "(\n" +
                 "\tnode;\n" +
                 "\tway;\n" +
                 ");\n" +
                 "(._;>;);\n" +
-                "out;", OSMTools.Utilities.buildOSMQuery(enveloppe, [], OSMElement.NODE, OSMElement.WAY)
+                "out;", Utilities.buildOSMQuery(enveloppe, [], OSMElement.NODE, OSMElement.WAY)
     }
 
     /**
@@ -304,7 +307,7 @@ class UtilitiesTest extends AbstractOSMTest {
      */
     @Test
     void badBuildOSMQueryFromEnvelopeTest(){
-        assertNull OSMTools.Utilities.buildOSMQuery((Envelope)null, ["building"], OSMElement.NODE)
+        assertNull Utilities.buildOSMQuery((Envelope)null, ["building"], OSMElement.NODE)
     }
 
     /**
@@ -331,28 +334,28 @@ class UtilitiesTest extends AbstractOSMTest {
                 "\tway[\"water\"](poly:\"2.3 0.0 2.3 7.6 8.9 7.6 8.9 0.0\");\n" +
                 ");\n" +
                 "(._;>;);\n" +
-                "out;", OSMTools.Utilities.buildOSMQuery(polygon, ["building", "water"], OSMElement.NODE, OSMElement.WAY)
+                "out;", Utilities.buildOSMQuery(polygon, ["building", "water"], OSMElement.NODE, OSMElement.WAY)
         assertEquals "[bbox:2.3,0.0,8.9,7.6];\n" +
                 "(\n" +
                 ");\n" +
                 "(._;>;);\n" +
-                "out;", OSMTools.Utilities.buildOSMQuery(polygon, ["building", "water"])
+                "out;", Utilities.buildOSMQuery(polygon, ["building", "water"])
         assertEquals "[bbox:2.3,0.0,8.9,7.6];\n" +
                 "(\n" +
                 ");\n" +
                 "(._;>;);\n" +
-                "out;", OSMTools.Utilities.buildOSMQuery(polygon, ["building", "water"], null)
+                "out;", Utilities.buildOSMQuery(polygon, ["building", "water"], null)
         assertEquals "[bbox:2.3,0.0,8.9,7.6];\n" +
                 "(\n" +
                 ");\n" +
                 "(._;>;);\n" +
-                "out;", OSMTools.Utilities.buildOSMQuery(polygon, ["building", "water"], null)
+                "out;", Utilities.buildOSMQuery(polygon, ["building", "water"], null)
         assertEquals "[bbox:2.3,0.0,8.9,7.6];\n" +
                 "(\n" +
                 "\tnode(poly:\"2.3 0.0 2.3 7.6 8.9 7.6 8.9 0.0\");\n" +
                 "\tway(poly:\"2.3 0.0 2.3 7.6 8.9 7.6 8.9 0.0\");\n" +
                 ");\n" +
-                "out;", OSMTools.Utilities.buildOSMQuery(polygon, [], OSMElement.NODE, OSMElement.WAY)
+                "out;", Utilities.buildOSMQuery(polygon, [], OSMElement.NODE, OSMElement.WAY)
     }
 
     /**
@@ -361,8 +364,8 @@ class UtilitiesTest extends AbstractOSMTest {
      */
     @Test
     void badBuildOSMQueryFromPolygonTest(){
-        assertNull OSMTools.Utilities.buildOSMQuery((Polygon)null, ["building"], OSMElement.NODE)
-        assertNull OSMTools.Utilities.buildOSMQuery(new GeometryFactory().createPolygon(), ["building"], OSMElement.NODE)
+        assertNull Utilities.buildOSMQuery((Polygon)null, ["building"], OSMElement.NODE)
+        assertNull Utilities.buildOSMQuery(new GeometryFactory().createPolygon(), ["building"], OSMElement.NODE)
     }
 
     /**
@@ -380,8 +383,8 @@ class UtilitiesTest extends AbstractOSMTest {
                         "biclycle_road","cyclestreet","junction"
                 ]
         ]
-        assertEquals map, OSMTools.Utilities.readJSONParameters(new File(UtilitiesTest.getResource("road_tags.json").toURI()).absolutePath)
-        assertEquals map, OSMTools.Utilities.readJSONParameters(UtilitiesTest.getResourceAsStream("road_tags.json"))
+        assertEquals map, Utilities.readJSONParameters(new File(UtilitiesTest.getResource("road_tags.json").toURI()).absolutePath)
+        assertEquals map, Utilities.readJSONParameters(UtilitiesTest.getResourceAsStream("road_tags.json"))
     }
 
     /**
@@ -389,12 +392,12 @@ class UtilitiesTest extends AbstractOSMTest {
      */
     @Test
     void badReadJSONParametersTest(){
-        assertNull OSMTools.Utilities.readJSONParameters(null)
-        assertNull OSMTools.Utilities.readJSONParameters("")
-        assertNull OSMTools.Utilities.readJSONParameters("toto")
-        assertNull OSMTools.Utilities.readJSONParameters("target")
-        assertNull OSMTools.Utilities.readJSONParameters(new File(UtilitiesTest.getResource("bad_json_params.json").toURI()).absolutePath)
-        assertNull OSMTools.Utilities.readJSONParameters(UtilitiesTest.getResourceAsStream("bad_json_params.json"))
+        assertNull Utilities.readJSONParameters(null)
+        assertNull Utilities.readJSONParameters("")
+        assertNull Utilities.readJSONParameters("toto")
+        assertNull Utilities.readJSONParameters("target")
+        assertNull Utilities.readJSONParameters(new File(UtilitiesTest.getResource("bad_json_params.json").toURI()).absolutePath)
+        assertNull Utilities.readJSONParameters(UtilitiesTest.getResourceAsStream("bad_json_params.json"))
     }
 
     /**
@@ -403,7 +406,7 @@ class UtilitiesTest extends AbstractOSMTest {
     @Test
     void buildGeometryTest(){
         assertEquals("POLYGON ((-3.29109 48.72223, -3.29109 48.83535, -2.80357 48.83535, -2.80357 48.72223, -3.29109 48.72223))",
-                OSMTools.Utilities.buildGeometry([-3.29109,48.83535,-2.80357,48.72223]).toString())
+                Utilities.buildGeometry([-3.29109, 48.83535, -2.80357, 48.72223]).toString())
     }
 
     /**
@@ -411,14 +414,14 @@ class UtilitiesTest extends AbstractOSMTest {
      */
     @Test
     void badBuildGeometryTest(){
-        assertNull OSMTools.Utilities.buildGeometry([-3.29109,48.83535,-2.80357])
-        assertNull OSMTools.Utilities.buildGeometry([-Float.MAX_VALUE,48.83535,-2.80357,48.72223])
-        assertNull OSMTools.Utilities.buildGeometry([-3.29109,Float.MAX_VALUE,-2.80357,48.72223])
-        assertNull OSMTools.Utilities.buildGeometry([-3.29109,48.83535,-Float.MAX_VALUE,48.72223])
-        assertNull OSMTools.Utilities.buildGeometry([-3.29109,48.83535,-2.80357,Float.MAX_VALUE])
-        assertNull OSMTools.Utilities.buildGeometry(null)
-        assertNull OSMTools.Utilities.buildGeometry()
-        assertNull OSMTools.Utilities.buildGeometry(new GeometryFactory())
+        assertNull Utilities.buildGeometry([-3.29109, 48.83535, -2.80357])
+        assertNull Utilities.buildGeometry([-Float.MAX_VALUE, 48.83535, -2.80357, 48.72223])
+        assertNull Utilities.buildGeometry([-3.29109, Float.MAX_VALUE, -2.80357, 48.72223])
+        assertNull Utilities.buildGeometry([-3.29109, 48.83535, -Float.MAX_VALUE, 48.72223])
+        assertNull Utilities.buildGeometry([-3.29109, 48.83535, -2.80357, Float.MAX_VALUE])
+        assertNull Utilities.buildGeometry(null)
+        assertNull Utilities.buildGeometry()
+        assertNull Utilities.buildGeometry(new GeometryFactory())
     }
 
     /**
@@ -427,7 +430,7 @@ class UtilitiesTest extends AbstractOSMTest {
     @Test
     void geometryFromNominatimTest(){
         assertEquals("POLYGON ((-3.29109 48.72223, -3.29109 48.83535, -2.80357 48.83535, -2.80357 48.72223, -3.29109 48.72223))",
-                OSMTools.Utilities.geometryFromNominatim([48.83535,-3.29109,48.72223,-2.80357]).toString())
+                Utilities.geometryFromNominatim([48.83535, -3.29109, 48.72223, -2.80357]).toString())
     }
 
     /**
@@ -435,10 +438,10 @@ class UtilitiesTest extends AbstractOSMTest {
      */
     @Test
     void badGeometryFromNominatimTest(){
-        assertNull OSMTools.Utilities.geometryFromNominatim([-3.29109,48.83535,-2.80357])
-        assertNull OSMTools.Utilities.geometryFromNominatim(null)
-        assertNull OSMTools.Utilities.geometryFromNominatim()
-        assertNull OSMTools.Utilities.geometryFromNominatim(new GeometryFactory())
+        assertNull Utilities.geometryFromNominatim([-3.29109, 48.83535, -2.80357])
+        assertNull Utilities.geometryFromNominatim(null)
+        assertNull Utilities.geometryFromNominatim()
+        assertNull Utilities.geometryFromNominatim(new GeometryFactory())
     }
 
     /**
@@ -447,7 +450,7 @@ class UtilitiesTest extends AbstractOSMTest {
     @Test
     void geometryFromOverpassTest(){
         assertEquals("POLYGON ((-3.29109 48.72223, -3.29109 48.83535, -2.80357 48.83535, -2.80357 48.72223, -3.29109 48.72223))",
-                OSMTools.Utilities.geometryFromOverpass([48.83535,-3.29109,48.72223,-2.80357]).toString())
+                Utilities.geometryFromOverpass([48.83535, -3.29109, 48.72223, -2.80357]).toString())
     }
 
     /**
@@ -455,10 +458,10 @@ class UtilitiesTest extends AbstractOSMTest {
      */
     @Test
     void badGeometryFromOverpassTest(){
-        assertNull OSMTools.Utilities.geometryFromOverpass([-3.29109,48.83535,-2.80357])
-        assertNull OSMTools.Utilities.geometryFromOverpass(null)
-        assertNull OSMTools.Utilities.geometryFromOverpass()
-        assertNull OSMTools.Utilities.geometryFromOverpass(new GeometryFactory())
+        assertNull Utilities.geometryFromOverpass([-3.29109, 48.83535, -2.80357])
+        assertNull Utilities.geometryFromOverpass(null)
+        assertNull Utilities.geometryFromOverpass()
+        assertNull Utilities.geometryFromOverpass(new GeometryFactory())
     }
 
     /**
@@ -478,7 +481,7 @@ class UtilitiesTest extends AbstractOSMTest {
         ds.execute "CREATE TABLE prefix_way_member"
         ds.execute "CREATE TABLE prefix_way_node"
         ds.execute "CREATE TABLE prefix_way_tag"
-        assertTrue OSMTools.Utilities.dropOSMTables("prefix", ds)
+        assertTrue Utilities.dropOSMTables("prefix", ds)
 
         ds.execute "CREATE TABLE _node"
         ds.execute "CREATE TABLE _node_member"
@@ -490,7 +493,7 @@ class UtilitiesTest extends AbstractOSMTest {
         ds.execute "CREATE TABLE _way_member"
         ds.execute "CREATE TABLE _way_node"
         ds.execute "CREATE TABLE _way_tag"
-        assertTrue OSMTools.Utilities.dropOSMTables("", ds)
+        assertTrue Utilities.dropOSMTables("", ds)
 
     }
 
@@ -501,8 +504,8 @@ class UtilitiesTest extends AbstractOSMTest {
     @Test
     void badDropOSMTablesTest(){
         def ds = RANDOM_DS()
-        assertFalse OSMTools.Utilities.dropOSMTables("prefix", null)
-        assertFalse OSMTools.Utilities.dropOSMTables(null, ds)
+        assertFalse Utilities.dropOSMTables("prefix", null)
+        assertFalse Utilities.dropOSMTables(null, ds)
     }
 
     /**
@@ -511,24 +514,57 @@ class UtilitiesTest extends AbstractOSMTest {
     @Test
     void getAreaFromPlaceTest(){
         def pattern = Pattern.compile("^POLYGON \\(\\((?>-?\\d+(?>\\.\\d+)? -?\\d+(?>\\.\\d+)?(?>, )?)*\\)\\)\$")
-        assertTrue pattern.matcher(OSMTools.Utilities.getAreaFromPlace("Paimpol").toString()).matches()
-        assertTrue pattern.matcher(OSMTools.Utilities.getAreaFromPlace("Boston").toString()).matches()
-        sampleExecuteNominatimPolygonQueryOverride()
-        assertEquals "POLYGON ((0 0, 0 2, 2 2, 2 2, 2 0, 0 0))", OSMTools.Utilities.getAreaFromPlace("Place name").toString()
-        assertEquals "Place name", query
-        sampleExecuteNominatimMultipolygonQueryOverride()
-        assertEquals "MULTIPOLYGON (((0 0, 0 2, 2 2, 2 2, 2 0, 0 0)), ((3 3, 3 4, 4 4, 4 3, 3 3)))", OSMTools.Utilities.getAreaFromPlace("Place name").toString()
-        assertEquals "Place name", query
+        assertTrue pattern.matcher(Utilities.getAreaFromPlace("Paimpol").toString()).matches()
+        assertTrue pattern.matcher(Utilities.getAreaFromPlace("Boston").toString()).matches()
     }
 
     /**
      * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#getAreaFromPlace(java.lang.Object)} method with bad data.
      */
     @Test
-    void badGetAreaFromPlaceTest(){
-        sampleExecuteNominatimPolygonQueryOverride()
-        assertNull OSMTools.Utilities.getAreaFromPlace(null)
-        badExecuteNominatimQueryOverride()
-        assertNull OSMTools.Utilities.getAreaFromPlace("place")
+    void badGetAreaFromPlaceTest() {
+        assertNull Utilities.getAreaFromPlace(null)
+    }
+
+    /**
+     * Test the {@link Utilities#getServerStatus()} method.
+     */
+    @Test
+    void getServerStatusTest(){
+        def status = Utilities.getServerStatus()
+        assertNotNull status
+    }
+
+    /**
+     * Test the {@link org.orbisgis.orbisanalysis.osm.OSMTools#wait(int)} method.
+     */
+    @Test
+    void waitTest(){
+        assertTrue Utilities.wait(500)
+    }
+
+    /**
+     * Test the {@link org.orbisgis.orbisanalysis.osm.OSMTools#executeOverPassQuery(java.lang.Object, java.lang.Object)} method.
+     */
+    @Test
+    void executeOverPassQueryTest(){
+        def file = new File("target/" + UUID.randomUUID().toString().replaceAll("-", "_"))
+        assertTrue file.createNewFile()
+        assertTrue Utilities.executeOverPassQuery("(node(51.249,7.148,51.251,7.152);<;);out meta;", file)
+        assertTrue file.exists()
+        assertFalse file.text.isEmpty()
+    }
+
+    /**
+     * Test the {@link org.orbisgis.orbisanalysis.osm.OSMTools#executeOverPassQuery(java.lang.Object, java.lang.Object)} method with bad data.
+     */
+    @Test
+    void badExecuteOverPassQueryTest(){
+        def file = new File("target/" + UUID.randomUUID().toString().replaceAll("-", "_"))
+        assertTrue file.createNewFile()
+        assertFalse Utilities.executeOverPassQuery(null, file)
+        assertTrue file.text.isEmpty()
+        assertFalse Utilities.executeOverPassQuery("query", null)
+        assertTrue file.text.isEmpty()
     }
 }

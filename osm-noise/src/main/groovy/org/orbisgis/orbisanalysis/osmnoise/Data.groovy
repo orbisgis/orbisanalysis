@@ -39,19 +39,20 @@ package org.orbisgis.orbisanalysis.osmnoise
 import groovy.transform.BaseScript
 import org.h2gis.functions.spatial.crs.ST_Transform
 import org.h2gis.utilities.GeographyUtilities
-import org.h2gis.utilities.GeometryTableUtilities
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
-import org.orbisgis.orbisanalysis.osm.OSMTools
+import org.orbisgis.orbisanalysis.osm.OSMTools as Tools
 import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 
-@BaseScript OSMNoise osmNoise
+@BaseScript GroovyProcessFactory pf
 
-
+def OSMTools = GroovyProcessManager.load(Tools)
 
 /**
  * Download the OSM data and transform it to a set of GIS layers
@@ -63,73 +64,71 @@ import org.orbisgis.orbisdata.processmanager.api.IProcess
  * @return The name of the resulting GIS tables : zoneTableName, zoneEnvelopeTableName, buildingTableName
  *  roadTableName, the epsg of the processed zone and the path where the OSM file is stored
  */
-IProcess GISLayers() {
-    return create({
-        title "Download and transform the OSM data to a set of GIS layers"
-        inputs datasource: JdbcDataSource, placeName: String
-        outputs buildingTableName: String, roadTableName:String,
-                zoneTableName:String,zoneEnvelopeTableName:String
-        run { datasource, placeName->
-            if(!datasource){
-                error "Please set a valid database connection"
-                return
-            }
+create {
+    title "Download and transform the OSM data to a set of GIS layers"
+    id "GISLayers"
+    inputs datasource: JdbcDataSource, placeName: String
+    outputs buildingTableName: String, roadTableName:String,
+            zoneTableName:String,zoneEnvelopeTableName:String
+    run { datasource, placeName->
+        if(!datasource){
+            error "Please set a valid database connection"
+            return
+        }
 
-            String formatedPlaceName = placeName.trim().split("\\s*(,|\\s)\\s*").join("_");
-            IProcess downloadData = download()
-            if(downloadData.execute(datasource: datasource, placeName: placeName)){
-                epsg = downloadData.results.epsg
-                def prefix = "OSM_DATA_$uuid"
-                def load = OSMTools.Loader.load()
-                info "Loading OSM data from the place name $placeName"
-                if (load(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: downloadData.results.osmFilePath)) {
-                    def outputBuildingTableName =null
-                    def outputRoadTableName =null
-                    def outputRailTableName =null
-                    def epsg = datasource.getSpatialTable(downloadData.results.zoneTableName).srid
-                    IProcess buildingFormating = createBuildingLayer()
-                    if (buildingFormating.execute(datasource: datasource, osmTablesPrefix: prefix,epsg:epsg,
-                            outputTablePrefix :formatedPlaceName)){
-                            outputBuildingTableName =buildingFormating.results.outputTableName
-                    }
-                    else{
-                        error "Cannot create the building layer"
-                    }
-
-                    IProcess roadFormating = createRoadLayer()
-                    if (roadFormating.execute(datasource: datasource, osmTablesPrefix: prefix,epsg:epsg,
-                            outputTablePrefix :formatedPlaceName)){
-                            outputRoadTableName =roadFormating.results.outputTableName
-                    }
-                    else{
-                        error "Cannot create the road layer"
-                    }
-
-                    //TODO : Create landcover with G coeff
-
-                    //Delete OSM tables
-                    OSMTools.Utilities.dropOSMTables(prefix, datasource)
-
-                    [buildingTableName  : outputBuildingTableName,
-                     roadTableName      : outputRoadTableName,
-                     zoneTableName      : downloadData.results.zoneTableName,
-                     zoneEnvelopeTableName: downloadData.results.zoneEnvelopeTableName]
-
+        String formatedPlaceName = placeName.trim().split("\\s*(,|\\s)\\s*").join("_");
+        IProcess downloadData = download()
+        if(downloadData.execute(datasource: datasource, placeName: placeName)){
+            epsg = downloadData.results.epsg
+            def prefix = "OSM_DATA_$uuid"
+            def load = OSMTools.Loader.load()
+            info "Loading OSM data from the place name $placeName"
+            if (load(datasource: datasource, osmTablesPrefix: prefix, osmFilePath: downloadData.results.osmFilePath)) {
+                def outputBuildingTableName =null
+                def outputRoadTableName =null
+                def outputRailTableName =null
+                def epsg = datasource.getSpatialTable(downloadData.results.zoneTableName).srid
+                IProcess buildingFormating = createBuildingLayer()
+                if (buildingFormating.execute(datasource: datasource, osmTablesPrefix: prefix,epsg:epsg,
+                        outputTablePrefix :formatedPlaceName)){
+                        outputBuildingTableName =buildingFormating.results.outputTableName
                 }
                 else{
-                    error"Cannot load the OSM data from the place name $placeName"
+                    error "Cannot create the building layer"
                 }
 
+                IProcess roadFormating = createRoadLayer()
+                if (roadFormating.execute(datasource: datasource, osmTablesPrefix: prefix,epsg:epsg,
+                        outputTablePrefix :formatedPlaceName)){
+                        outputRoadTableName =roadFormating.results.outputTableName
+                }
+                else{
+                    error "Cannot create the road layer"
+                }
+
+                //TODO : Create landcover with G coeff
+
+                //Delete OSM tables
+                OSMTools.Utilities.dropOSMTables(prefix, datasource)
+
+                [buildingTableName  : outputBuildingTableName,
+                 roadTableName      : outputRoadTableName,
+                 zoneTableName      : downloadData.results.zoneTableName,
+                 zoneEnvelopeTableName: downloadData.results.zoneEnvelopeTableName]
 
             }
             else{
-                error"Cannot create the OSM GIS layers from the place $placeName"
+                error"Cannot load the OSM data from the place name $placeName"
             }
 
 
         }
-    })
+        else{
+            error"Cannot create the OSM GIS layers from the place $placeName"
+        }
 
+
+    }
 }
 
 /**
@@ -144,17 +143,17 @@ IProcess GISLayers() {
  *
  * @return the name of the output building layer
  */
-IProcess createBuildingLayer() {
-    return create({
+create {
     title "Create the building layer"
+    id "createBuildingLayer"
     inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsg:int, inputZoneEnvelopeTableName:"",
             outputTablePrefix: String,jsonFilename: ""
     outputs outputTableName: String
     run { datasource, osmTablesPrefix, epsg, inputZoneEnvelopeTableName, outputTablePrefix,jsonFilename ->
-        def transform = OSMTools.Transform.toPolygons()
-        logger.info "Create the building layer"
+        def transform = OSMTools.Transform.toPolygons
+        info "Create the building layer"
         def paramsDefaultFile = this.class.getResourceAsStream("buildingParams.json")
-        def parametersMap = parametersMapping(jsonFilename, paramsDefaultFile)
+        def parametersMap = OSMNoiseUtils.parametersMapping(jsonFilename, paramsDefaultFile)
         def tags = parametersMap.get("tags")
         def columnsToKeep = parametersMap.get("columns")
         def mappingTypeAndUse = parametersMap.get("type")
@@ -164,8 +163,8 @@ IProcess createBuildingLayer() {
         def hThresholdLev2 = parametersMap.get("hThresholdLev2")
         if (transform(datasource: datasource, osmTablesPrefix: osmTablesPrefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
             def inputTableName = transform.results.outputTableName
-            logger.info "Formating building layer"
-            def outputTableName = "${outputTablePrefix}_BUILDING_$uuid"
+            info "Formating building layer"
+            def outputTableName = postfix "${outputTablePrefix}_BUILDING"
             datasource.execute """ DROP TABLE if exists ${outputTableName};
                         CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id_build serial, ID_SOURCE VARCHAR, HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT,
                               NB_LEV INTEGER, TYPE VARCHAR, MAIN_USE VARCHAR, ZINDEX INTEGER);"""
@@ -230,7 +229,6 @@ IProcess createBuildingLayer() {
             }
         }
     }
-    })
 }
 
 /**
@@ -246,87 +244,86 @@ IProcess createBuildingLayer() {
  *
  * @return the name of the output road layer
  */
-IProcess createRoadLayer() {
-    return create({
-        title "Create the road layer"
-        inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsg:int, inputZoneEnvelopeTableName:"",
-                outputTablePrefix: String,jsonFilename: ""
-        outputs outputTableName: String
-        run { datasource, osmTablesPrefix, epsg, inputZoneEnvelopeTableName, outputTablePrefix,jsonFilename ->
-            //Create the road layer
-            transform = OSMTools.Transform.extractWaysAsLines()
-            logger.info "Create the road layer"
-            paramsDefaultFile = this.class.getResourceAsStream("roadParams.json")
-            parametersMap = parametersMapping(jsonFilename,paramsDefaultFile)
-            def mappingTypeAndUse = parametersMap.get("type")
-            def mappingForSurface = parametersMap.get("surface")
-            def mappingMaxSpeed = parametersMap.get("maxspeed")
-            tags = parametersMap.get("tags")
-            columnsToKeep = parametersMap.get("columns")
-            if (transform(datasource: datasource, osmTablesPrefix: osmTablesPrefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
-                def inputTableName = transform.results.outputTableName
-                logger.info('Formating road layer')
-                def outputTableName = "${outputTablePrefix}_ROAD_$uuid"
-                datasource.execute """drop table if exists $outputTableName;
-                            CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_road serial, ID_SOURCE VARCHAR, WGAEN_TYPE VARCHAR,
-                            SURFACE VARCHAR, ONEWAY BOOLEAN, MAXSPEED INTEGER, ZINDEX INTEGER);"""
-                    def queryMapper = "SELECT "
-                    ISpatialTable inputSpatialTable = datasource.getSpatialTable(inputTableName)
-                    if(inputSpatialTable.rowCount>0) {
-                        inputSpatialTable.the_geom.createSpatialIndex()
-                        def columnNames = inputSpatialTable.columns
-                        columnNames.remove("THE_GEOM")
-                        queryMapper += columnsMapper(columnNames, columnsToKeep)
-                        if(inputZoneEnvelopeTableName) {
-                            queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) then st_intersection(st_force2D(a.the_geom), b.the_geom) else a.the_geom end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
-                        }else{
-                            queryMapper += ", a.the_geom FROM $inputTableName  as a"
-                        }
-                        datasource.withBatch(1000) { stmt ->
-                            datasource.eachRow(queryMapper) { row ->
-                                String type = row."highway"
+create{
+    title "Create the road layer"
+    id "createRoadLayer"
+    inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsg:int, inputZoneEnvelopeTableName:"",
+            outputTablePrefix: String,jsonFilename: ""
+    outputs outputTableName: String
+    run { datasource, osmTablesPrefix, epsg, inputZoneEnvelopeTableName, outputTablePrefix,jsonFilename ->
+        //Create the road layer
+        def transform = OSMTools.Transform.extractWaysAsLines
+        info "Create the road layer"
+        def paramsDefaultFile = this.class.getResourceAsStream("roadParams.json")
+        def parametersMap = OSMNoiseUtils.parametersMapping(jsonFilename,paramsDefaultFile)
+        def mappingTypeAndUse = parametersMap.get("type")
+        def mappingForSurface = parametersMap.get("surface")
+        def mappingMaxSpeed = parametersMap.get("maxspeed")
+        def tags = parametersMap.get("tags")
+        def columnsToKeep = parametersMap.get("columns")
+        if (transform(datasource: datasource, osmTablesPrefix: osmTablesPrefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
+            def inputTableName = transform.results.outputTableName
+            info('Formating road layer')
+            def outputTableName = postfix "${outputTablePrefix}_ROAD"
+            datasource.execute """drop table if exists $outputTableName;
+                        CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_road serial, ID_SOURCE VARCHAR, WGAEN_TYPE VARCHAR,
+                        SURFACE VARCHAR, ONEWAY BOOLEAN, MAXSPEED INTEGER, ZINDEX INTEGER);"""
+                def queryMapper = "SELECT "
+                ISpatialTable inputSpatialTable = datasource.getSpatialTable(inputTableName)
+                if(inputSpatialTable.rowCount>0) {
+                    inputSpatialTable.the_geom.createSpatialIndex()
+                    def columnNames = inputSpatialTable.columns
+                    columnNames.remove("THE_GEOM")
+                    queryMapper += columnsMapper(columnNames, columnsToKeep)
+                    if(inputZoneEnvelopeTableName) {
+                        queryMapper += ", CASE WHEN st_overlaps(CASE WHEN ST_ISVALID(a.the_geom) THEN a.the_geom else st_makevalid(a.the_geom) end, b.the_geom) then st_intersection(st_force2D(a.the_geom), b.the_geom) else a.the_geom end as the_geom FROM $inputTableName  as a, $inputZoneEnvelopeTableName as b where a.the_geom && b.the_geom"
+                    }else{
+                        queryMapper += ", a.the_geom FROM $inputTableName  as a"
+                    }
+                    datasource.withBatch(1000) { stmt ->
+                        datasource.eachRow(queryMapper) { row ->
+                            String type = row."highway"
 
 
-                                /*Return a default value road type from OSM tag
-                                * ref :  Tool 4.5: No heavy vehicle data available
-                                * see the json config file
-                                */
-                                def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
-                                type = typeAndUseValues[0]
-                                if (!type) {
-                                    type = "Small main road"
-                                }
+                            /*Return a default value road type from OSM tag
+                            * ref :  Tool 4.5: No heavy vehicle data available
+                            * see the json config file
+                            */
+                            def typeAndUseValues = getTypeAndUse(row, columnNames, mappingTypeAndUse)
+                            type = typeAndUseValues[0]
+                            if (!type) {
+                                type = "Small main road"
+                            }
 
-                                int maxspeed = getSpeedInKmh(row."maxspeed")
+                            int maxspeed = getSpeedInKmh(row."maxspeed")
 
-                                if(maxspeed==-1){
-                                    maxspeed = mappingMaxSpeed[type]
-                                }
+                            if(maxspeed==-1){
+                                maxspeed = mappingMaxSpeed[type]
+                            }
 
-                                String onewayValue = row."oneway"
-                                boolean oneway = false;
-                                if(onewayValue && onewayValue=="yes"){
-                                    oneway=true
-                                }
+                            String onewayValue = row."oneway"
+                            boolean oneway = false;
+                            if(onewayValue && onewayValue=="yes"){
+                                oneway=true
+                            }
 
-                                String surface = getTypeValue(row, columnNames, mappingForSurface)
-                                def zIndex = getZIndex(row.'layer')
-                                if (type) {
-                                    Geometry geom = row.the_geom
-                                    for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                        stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${
-                                            geom.getGeometryN(i)}',$epsg), null, '${row.id}','${type}', '${
-                                            surface}',${oneway},${maxspeed}, ${zIndex})""".toString()
-                                    }
+                            String surface = getTypeValue(row, columnNames, mappingForSurface)
+                            def zIndex = getZIndex(row.'layer')
+                            if (type) {
+                                Geometry geom = row.the_geom
+                                for (int i = 0; i < geom.getNumGeometries(); i++) {
+                                    stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${
+                                        geom.getGeometryN(i)}',$epsg), null, '${row.id}','${type}', '${
+                                        surface}',${oneway},${maxspeed}, ${zIndex})""".toString()
                                 }
                             }
                         }
-                        logger.info('Roads transformation finishes')
-                        [outputTableName: outputTableName]
                     }
-            }
+                    info('Roads transformation finishes')
+                    [outputTableName: outputTableName]
+                }
         }
-        })
+    }
 }
 
 /**
@@ -338,72 +335,70 @@ IProcess createRoadLayer() {
  * @return The name of the resulting GIS tables : zoneTableName, zoneEnvelopeTableName
  *  , the epsg of the processed zone and the path where the OSM file is stored
  */
-IProcess download() {
-    return create({
-        title "Download the OSM data from a place name"
-        inputs datasource: JdbcDataSource, placeName: String
-        outputs zoneTableName: String, zoneEnvelopeTableName: String, osmFilePath : String
-        run { datasource, placeName ->
-            def outputZoneTable = "ZONE_$uuid"
-            def outputZoneEnvelopeTable = "ZONE_ENVELOPE_$uuid"
-            if(!datasource){
-                error "Please set a valid database connection"
-                return
+create {
+    title "Download the OSM data from a place name"
+    id "download"
+    inputs datasource: JdbcDataSource, placeName: String
+    outputs zoneTableName: String, zoneEnvelopeTableName: String, osmFilePath : String
+    run { datasource, placeName ->
+        def outputZoneTable = "ZONE_$uuid"
+        def outputZoneEnvelopeTable = "ZONE_ENVELOPE_$uuid"
+        if(!datasource){
+            error "Please set a valid database connection"
+            return
+        }
+        Geometry geom = OSMTools.Utilities.getAreaFromPlace(placeName);
+
+        if (geom == null) {
+            error("Cannot find an area from the place name ${placeName}")
+            return null
+        } else {
+            def GEOMETRY_TYPE = "GEOMETRY"
+            if(geom instanceof Polygon){
+                GEOMETRY_TYPE ="POLYGON"
+            }else if(geom instanceof MultiPolygon){
+                GEOMETRY_TYPE ="MULTIPOLYGON"
             }
-            Geometry geom = OSMTools.Utilities.getAreaFromPlace(placeName);
+            /**
+             * Extract the OSM file from the envelope of the geometry
+             */
+            Envelope envelope  = geom.getEnvelopeInternal()
+            def con = datasource.getConnection();
+            def interiorPoint = envelope.centre()
+            def epsg = GeographyUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
+            Geometry geomUTM = ST_Transform.ST_Transform(con, geom, epsg)
 
-            if (geom == null) {
-                logger.error("Cannot find an area from the place name ${placeName}")
-                return null
+            datasource.execute """create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);
+        INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${geomUTM.toString()}', $epsg), '$placeName');"""
+
+            datasource.execute """create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
+        INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${geomUTM.getFactory().toGeometry(geomUTM.getEnvelopeInternal()).toString()
+            }',$epsg), '$placeName');"""
+
+            def query =  "[maxsize:1073741824];" +
+                    "(" +
+                    "(" +
+                    "node(${envelopeToString(envelope)});" +
+                    "way(${envelopeToString(envelope)});" +
+                    "relation(${envelopeToString(envelope)});" +
+                    ");" +
+                    ">;);" +
+                    "out;"
+
+            def extract = OSMTools.Loader.extract()
+            if (extract.execute(overpassQuery: query)){
+                [zoneTableName      : outputZoneTable,
+                 zoneEnvelopeTableName: outputZoneEnvelopeTable,
+                 osmFilePath: extract.results.outputFilePath]
             } else {
-                def GEOMETRY_TYPE = "GEOMETRY"
-                if(geom instanceof Polygon){
-                    GEOMETRY_TYPE ="POLYGON"
-                }else if(geom instanceof MultiPolygon){
-                    GEOMETRY_TYPE ="MULTIPOLYGON"
-                }
-                /**
-                 * Extract the OSM file from the envelope of the geometry
-                 */
-                Envelope envelope  = geom.getEnvelopeInternal()
-                def con = datasource.getConnection();
-                def interiorPoint = envelope.centre()
-                def epsg = GeographyUtilities.getSRID(con, interiorPoint.y as float, interiorPoint.x as float)
-                Geometry geomUTM = ST_Transform.ST_Transform(con, geom, epsg)
-
-                datasource.execute """create table ${outputZoneTable} (the_geom GEOMETRY(${GEOMETRY_TYPE}, $epsg), ID_ZONE VARCHAR);
-            INSERT INTO ${outputZoneTable} VALUES (ST_GEOMFROMTEXT('${geomUTM.toString()}', $epsg), '$placeName');"""
-
-                datasource.execute """create table ${outputZoneEnvelopeTable} (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
-            INSERT INTO ${outputZoneEnvelopeTable} VALUES (ST_GEOMFROMTEXT('${geomUTM.getFactory().toGeometry(geomUTM.getEnvelopeInternal()).toString()
-                }',$epsg), '$placeName');"""
-
-                def query =  "[maxsize:1073741824];" +
-                        "(" +
-                        "(" +
-                        "node(${envelopeToString(envelope)});" +
-                        "way(${envelopeToString(envelope)});" +
-                        "relation(${envelopeToString(envelope)});" +
-                        ");" +
-                        ">;);" +
-                        "out;"
-
-                def extract = OSMTools.Loader.extract()
-                if (extract.execute(overpassQuery: query)){
-                    [zoneTableName      : outputZoneTable,
-                     zoneEnvelopeTableName: outputZoneEnvelopeTable,
-                     osmFilePath: extract.results.outputFilePath]
-                } else {
-                    logger.error "Cannot extract the OSM data from the place  $placeName"
-                }
+                error "Cannot extract the OSM data from the place  $placeName"
             }
         }
-    })
+    }
 }
 
 private static String envelopeToString(Envelope env){
     if(!env){
-        error "The envelope should not be null"
         return null
     }
     return "${String.format(Locale.US, "%.12f", env.getMinY())}," +
@@ -419,7 +414,7 @@ private static String envelopeToString(Envelope env){
  */
 private double getSpeedInKmh(String maxspeedValue){
         if (!maxspeedValue) return -1
-        def matcher = speedPattern.matcher(maxspeedValue)
+        def matcher = OSMNoiseUtils.speedPattern.matcher(maxspeedValue)
         if (!matcher.matches()) return -1
 
         def speed = Integer.parseInt(matcher.group(1))

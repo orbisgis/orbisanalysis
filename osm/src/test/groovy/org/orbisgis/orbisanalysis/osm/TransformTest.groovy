@@ -68,13 +68,13 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#toPoints()} process with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#toPoints} process with bad data.
      */
     @Test
     void badToPointsTest(){
-        def toPoints = OSMTools.Transform.toPoints()
+        def toPoints = Tools.Transform.toPoints
         H2GIS ds = RANDOM_DS()
-        def prefix = uuid()
+        def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = []
         def columnsToKeep = []
@@ -97,13 +97,13 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#toPoints()} process.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#toPoints} process.
      */
     @Test
     void toPointsTest(){
-        def toPoints = OSMTools.Transform.toPoints()
+        def toPoints = Tools.Transform.toPoints
         H2GIS ds = RANDOM_DS()
-        def prefix = uuid()
+        def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = [building:"house"]
         def columnsToKeep = ["water"]
@@ -132,12 +132,12 @@ class TransformTest extends AbstractOSMTest {
         }
 
         //Test column to keep absent
-        toPoints = OSMTools.Transform.toPoints()
+        toPoints = Tools.Transform.toPoints
         assertTrue toPoints(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:["landcover"])
         assertTrue ds.getTable(toPoints.results.outputTableName).isEmpty()
 
         //Test no points
-        toPoints = OSMTools.Transform.toPoints()
+        toPoints = Tools.Transform.toPoints
         ds.execute "DROP TABLE ${prefix}_node_tag"
         ds.execute "CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar)"
         assertFalse toPoints(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
@@ -145,13 +145,13 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#toLines()} process with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#toLines} process with bad data.
      */
     @Test
     void badToLinesTest(){
-        def toLines = OSMTools.Transform.toLines()
+        def toLines = Tools.Transform.toLines
         H2GIS ds = RANDOM_DS()
-        def prefix = uuid()
+        def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = []
         def columnsToKeep = []
@@ -174,13 +174,13 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#toLines()} process.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#toLines} process.
      */
     @Test
     void toLinesTest(){
-        def toLines = OSMTools.Transform.toLines()
+        def toLines = Tools.Transform.toLines
         H2GIS ds = RANDOM_DS()
-        def prefix = uuid()
+        def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = [building:"house"]
         def columnsToKeep = ["water"]
@@ -209,12 +209,12 @@ class TransformTest extends AbstractOSMTest {
         }
 
         //Test column to keep absent
-        toLines = OSMTools.Transform.toLines()
+        toLines = Tools.Transform.toLines
         assertTrue toLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:["landcover"])
         assertTrue ds.getTable(toLines.results.outputTableName).isEmpty()
 
         //Test no lines
-        toLines = OSMTools.Transform.toLines()
+        toLines = Tools.Transform.toLines
         ds.execute "DROP TABLE ${prefix}_way_tag"
         ds.execute "CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar)"
         ds.execute "DROP TABLE ${prefix}_relation_tag"
@@ -224,13 +224,13 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#toPolygons()} process with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#toPolygons} process with bad data.
      */
     @Test
     void badToPolygonsTest(){
-        def toPolygons = OSMTools.Transform.toPolygons()
+        def toPolygons = Tools.Transform.toPolygons
         H2GIS ds = RANDOM_DS()
-        def prefix = uuid()
+        def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = []
         def columnsToKeep = []
@@ -253,13 +253,13 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#toPolygons()} process.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#toPolygons} process.
      */
     @Test
     void toPolygonsTest(){
-        def toPolygons = OSMTools.Transform.toPolygons()
+        def toPolygons = Tools.Transform.toPolygons
         H2GIS ds = RANDOM_DS()
-        def prefix = uuid()
+        def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = [building:"house"]
         def columnsToKeep = ["water"]
@@ -288,12 +288,12 @@ class TransformTest extends AbstractOSMTest {
         }
 
         //Test column to keep absent
-        toPolygons = OSMTools.Transform.toPolygons()
+        toPolygons = Tools.Transform.toPolygons
         assertTrue toPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:["landcover"])
         assertTrue ds.getTable(toPolygons.results.outputTableName).isEmpty()
 
         //Test no polygons
-        toPolygons = OSMTools.Transform.toPolygons()
+        toPolygons = Tools.Transform.toPolygons
         ds.execute "DROP TABLE ${prefix}_relation"
         ds.execute "CREATE TABLE ${prefix}_relation(id_relation int)"
         ds.execute "DROP TABLE ${prefix}_way"
@@ -303,13 +303,13 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractWaysAsPolygons()} process with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractWaysAsPolygons} process with bad data.
      */
     @Test
     void badExtractWaysAsPolygonsTest(){
-        def extractWaysAsPolygons = OSMTools.Transform.extractWaysAsPolygons()
+        def extractWaysAsPolygons = Tools.Transform.extractWaysAsPolygons
         H2GIS ds = RANDOM_DS()
-        def prefix = uuid()
+        def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = []
         def columnsToKeep = []
@@ -332,13 +332,13 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractWaysAsPolygons()} process.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractWaysAsPolygons} process.
      */
     @Test
     void extractWaysAsPolygonsTest(){
-        def extractWaysAsPolygons = OSMTools.Transform.extractWaysAsPolygons()
+        def extractWaysAsPolygons = Tools.Transform.extractWaysAsPolygons
         H2GIS ds = RANDOM_DS()
-        def prefix = uuid()
+        def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = [building:"house"]
         def columnsToKeep = ["water"]
@@ -361,12 +361,12 @@ class TransformTest extends AbstractOSMTest {
         }
 
         //Test not existing tags
-        extractWaysAsPolygons = OSMTools.Transform.extractWaysAsPolygons()
+        extractWaysAsPolygons = Tools.Transform.extractWaysAsPolygons
         assertTrue extractWaysAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[toto:"tata"], columnsToKeep:[])
         assertTrue ds.getTable(extractWaysAsPolygons.results.outputTableName).isEmpty()
 
         //Test no tags
-        extractWaysAsPolygons = OSMTools.Transform.extractWaysAsPolygons()
+        extractWaysAsPolygons = Tools.Transform.extractWaysAsPolygons
         ds.execute "DROP TABLE ${prefix}_node_tag"
         ds.execute "CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar)"
         assertTrue extractWaysAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[], columnsToKeep:[])
@@ -384,19 +384,19 @@ class TransformTest extends AbstractOSMTest {
         }
         
         //Test column to keep absent
-        extractWaysAsPolygons = OSMTools.Transform.extractWaysAsPolygons()
+        extractWaysAsPolygons = Tools.Transform.extractWaysAsPolygons
         assertTrue extractWaysAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:["landscape"])
         assertTrue ds.getTable(extractWaysAsPolygons.results.outputTableName).isEmpty()
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractRelationsAsPolygons()} process with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractRelationsAsPolygons} process with bad data.
      */
     @Test
     void badExtractRelationsAsPolygonsTest(){
-        def extractRelationsAsPolygons = OSMTools.Transform.extractRelationsAsPolygons()
+        def extractRelationsAsPolygons = Tools.Transform.extractRelationsAsPolygons
         H2GIS ds = RANDOM_DS()
-        def prefix = uuid()
+        def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = []
         def columnsToKeep = []
@@ -419,13 +419,13 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractRelationsAsPolygons()} process.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractRelationsAsPolygons)} process.
      */
     @Test
     void extractRelationsAsPolygonsTest(){
-        def extractRelationsAsPolygons = OSMTools.Transform.extractRelationsAsPolygons()
+        def extractRelationsAsPolygons = Tools.Transform.extractRelationsAsPolygons
         H2GIS ds = RANDOM_DS()
-        def prefix = uuid()
+        def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = [building:"house"]
         def columnsToKeep = ["water"]
@@ -448,12 +448,12 @@ class TransformTest extends AbstractOSMTest {
         }
 
         //Test not existing tags
-        extractRelationsAsPolygons = OSMTools.Transform.extractRelationsAsPolygons()
+        extractRelationsAsPolygons = Tools.Transform.extractRelationsAsPolygons
         assertTrue extractRelationsAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[toto:"tata"], columnsToKeep:[])
         assertTrue ds.getTable(extractRelationsAsPolygons.results.outputTableName).isEmpty()
 
         //Test no tags
-        extractRelationsAsPolygons = OSMTools.Transform.extractRelationsAsPolygons()
+        extractRelationsAsPolygons = Tools.Transform.extractRelationsAsPolygons
         ds.execute "DROP TABLE ${prefix}_node_tag"
         ds.execute "CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar)"
         assertTrue extractRelationsAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[], columnsToKeep:[])
@@ -471,19 +471,19 @@ class TransformTest extends AbstractOSMTest {
         }
         
         //Test column to keep absent
-        extractRelationsAsPolygons = OSMTools.Transform.extractRelationsAsPolygons()
+        extractRelationsAsPolygons = Tools.Transform.extractRelationsAsPolygons
         assertTrue extractRelationsAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:["landscape"])
         assertTrue ds.getTable(extractRelationsAsPolygons.results.outputTableName).isEmpty()
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractWaysAsLines()} process with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractWaysAsLines} process with bad data.
      */
     @Test
     void badExtractWaysAsLinesTest(){
-        def extractWaysAsLines = OSMTools.Transform.extractWaysAsLines()
+        def extractWaysAsLines = Tools.Transform.extractWaysAsLines
         H2GIS ds = RANDOM_DS()
-        def prefix = uuid()
+        def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = []
         def columnsToKeep = []
@@ -506,13 +506,13 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractWaysAsLines()} process.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractWaysAsLines} process.
      */
     @Test
     void extractWaysAsLinesTest(){
-        def extractWaysAsLines = OSMTools.Transform.extractWaysAsLines()
+        def extractWaysAsLines = Tools.Transform.extractWaysAsLines
         H2GIS ds = RANDOM_DS()
-        def prefix = uuid()
+        def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = [building:"house"]
         def columnsToKeep = ["water"]
@@ -536,17 +536,17 @@ class TransformTest extends AbstractOSMTest {
         }
 
         //Test not existing tags
-        extractWaysAsLines = OSMTools.Transform.extractWaysAsLines()
+        extractWaysAsLines = Tools.Transform.extractWaysAsLines
         assertTrue extractWaysAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[toto:"tata"], columnsToKeep:[])
         assertTrue ds.getTable(extractWaysAsLines.results.outputTableName).isEmpty()
 
         //Test column to keep absent
-        extractWaysAsLines = OSMTools.Transform.extractWaysAsLines()
+        extractWaysAsLines = Tools.Transform.extractWaysAsLines
         assertTrue extractWaysAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:["landscape"])
         assertTrue ds.getTable(extractWaysAsLines.results.outputTableName).isEmpty()
 
         //Test no tags
-        extractWaysAsLines = OSMTools.Transform.extractWaysAsLines()
+        extractWaysAsLines = Tools.Transform.extractWaysAsLines
         ds.execute "DROP TABLE ${prefix}_node_tag"
         ds.execute "CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar)"
         assertTrue extractWaysAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[], columnsToKeep:[])
@@ -565,13 +565,13 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractRelationsAsLines()} process with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractRelationsAsLines} process with bad data.
      */
     @Test
     void badExtractRelationsAsLinesTest(){
-        def extractRelationsAsLines = OSMTools.Transform.extractRelationsAsLines()
+        def extractRelationsAsLines = Tools.Transform.extractRelationsAsLines
         H2GIS ds = RANDOM_DS()
-        def prefix = uuid()
+        def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = []
         def columnsToKeep = []
@@ -594,13 +594,13 @@ class TransformTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractRelationsAsLines()} process.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.Transform#extractRelationsAsLines)} process.
      */
     @Test
     void extractRelationsAsLinesTest(){
-        def extractRelationsAsLines = OSMTools.Transform.extractRelationsAsLines()
+        def extractRelationsAsLines = Tools.Transform.extractRelationsAsLines
         H2GIS ds = RANDOM_DS()
-        def prefix = uuid()
+        def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = [building:"house"]
         def columnsToKeep = ["water"]
@@ -624,12 +624,12 @@ class TransformTest extends AbstractOSMTest {
         }
 
         //Test not existing tags
-        extractRelationsAsLines = OSMTools.Transform.extractRelationsAsLines()
+        extractRelationsAsLines = Tools.Transform.extractRelationsAsLines
         assertTrue extractRelationsAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[toto:"tata"], columnsToKeep:[])
         assertTrue ds.getTable(extractRelationsAsLines.results.outputTableName).isEmpty()
 
         //Test no tags
-        extractRelationsAsLines = OSMTools.Transform.extractRelationsAsLines()
+        extractRelationsAsLines = Tools.Transform.extractRelationsAsLines
         ds.execute "DROP TABLE ${prefix}_node_tag"
         ds.execute "CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar)"
         assertTrue extractRelationsAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[], columnsToKeep:[])
@@ -647,7 +647,7 @@ class TransformTest extends AbstractOSMTest {
         }
         
         //Test column to keep absent
-        extractRelationsAsLines = OSMTools.Transform.extractRelationsAsLines()
+        extractRelationsAsLines = Tools.Transform.extractRelationsAsLines
         assertTrue extractRelationsAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:["landscape"])
         assertTrue ds.getTable(extractRelationsAsLines.results.outputTableName).isEmpty()
     }
@@ -669,7 +669,7 @@ class TransformTest extends AbstractOSMTest {
                 def load = OSMTools.Loader.load()
                 if (load(datasource: h2GIS, osmTablesPrefix: prefix, osmFilePath:extract.results.outputFilePath)) {
                     def tags = ['building']
-                    def transform = OSMTools.Transform.toPolygons()
+                    def transform = Tools.Transform.toPolygons
                     transform.execute(datasource: h2GIS, osmTablesPrefix: prefix, tags: tags)
                     assertNotNull(transform.results.outputTableName)
                     h2GIS.getTable(transform.results.outputTableName).save("/tmp/${transform.results.outputTableName}.shp")

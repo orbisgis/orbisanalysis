@@ -36,15 +36,36 @@
  */
 package org.orbisgis.orbisanalysis.osmnoise
 
+import groovy.json.JsonSlurper
+import java.util.regex.Pattern
 
-import groovy.transform.BaseScript
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 /**
- * Main script to access to all processes used to extract, transform and prepare OSM data
- * to noise modelling.
- *
  * @author Erwan Bocher CNRS LAB-STICC
  */
-@BaseScript GroovyProcessManager pm
+class OSMNoiseUtils {
 
-register([Data, Traffic])
+    /**
+     * Get a set of parameters stored in a json file
+     *
+     * @param file
+     * @param altResourceStream
+     * @return
+     */
+    static Map parametersMapping(def file, def altResourceStream) {
+        def paramStream
+        def jsonSlurper = new JsonSlurper()
+        if (file) {
+            if (new File(file).isFile()) {
+                paramStream = new FileInputStream(file)
+            } else {
+                warn("No file named ${file} found. Taking default instead")
+                paramStream = altResourceStream
+            }
+        } else {
+            paramStream = altResourceStream
+        }
+        return jsonSlurper.parse(paramStream)
+    }
+
+    static def speedPattern = Pattern.compile("([0-9]+)( ([a-zA-Z]+))?", Pattern.CASE_INSENSITIVE)
+}

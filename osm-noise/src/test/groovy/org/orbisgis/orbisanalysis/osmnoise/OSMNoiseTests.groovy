@@ -42,6 +42,7 @@ import org.orbisgis.orbisanalysis.osm.OSMTools
 import org.orbisgis.orbisanalysis.osmnoise.OSMNoise
 import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -52,11 +53,14 @@ class OSMNoiseTests {
 
     private static final Logger logger = LoggerFactory.getLogger(OSMNoiseTests.class)
 
+    def Noise = GroovyProcessManager.load(OSMNoise)
+    def Tools = GroovyProcessManager.load(OSMTools)
+
     @Disabled
     @Test
     void downloadTest() {
         def h2GIS = H2GIS.open('./target/OSMNoise;AUTO_SERVER=TRUE')
-        def process = OSMNoise.Data.download()
+        def process = Noise.Data.download()
         assertTrue process.execute(datasource: h2GIS, placeName: "Saint Jean La Poterie")
         assertTrue(h2GIS.hasTable(process.results.zoneTableName))
         ISpatialTable zoneTable = h2GIS.getSpatialTable(process.results.zoneTableName)
@@ -68,7 +72,7 @@ class OSMNoiseTests {
     @Test
     void GISLayersTestFromApi() {
         def h2GIS = H2GIS.open('./target/OSMNoise;AUTO_SERVER=TRUE')
-        def process = OSMNoise.Data.GISLayers()
+        def process = Noise.Data.GISLayers()
         assertTrue process.execute(datasource: h2GIS, placeName: "Saint Jean La Poterie")
         assertTrue(h2GIS.hasTable(process.results.zoneTableName))
         ISpatialTable zoneTable = h2GIS.getSpatialTable(process.results.zoneTableName)
@@ -90,12 +94,12 @@ class OSMNoiseTests {
     @Test
     void GISLayersFromOSMFileTest() {
         def h2GIS = H2GIS.open('./target/OSMNoise;AUTO_SERVER=TRUE')
-        def load = OSMTools.Loader.load()
+        def load = Tools.Loader.load
         def prefix = "OSM_FILE"
         assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
                 osmFilePath : new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath())
 
-        def process = OSMNoise.Data.createBuildingLayer()
+        def process = Noise.Data.createBuildingLayer
         assertTrue process.execute(datasource: h2GIS, osmTablesPrefix: prefix,epsg: 2154, outputTablePrefix : "redon")
         assertTrue(h2GIS.hasTable(process.results.outputTableName))
         ISpatialTable ouputTable = h2GIS.getSpatialTable(process.results.outputTableName)
@@ -104,7 +108,7 @@ class OSMNoiseTests {
         assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.outputTableName} where HEIGHT_WALL is null").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.outputTableName} where HEIGHT_ROOF is null").count==0
 
-        process = OSMNoise.Data.createRoadLayer()
+        process = Noise.Data.createRoadLayer
         assertTrue process.execute(datasource: h2GIS, osmTablesPrefix: prefix, epsg: 2154,outputTablePrefix : "redon")
         assertTrue(h2GIS.hasTable(process.results.outputTableName))
         ouputTable = h2GIS.getSpatialTable(process.results.outputTableName)
@@ -117,35 +121,35 @@ class OSMNoiseTests {
 
     @Test
     void test(){
-        assertEquals (-1,OSMNoise.Data.getSpeedInKmh(null))
-        assertEquals (-1,OSMNoise.Data.getSpeedInKmh(""))
-        assertEquals 72,OSMNoise.Data.getSpeedInKmh("72")
-        assertEquals 115.848,OSMNoise.Data.getSpeedInKmh("72 MPH")
-        assertEquals 115.848,OSMNoise.Data.getSpeedInKmh("72 mph")
-        assertEquals 115.848,OSMNoise.Data.getSpeedInKmh("72 MpH")
-        assertEquals 72,OSMNoise.Data.getSpeedInKmh("72 KMH")
-        assertEquals 72,OSMNoise.Data.getSpeedInKmh("72 KmH")
-        assertEquals 72,OSMNoise.Data.getSpeedInKmh("72 kmh")
-        assertEquals 72, OSMNoise.Data.getSpeedInKmh("72 kmh")
-        assertEquals (-1, OSMNoise.Data.getSpeedInKmh("72 knots"))
-        assertEquals (-1, OSMNoise.Data.getSpeedInKmh("25kmh"))
-        assertEquals (-1, OSMNoise.Data.getSpeedInKmh("vbghfgh"))
+        assertEquals (-1,Noise.Data.getSpeedInKmh(null))
+        assertEquals (-1,Noise.Data.getSpeedInKmh(""))
+        assertEquals 72,Noise.Data.getSpeedInKmh("72")
+        assertEquals 115.848,Noise.Data.getSpeedInKmh("72 MPH")
+        assertEquals 115.848,Noise.Data.getSpeedInKmh("72 mph")
+        assertEquals 115.848,Noise.Data.getSpeedInKmh("72 MpH")
+        assertEquals 72,Noise.Data.getSpeedInKmh("72 KMH")
+        assertEquals 72,Noise.Data.getSpeedInKmh("72 KmH")
+        assertEquals 72,Noise.Data.getSpeedInKmh("72 kmh")
+        assertEquals 72, Noise.Data.getSpeedInKmh("72 kmh")
+        assertEquals (-1, Noise.Data.getSpeedInKmh("72 knots"))
+        assertEquals (-1, Noise.Data.getSpeedInKmh("25kmh"))
+        assertEquals (-1, Noise.Data.getSpeedInKmh("vbghfgh"))
     }
 
     @Test
     void buildTrafficWGAENDataFromTestFile() {
         def h2GIS = H2GIS.open('./target/OSMNoise;AUTO_SERVER=TRUE')
         def prefix = "OSM_FILE"
-        def load = OSMTools.Loader.load()
+        def load = Tools.Loader.load
         assertTrue load.execute(datasource : h2GIS, osmTablesPrefix : prefix,
                 osmFilePath : new File(this.class.getResource("redon.osm").toURI()).getAbsolutePath())
-        def process = OSMNoise.Data.createRoadLayer()
+        def process = Noise.Data.createRoadLayer
         assertTrue process.execute(datasource: h2GIS, osmTablesPrefix: prefix,
                 epsg: 2154, outputTablePrefix : "redon")
         assertTrue(h2GIS.hasTable(process.results.outputTableName))
         def ouputTable = h2GIS.getSpatialTable(process.results.outputTableName)
         assertTrue(ouputTable.rowCount>1)
-        process = OSMNoise.Traffic.WGAEN_ROAD()
+        process = Noise.Traffic.WGAEN_ROAD
         process.execute(datasource: h2GIS,roadTableName:ouputTable.getName(), outputTablePrefix:"redon")
         ouputTable = h2GIS.getSpatialTable(process.results.outputTableName)
         assertTrue(ouputTable.rowCount>1)

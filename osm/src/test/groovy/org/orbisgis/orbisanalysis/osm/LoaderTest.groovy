@@ -79,7 +79,7 @@ class LoaderTest extends AbstractOSMTest {
     void badFromAreaTest(){
         sampleGetAreaFromPlace()
         sampleOverpassQueryOverride()
-        def fromArea = OSMTools.Loader.fromArea()
+        def fromArea = Tools.Loader.fromArea
         H2GIS ds = RANDOM_DS()
         def geomFacto = new GeometryFactory()
         def polygon = geomFacto.createPolygon([new Coordinate(0, 0),
@@ -107,7 +107,7 @@ class LoaderTest extends AbstractOSMTest {
     void fromAreaNoDistTest(){
         sampleGetAreaFromPlace()
         sampleOverpassQueryOverride()
-        def fromArea = OSMTools.Loader.fromArea()
+        def fromArea = Tools.Loader.fromArea
         H2GIS ds = RANDOM_DS()
         def geomFacto = new GeometryFactory()
         def polygon = geomFacto.createPolygon([new Coordinate(0, 0),
@@ -189,7 +189,7 @@ class LoaderTest extends AbstractOSMTest {
     void fromAreaWithDistTest(){
         sampleGetAreaFromPlace()
         sampleOverpassQueryOverride()
-        def fromArea = OSMTools.Loader.fromArea()
+        def fromArea = Tools.Loader.fromArea
         H2GIS ds = RANDOM_DS()
         def geomFacto = new GeometryFactory()
         def dist = 1000
@@ -270,7 +270,7 @@ class LoaderTest extends AbstractOSMTest {
     void fromPlaceNoDistTest(){
         sampleGetAreaFromPlace()
         sampleOverpassQueryOverride()
-        def fromPlace = OSMTools.Loader.fromPlace()
+        def fromPlace = Tools.Loader.fromPlace
         def placeName = "  The place Name -toFind  "
         def formattedPlaceName = "The_place_Name_toFind_"
         def overpassQuery = "[bbox:48.82,-3.016,48.821,-3.015];\n" +
@@ -319,7 +319,7 @@ class LoaderTest extends AbstractOSMTest {
     void fromPlaceWithDistTest(){
         sampleGetAreaFromPlace()
         sampleOverpassQueryOverride()
-        def fromPlace = OSMTools.Loader.fromPlace()
+        def fromPlace = Tools.Loader.fromPlace
         def placeName = "  The place Name -toFind  "
         def dist = 5
         def formattedPlaceName = "The_place_Name_toFind_"
@@ -368,7 +368,7 @@ class LoaderTest extends AbstractOSMTest {
     void badFromPlaceTest(){
         sampleGetAreaFromPlace()
         sampleOverpassQueryOverride()
-        def fromPlace = OSMTools.Loader.fromPlace()
+        def fromPlace = Tools.Loader.fromPlace
         def placeName = "  The place Name -toFind  "
         def dist = -5
         H2GIS ds = RANDOM_DS()
@@ -386,7 +386,7 @@ class LoaderTest extends AbstractOSMTest {
 
         badLoad()
         assertFalse fromPlace(datasource: ds, placeName: placeName)
-        badExtract()
+        //badExtract()
         assertFalse fromPlace(datasource: ds, placeName: placeName)
         badGetAreaFromPlace()
         assertFalse fromPlace(datasource: ds, placeName: placeName)
@@ -398,7 +398,7 @@ class LoaderTest extends AbstractOSMTest {
     @Test
     void extractTest(){
         sampleOverpassQueryOverride()
-        def extract = OSMTools.Loader.extract()
+        def extract = Tools.Loader.extract
         def query = "Overpass test query"
         assertTrue extract([overpassQuery : query])
         assertEquals query, this.query
@@ -414,7 +414,7 @@ class LoaderTest extends AbstractOSMTest {
      */
     @Test
     void badExtractTest(){
-        def extract = OSMTools.Loader.extract()
+        def extract = Tools.Loader.extract
 
         sampleOverpassQueryOverride()
         assertFalse extract([overpassQuery : null])
@@ -431,7 +431,7 @@ class LoaderTest extends AbstractOSMTest {
     @Test
     void badLoadTest(){
         H2GIS ds = RANDOM_DS()
-        def load = OSMTools.Loader.load()
+        def load = Tools.Loader.load
         assertNotNull load
         def url = LoaderTest.getResource("sample.osm")
         assertNotNull url
@@ -470,14 +470,14 @@ class LoaderTest extends AbstractOSMTest {
     @Test
     void loadTest(){
         H2GIS ds = RANDOM_DS()
-        def load = OSMTools.Loader.load()
+        def load = Tools.Loader.load
         assertNotNull load
         def url = LoaderTest.getResource("sample.osm")
         assertNotNull url
         def osmFile = new File(url.toURI())
         assertTrue osmFile.exists()
         assertTrue osmFile.isFile()
-        def prefix = uuid().toUpperCase()
+        def prefix = "OSM_"+uuid().toUpperCase()
 
         assertTrue load([datasource: ds, osmTablesPrefix: prefix, osmFilePath: osmFile.absolutePath])
 

@@ -39,8 +39,10 @@ package org.orbisgis.orbisanalysis.osm
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.WKTReader
+import org.orbisgis.orbisanalysis.osm.utils.Utilities
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 
@@ -57,7 +59,7 @@ abstract class AbstractOSMTest {
     private static final def DB_OPTION = ";AUTO_SERVER=TRUE"
 
     /** Generation of string {@link UUID}.*/
-    protected static final def uuid(){ "_"+UUID.randomUUID().toString().replaceAll("-", "_")}
+    protected static final def uuid(){ UUID.randomUUID().toString().replaceAll("-", "_")}
     /** Used to store the OSM request to ensure the good query is generated. */
     protected static def query
     /** Generation of a random named database. */
@@ -67,6 +69,9 @@ abstract class AbstractOSMTest {
     /** Return a random file path. **/
     protected static def RANDOM_PATH = {"./target/file"+uuid()}
 
+    /** The process manager. */
+    protected static Tools = GroovyProcessManager.load(OSMTools)
+
     /**WKTReader*/
     protected static def wktReader = new WKTReader();
 
@@ -75,11 +80,11 @@ abstract class AbstractOSMTest {
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
     private static def getAreaFromPlace
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
+    private static def executeNominatimQuery
+    /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
     private static def extract
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
     private static def load
-    /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
-    private static def executeNominatimQuery
 
     /**
      * Preparation for test execution. Signature should not be changed ({@link org.junit.jupiter.api.BeforeEach}
@@ -87,11 +92,13 @@ abstract class AbstractOSMTest {
      */
     void beforeEach(){
         //Store the modified object
-        executeOverPassQuery = OSMTools.Loader.&executeOverPassQuery
-        extract = OSMTools.Loader.&extract
-        load = OSMTools.Loader.&load
-        getAreaFromPlace = OSMTools.Utilities.&getAreaFromPlace
-        executeNominatimQuery = OSMTools.Utilities.&executeNominatimQuery
+        executeOverPassQuery = Utilities.&executeOverPassQuery
+        getAreaFromPlace = Utilities.&getAreaFromPlace
+        executeNominatimQuery = Utilities.&executeNominatimQuery
+        extract = Tools.Loader.extract.newInstance()
+        extract.identifier = "extract"
+        load = Tools.Loader.load.newInstance()
+        load.identifier = "load"
     }
 
     /**
@@ -100,18 +107,18 @@ abstract class AbstractOSMTest {
      */
     void afterEach(){
         //Restore the modified object
-        OSMTools.Loader.metaClass.static.executeOverPassQuery = executeOverPassQuery
-        OSMTools.Loader.metaClass.static.extract = extract
-        OSMTools.Loader.metaClass.static.load = load
-        OSMTools.Utilities.metaClass.static.getAreaFromPlace = getAreaFromPlace
-        OSMTools.Utilities.metaClass.static.executeNominatimQuery = executeNominatimQuery
+        Utilities.metaClass.static.executeOverPassQuery = executeOverPassQuery
+        Utilities.metaClass.static.getAreaFromPlace = getAreaFromPlace
+        Utilities.metaClass.static.executeNominatimQuery = executeNominatimQuery
+        Tools.Loader.registerProcess(extract)
+        Tools.Loader.registerProcess(load)
     }
 
     /**
      * Override the 'executeNominatimQuery' methods to avoid the call to the server
      */
     protected static void sampleExecuteNominatimPolygonQueryOverride(){
-        OSMTools.Utilities.metaClass.static.executeNominatimQuery = {query, outputOSMFile ->
+        Utilities.metaClass.static.executeNominatimQuery = {query, outputOSMFile ->
             AbstractOSMTest.query = query
             outputOSMFile << LoaderTest.getResourceAsStream("nominatimSamplePolygon.geojson").text
             return true
@@ -122,7 +129,7 @@ abstract class AbstractOSMTest {
      * Override the 'executeNominatimQuery' methods to avoid the call to the server
      */
     protected static void sampleExecuteNominatimMultipolygonQueryOverride(){
-        OSMTools.Utilities.metaClass.static.executeNominatimQuery = {query, outputOSMFile ->
+        Utilities.metaClass.static.executeNominatimQuery = {query, outputOSMFile ->
             AbstractOSMTest.query = query
             outputOSMFile << LoaderTest.getResourceAsStream("nominatimSampleMultipolygon.geojson").text
             return true
@@ -133,7 +140,7 @@ abstract class AbstractOSMTest {
      * Override the 'executeNominatimQuery' methods to avoid the call to the server
      */
     protected static void badExecuteNominatimQueryOverride(){
-        OSMTools.Utilities.metaClass.static.executeNominatimQuery = {query, outputOSMFile ->
+        Utilities.metaClass.static.executeNominatimQuery = {query, outputOSMFile ->
             return false
         }
     }
@@ -142,7 +149,7 @@ abstract class AbstractOSMTest {
      * Override the 'executeOverPassQuery' methods to avoid the call to the server
      */
     protected static void sampleOverpassQueryOverride(){
-        OSMTools.Loader.metaClass.static.executeOverPassQuery = {query, outputOSMFile ->
+        Utilities.metaClass.static.executeOverPassQuery = {query, outputOSMFile ->
             AbstractOSMTest.query = query
             outputOSMFile << LoaderTest.getResourceAsStream("sample.osm").text
             return true
@@ -153,7 +160,7 @@ abstract class AbstractOSMTest {
      * Override the 'executeOverPassQuery' methods to avoid the call to the server
      */
     protected static void badOverpassQueryOverride(){
-        OSMTools.Loader.metaClass.static.executeOverPassQuery = {query, outputOSMFile ->
+        Utilities.metaClass.static.executeOverPassQuery = {query, outputOSMFile ->
             AbstractOSMTest.query = query
             return false
         }
@@ -163,7 +170,7 @@ abstract class AbstractOSMTest {
      * Override the 'getAreaFromPlace' methods to avoid the call to the server
      */
     protected static void sampleGetAreaFromPlace(){
-        OSMTools.Utilities.metaClass.static.getAreaFromPlace = {placeName ->
+        Utilities.metaClass.static.getAreaFromPlace = {placeName ->
             def coordinates = [new Coordinate(-3.016, 48.82),
                                new Coordinate(-3.016, 48.821),
                                new Coordinate(-3.015 ,48.821),
@@ -179,35 +186,33 @@ abstract class AbstractOSMTest {
      * Override the 'getAreaFromPlace' methods to avoid the call to the server
      */
     protected static void badGetAreaFromPlace(){
-        OSMTools.Utilities.metaClass.static.getAreaFromPlace = {placeName -> }
+        Utilities.metaClass.static.getAreaFromPlace = {placeName -> }
     }
 
     /**
      * Override the 'extract' process to make it fail
      */
     protected static void badExtract(){
-        OSMTools.Loader.metaClass.static.extract = {
-            return OSMTools.Loader.create({
-                title "Extract the OSM data using the overpass api and save the result in an XML file"
-                inputs overpassQuery: String
-                outputs outputFilePath: String
-                run { overpassQuery -> }
-            })
-        }
+        Tools.Loader.create({
+            title "Extract the OSM data using the overpass api and save the result in an XML file"
+            id "extract"
+            inputs overpassQuery: String
+            outputs outputFilePath: String
+            run { overpassQuery -> }
+        })
     }
 
     /**
      * Override the 'load' process to make it fail
      */
     protected static void badLoad(){
-        OSMTools.Loader.metaClass.static.load = {
-            return OSMTools.Loader.create({
-                title "Load an OSM file to the current database"
-                inputs datasource: JdbcDataSource, osmTablesPrefix: String, osmFilePath: String
-                outputs datasource: JdbcDataSource
-                run { JdbcDataSource datasource, osmTablesPrefix, osmFilePath -> }
-            })
-        }
+        Tools.Loader.create({
+            title "Load an OSM file to the current database"
+            id "load"
+            inputs datasource: JdbcDataSource, osmTablesPrefix: String, osmFilePath: String
+            outputs datasource: JdbcDataSource
+            run { JdbcDataSource datasource, osmTablesPrefix, osmFilePath -> }
+        })
     }
 
     /**

@@ -162,6 +162,10 @@ create {
             error("Cannot find an area from the place name $placeName")
             return
         }
+        if(distance < 0) {
+            error("Cannot use a negative distance")
+            return
+        }
         def env = GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance)
 
         //Create table to store the geometry and the envelope of the extracted area

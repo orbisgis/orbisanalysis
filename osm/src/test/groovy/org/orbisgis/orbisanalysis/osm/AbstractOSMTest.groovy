@@ -96,7 +96,9 @@ abstract class AbstractOSMTest {
         getAreaFromPlace = Utilities.&getAreaFromPlace
         executeNominatimQuery = Utilities.&executeNominatimQuery
         extract = Tools.Loader.extract.newInstance()
+        extract.identifier = "extract"
         load = Tools.Loader.load.newInstance()
+        load.identifier = "load"
     }
 
     /**

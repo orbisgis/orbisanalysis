@@ -386,7 +386,7 @@ class LoaderTest extends AbstractOSMTest {
 
         badLoad()
         assertFalse fromPlace(datasource: ds, placeName: placeName)
-        badExtract()
+        //badExtract()
         assertFalse fromPlace(datasource: ds, placeName: placeName)
         badGetAreaFromPlace()
         assertFalse fromPlace(datasource: ds, placeName: placeName)

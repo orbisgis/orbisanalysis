@@ -38,6 +38,7 @@ package org.orbisgis.orbisanalysis.osm.utils
 
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInfo
 import org.locationtech.jts.geom.Coordinate
@@ -187,6 +188,7 @@ class UtilitiesTest extends AbstractOSMTest {
      * This test performs a web request to the Nominatim service.
      */
     @Test
+    @Disabled
     void getExecuteNominatimQueryTest(){
         def path = RANDOM_PATH()
         def file = new File(path)
@@ -199,6 +201,7 @@ class UtilitiesTest extends AbstractOSMTest {
      * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#executeNominatimQuery(java.lang.Object, java.lang.Object)} method.
      */
     @Test
+    @Disabled
     void badGetExecuteNominatimQueryTest(){
         def file = new File(RANDOM_PATH())
         assertFalse Utilities.executeNominatimQuery(null, file)
@@ -512,6 +515,7 @@ class UtilitiesTest extends AbstractOSMTest {
      * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#getAreaFromPlace(java.lang.Object)} method.
      */
     @Test
+    @Disabled
     void getAreaFromPlaceTest(){
         def pattern = Pattern.compile("^POLYGON \\(\\((?>-?\\d+(?>\\.\\d+)? -?\\d+(?>\\.\\d+)?(?>, )?)*\\)\\)\$")
         assertTrue pattern.matcher(Utilities.getAreaFromPlace("Paimpol").toString()).matches()
@@ -522,6 +526,7 @@ class UtilitiesTest extends AbstractOSMTest {
      * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#getAreaFromPlace(java.lang.Object)} method with bad data.
      */
     @Test
+    @Disabled
     void badGetAreaFromPlaceTest() {
         assertNull Utilities.getAreaFromPlace(null)
     }
@@ -547,6 +552,7 @@ class UtilitiesTest extends AbstractOSMTest {
      * Test the {@link org.orbisgis.orbisanalysis.osm.OSMTools#executeOverPassQuery(java.lang.Object, java.lang.Object)} method.
      */
     @Test
+    @Disabled
     void executeOverPassQueryTest(){
         def file = new File("target/" + UUID.randomUUID().toString().replaceAll("-", "_"))
         assertTrue file.createNewFile()
@@ -559,6 +565,7 @@ class UtilitiesTest extends AbstractOSMTest {
      * Test the {@link org.orbisgis.orbisanalysis.osm.OSMTools#executeOverPassQuery(java.lang.Object, java.lang.Object)} method with bad data.
      */
     @Test
+    @Disabled
     void badExecuteOverPassQueryTest(){
         def file = new File("target/" + UUID.randomUUID().toString().replaceAll("-", "_"))
         assertTrue file.createNewFile()

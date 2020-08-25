@@ -72,7 +72,7 @@ class TransformTest extends AbstractOSMTest {
      */
     @Test
     void badToPointsTest(){
-        def toPoints = Tools.Transform.toPoints
+        def toPoints = OSMTools.Transform.toPoints()
         H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
@@ -101,7 +101,7 @@ class TransformTest extends AbstractOSMTest {
      */
     @Test
     void toPointsTest(){
-        def toPoints = Tools.Transform.toPoints
+        def toPoints = OSMTools.Transform.toPoints()
         H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
@@ -132,12 +132,12 @@ class TransformTest extends AbstractOSMTest {
         }
 
         //Test column to keep absent
-        toPoints = Tools.Transform.toPoints
+        toPoints = OSMTools.Transform.toPoints()
         assertTrue toPoints(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:["landcover"])
         assertTrue ds.getTable(toPoints.results.outputTableName).isEmpty()
 
         //Test no points
-        toPoints = Tools.Transform.toPoints
+        toPoints = OSMTools.Transform.toPoints()
         ds.execute "DROP TABLE ${prefix}_node_tag"
         ds.execute "CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar)"
         assertFalse toPoints(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:columnsToKeep)
@@ -149,7 +149,7 @@ class TransformTest extends AbstractOSMTest {
      */
     @Test
     void badToLinesTest(){
-        def toLines = Tools.Transform.toLines
+        def toLines = OSMTools.Transform.toLines()
         H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
@@ -178,7 +178,7 @@ class TransformTest extends AbstractOSMTest {
      */
     @Test
     void toLinesTest(){
-        def toLines = Tools.Transform.toLines
+        def toLines = OSMTools.Transform.toLines()
         H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
@@ -209,12 +209,12 @@ class TransformTest extends AbstractOSMTest {
         }
 
         //Test column to keep absent
-        toLines = Tools.Transform.toLines
+        toLines = OSMTools.Transform.toLines()
         assertTrue toLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:["landcover"])
         assertTrue ds.getTable(toLines.results.outputTableName).isEmpty()
 
         //Test no lines
-        toLines = Tools.Transform.toLines
+        toLines = OSMTools.Transform.toLines()
         ds.execute "DROP TABLE ${prefix}_way_tag"
         ds.execute "CREATE TABLE ${prefix}_way_tag (id_way int, tag_key varchar, tag_value varchar)"
         ds.execute "DROP TABLE ${prefix}_relation_tag"
@@ -228,7 +228,7 @@ class TransformTest extends AbstractOSMTest {
      */
     @Test
     void badToPolygonsTest(){
-        def toPolygons = Tools.Transform.toPolygons
+        def toPolygons = OSMTools.Transform.toPolygons()
         H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
@@ -257,7 +257,7 @@ class TransformTest extends AbstractOSMTest {
      */
     @Test
     void toPolygonsTest(){
-        def toPolygons = Tools.Transform.toPolygons
+        def toPolygons = OSMTools.Transform.toPolygons()
         H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
@@ -288,12 +288,12 @@ class TransformTest extends AbstractOSMTest {
         }
 
         //Test column to keep absent
-        toPolygons = Tools.Transform.toPolygons
+        toPolygons = OSMTools.Transform.toPolygons()
         assertTrue toPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:["landcover"])
         assertTrue ds.getTable(toPolygons.results.outputTableName).isEmpty()
 
         //Test no polygons
-        toPolygons = Tools.Transform.toPolygons
+        toPolygons = OSMTools.Transform.toPolygons()
         ds.execute "DROP TABLE ${prefix}_relation"
         ds.execute "CREATE TABLE ${prefix}_relation(id_relation int)"
         ds.execute "DROP TABLE ${prefix}_way"
@@ -307,7 +307,7 @@ class TransformTest extends AbstractOSMTest {
      */
     @Test
     void badExtractWaysAsPolygonsTest(){
-        def extractWaysAsPolygons = Tools.Transform.extractWaysAsPolygons
+        def extractWaysAsPolygons = OSMTools.Transform.extractWaysAsPolygons()
         H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
@@ -336,7 +336,7 @@ class TransformTest extends AbstractOSMTest {
      */
     @Test
     void extractWaysAsPolygonsTest(){
-        def extractWaysAsPolygons = Tools.Transform.extractWaysAsPolygons
+        def extractWaysAsPolygons = OSMTools.Transform.extractWaysAsPolygons()
         H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
@@ -361,12 +361,12 @@ class TransformTest extends AbstractOSMTest {
         }
 
         //Test not existing tags
-        extractWaysAsPolygons = Tools.Transform.extractWaysAsPolygons
+        extractWaysAsPolygons = OSMTools.Transform.extractWaysAsPolygons()
         assertTrue extractWaysAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[toto:"tata"], columnsToKeep:[])
         assertTrue ds.getTable(extractWaysAsPolygons.results.outputTableName).isEmpty()
 
         //Test no tags
-        extractWaysAsPolygons = Tools.Transform.extractWaysAsPolygons
+        extractWaysAsPolygons = OSMTools.Transform.extractWaysAsPolygons()
         ds.execute "DROP TABLE ${prefix}_node_tag"
         ds.execute "CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar)"
         assertTrue extractWaysAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[], columnsToKeep:[])
@@ -384,7 +384,7 @@ class TransformTest extends AbstractOSMTest {
         }
         
         //Test column to keep absent
-        extractWaysAsPolygons = Tools.Transform.extractWaysAsPolygons
+        extractWaysAsPolygons = OSMTools.Transform.extractWaysAsPolygons()
         assertTrue extractWaysAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:["landscape"])
         assertTrue ds.getTable(extractWaysAsPolygons.results.outputTableName).isEmpty()
     }
@@ -394,7 +394,7 @@ class TransformTest extends AbstractOSMTest {
      */
     @Test
     void badExtractRelationsAsPolygonsTest(){
-        def extractRelationsAsPolygons = Tools.Transform.extractRelationsAsPolygons
+        def extractRelationsAsPolygons = OSMTools.Transform.extractRelationsAsPolygons()
         H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
@@ -423,7 +423,7 @@ class TransformTest extends AbstractOSMTest {
      */
     @Test
     void extractRelationsAsPolygonsTest(){
-        def extractRelationsAsPolygons = Tools.Transform.extractRelationsAsPolygons
+        def extractRelationsAsPolygons = OSMTools.Transform.extractRelationsAsPolygons()
         H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
@@ -448,12 +448,12 @@ class TransformTest extends AbstractOSMTest {
         }
 
         //Test not existing tags
-        extractRelationsAsPolygons = Tools.Transform.extractRelationsAsPolygons
+        extractRelationsAsPolygons = OSMTools.Transform.extractRelationsAsPolygons()
         assertTrue extractRelationsAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[toto:"tata"], columnsToKeep:[])
         assertTrue ds.getTable(extractRelationsAsPolygons.results.outputTableName).isEmpty()
 
         //Test no tags
-        extractRelationsAsPolygons = Tools.Transform.extractRelationsAsPolygons
+        extractRelationsAsPolygons = OSMTools.Transform.extractRelationsAsPolygons()
         ds.execute "DROP TABLE ${prefix}_node_tag"
         ds.execute "CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar)"
         assertTrue extractRelationsAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[], columnsToKeep:[])
@@ -471,7 +471,7 @@ class TransformTest extends AbstractOSMTest {
         }
         
         //Test column to keep absent
-        extractRelationsAsPolygons = Tools.Transform.extractRelationsAsPolygons
+        extractRelationsAsPolygons = OSMTools.Transform.extractRelationsAsPolygons()
         assertTrue extractRelationsAsPolygons(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:["landscape"])
         assertTrue ds.getTable(extractRelationsAsPolygons.results.outputTableName).isEmpty()
     }
@@ -481,7 +481,7 @@ class TransformTest extends AbstractOSMTest {
      */
     @Test
     void badExtractWaysAsLinesTest(){
-        def extractWaysAsLines = Tools.Transform.extractWaysAsLines
+        def extractWaysAsLines = OSMTools.Transform.extractWaysAsLines()
         H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
@@ -510,7 +510,7 @@ class TransformTest extends AbstractOSMTest {
      */
     @Test
     void extractWaysAsLinesTest(){
-        def extractWaysAsLines = Tools.Transform.extractWaysAsLines
+        def extractWaysAsLines = OSMTools.Transform.extractWaysAsLines()
         H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
@@ -536,17 +536,17 @@ class TransformTest extends AbstractOSMTest {
         }
 
         //Test not existing tags
-        extractWaysAsLines = Tools.Transform.extractWaysAsLines
+        extractWaysAsLines = OSMTools.Transform.extractWaysAsLines()
         assertTrue extractWaysAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[toto:"tata"], columnsToKeep:[])
         assertTrue ds.getTable(extractWaysAsLines.results.outputTableName).isEmpty()
 
         //Test column to keep absent
-        extractWaysAsLines = Tools.Transform.extractWaysAsLines
+        extractWaysAsLines = OSMTools.Transform.extractWaysAsLines()
         assertTrue extractWaysAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:["landscape"])
         assertTrue ds.getTable(extractWaysAsLines.results.outputTableName).isEmpty()
 
         //Test no tags
-        extractWaysAsLines = Tools.Transform.extractWaysAsLines
+        extractWaysAsLines = OSMTools.Transform.extractWaysAsLines()
         ds.execute "DROP TABLE ${prefix}_node_tag"
         ds.execute "CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar)"
         assertTrue extractWaysAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[], columnsToKeep:[])
@@ -569,7 +569,7 @@ class TransformTest extends AbstractOSMTest {
      */
     @Test
     void badExtractRelationsAsLinesTest(){
-        def extractRelationsAsLines = Tools.Transform.extractRelationsAsLines
+        def extractRelationsAsLines = OSMTools.Transform.extractRelationsAsLines()
         H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
@@ -598,7 +598,7 @@ class TransformTest extends AbstractOSMTest {
      */
     @Test
     void extractRelationsAsLinesTest(){
-        def extractRelationsAsLines = Tools.Transform.extractRelationsAsLines
+        def extractRelationsAsLines = OSMTools.Transform.extractRelationsAsLines()
         H2GIS ds = RANDOM_DS()
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
@@ -624,12 +624,12 @@ class TransformTest extends AbstractOSMTest {
         }
 
         //Test not existing tags
-        extractRelationsAsLines = Tools.Transform.extractRelationsAsLines
+        extractRelationsAsLines = OSMTools.Transform.extractRelationsAsLines()
         assertTrue extractRelationsAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[toto:"tata"], columnsToKeep:[])
         assertTrue ds.getTable(extractRelationsAsLines.results.outputTableName).isEmpty()
 
         //Test no tags
-        extractRelationsAsLines = Tools.Transform.extractRelationsAsLines
+        extractRelationsAsLines = OSMTools.Transform.extractRelationsAsLines()
         ds.execute "DROP TABLE ${prefix}_node_tag"
         ds.execute "CREATE TABLE ${prefix}_node_tag (id_node int, tag_key varchar, tag_value varchar)"
         assertTrue extractRelationsAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:[], columnsToKeep:[])
@@ -647,7 +647,7 @@ class TransformTest extends AbstractOSMTest {
         }
         
         //Test column to keep absent
-        extractRelationsAsLines = Tools.Transform.extractRelationsAsLines
+        extractRelationsAsLines = OSMTools.Transform.extractRelationsAsLines()
         assertTrue extractRelationsAsLines(datasource: ds, osmTablesPrefix: prefix, epsgCode:epsgCode, tags:tags, columnsToKeep:["landscape"])
         assertTrue ds.getTable(extractRelationsAsLines.results.outputTableName).isEmpty()
     }
@@ -660,16 +660,16 @@ class TransformTest extends AbstractOSMTest {
     @Test
     void dev() {
         H2GIS h2GIS = RANDOM_DS()
-        Geometry geom = OSMTools.Utilities.getAreaFromPlace("Agadir");
-        def query = OSMTools.Utilities.buildOSMQuery(geom.getEnvelopeInternal(), [], OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
-        def extract = OSMTools.Loader.extract()
+        Geometry geom = Utilities.getAreaFromPlace("Agadir");
+        def query = Utilities.buildOSMQuery(geom.getEnvelopeInternal(), [], OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+        def extract = Loader.extract()
         if (!query.isEmpty()) {
             if (extract.execute(overpassQuery: query)) {
                 def prefix = "OSM_FILE_${OSMTools.uuid}"
-                def load = OSMTools.Loader.load()
+                def load = Loader.load()
                 if (load(datasource: h2GIS, osmTablesPrefix: prefix, osmFilePath:extract.results.outputFilePath)) {
                     def tags = ['building']
-                    def transform = Tools.Transform.toPolygons
+                    def transform = Transform.toPolygons
                     transform.execute(datasource: h2GIS, osmTablesPrefix: prefix, tags: tags)
                     assertNotNull(transform.results.outputTableName)
                     h2GIS.getTable(transform.results.outputTableName).save("/tmp/${transform.results.outputTableName}.shp")

@@ -42,7 +42,7 @@ import org.locationtech.jts.io.WKTReader
 import org.orbisgis.orbisanalysis.osm.utils.Utilities
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
+import org.orbisgis.orbisanalysis.osm.OSMTools as Tools
 
 import static org.junit.jupiter.api.Assertions.assertEquals
 
@@ -70,7 +70,7 @@ abstract class AbstractOSMTest {
     protected static def RANDOM_PATH = {"./target/file"+uuid()}
 
     /** The process manager. */
-    protected static Tools = GroovyProcessManager.load(OSMTools)
+    protected static OSMTools = Tools
 
     /**WKTReader*/
     protected static def wktReader = new WKTReader();
@@ -95,10 +95,8 @@ abstract class AbstractOSMTest {
         executeOverPassQuery = Utilities.&executeOverPassQuery
         getAreaFromPlace = Utilities.&getAreaFromPlace
         executeNominatimQuery = Utilities.&executeNominatimQuery
-        extract = Tools.Loader.extract.newInstance()
-        extract.identifier = "extract"
-        load = Tools.Loader.load.newInstance()
-        load.identifier = "load"
+        extract = OSMTools.Loader.extract()
+        load = OSMTools.Loader.load()
     }
 
     /**
@@ -110,8 +108,8 @@ abstract class AbstractOSMTest {
         Utilities.metaClass.static.executeOverPassQuery = executeOverPassQuery
         Utilities.metaClass.static.getAreaFromPlace = getAreaFromPlace
         Utilities.metaClass.static.executeNominatimQuery = executeNominatimQuery
-        Tools.Loader.registerProcess(extract)
-        Tools.Loader.registerProcess(load)
+        OSMTools.Loader.metaClass.extract = extract
+        OSMTools.Loader.metaClass.load = load
     }
 
     /**
@@ -186,14 +184,14 @@ abstract class AbstractOSMTest {
      * Override the 'getAreaFromPlace' methods to avoid the call to the server
      */
     protected static void badGetAreaFromPlace(){
-        Utilities.metaClass.static.getAreaFromPlace = {placeName -> }
+        Utilities.metaClass.getAreaFromPlace = {placeName -> }
     }
 
     /**
      * Override the 'extract' process to make it fail
      */
     protected static void badExtract(){
-        Tools.Loader.create({
+        OSMTools.Loader.metaClass.extract = OSMTools.Loader.create({
             title "Extract the OSM data using the overpass api and save the result in an XML file"
             id "extract"
             inputs overpassQuery: String
@@ -206,7 +204,7 @@ abstract class AbstractOSMTest {
      * Override the 'load' process to make it fail
      */
     protected static void badLoad(){
-        Tools.Loader.create({
+        OSMTools.Loader.metaClass.load = OSMTools.Loader.create({
             title "Load an OSM file to the current database"
             id "load"
             inputs datasource: JdbcDataSource, osmTablesPrefix: String, osmFilePath: String

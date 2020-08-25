@@ -36,6 +36,7 @@
  */
 package org.orbisgis.orbisanalysis.osm.utils
 
+import org.orbisgis.orbisanalysis.osm.OSMTools
 import org.orbisgis.orbisanalysis.osm.OSMTools as OSM
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
@@ -59,8 +60,6 @@ class TransformUtils {
     static def warn = { obj -> LOGGER.warn(obj.toString()) }
     /** {@link Closure} logging with ERROR level the given {@link Object} {@link String} representation. */
     static def error = { obj -> LOGGER.error(obj.toString()) }
-
-    def static OSMTools = GroovyProcessManager.load(OSM)
 
     /**
      * Merge arrays into one.
@@ -113,12 +112,12 @@ class TransformUtils {
         def relationsProcess
         switch (type) {
             case Types.POLYGONS:
-                waysProcess = OSMTools.Transform.extractWaysAsPolygons
-                relationsProcess = OSMTools.Transform.extractRelationsAsPolygons
+                waysProcess = OSMTools.Transform.extractWaysAsPolygons()
+                relationsProcess = OSMTools.Transform.extractRelationsAsPolygons()
                 break
             case Types.LINES:
-                waysProcess = OSMTools.Transform.extractWaysAsLines
-                relationsProcess = OSMTools.Transform.extractRelationsAsLines
+                waysProcess = OSMTools.Transform.extractWaysAsLines()
+                relationsProcess = OSMTools.Transform.extractRelationsAsLines()
                 break
             default:
                 error "Wrong type '${type}'."

@@ -37,14 +37,17 @@
 package org.orbisgis.orbisanalysis.osmnoise
 
 
-import groovy.transform.BaseScript
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
+import org.orbisgis.orbisanalysis.osmnoise.Data as DATA
+import org.orbisgis.orbisanalysis.osmnoise.Traffic as TRAFFIC
+
 /**
  * Main script to access to all processes used to extract, transform and prepare OSM data
  * to noise modelling.
  *
  * @author Erwan Bocher CNRS LAB-STICC
  */
-@BaseScript GroovyProcessManager pm
-
-register([Data, Traffic])
+abstract class OSMNoise extends GroovyProcessFactory {
+    def static Data = new DATA()
+    def static Traffic = new TRAFFIC()
+}

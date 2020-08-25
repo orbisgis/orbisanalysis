@@ -43,7 +43,7 @@ import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import static org.orbisgis.orbisanalysis.osm.utils.TransformUtils.*
 import static org.orbisgis.orbisanalysis.osm.utils.TransformUtils.Types.*
 
-@BaseScript GroovyProcessFactory pf
+@BaseScript OSMTools pf
 
 /**
  * This process is used to extract all the points from the OSM tables
@@ -60,32 +60,34 @@ import static org.orbisgis.orbisanalysis.osm.utils.TransformUtils.Types.*
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Lesaux (UBS LAB-STICC)
  */
-create {
-    title "Transform all OSM features as points"
-    id "toPoints"
-    inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags: [], columnsToKeep: []
-    outputs outputTableName: String
-    run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
-        String outputTableName = postfix "OSM_POINTS"
-        if(!datasource){
-            error "Please set a valid database connection"
-            return
+def toPoints () {
+    create {
+        title "Transform all OSM features as points"
+        id "toPoints"
+        inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags: [], columnsToKeep: []
+        outputs outputTableName: String
+        run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
+            String outputTableName = postfix "OSM_POINTS"
+            if (!datasource) {
+                error "Please set a valid database connection"
+                return
+            }
+            if (epsgCode == -1) {
+                error "Invalid EPSG code : $epsgCode"
+                return
+            }
+            info "Start points transformation"
+            info "Indexing osm tables..."
+            buildIndexes datasource, osmTablesPrefix
+            def pointsNodes = extractNodesAsPoints datasource, osmTablesPrefix, epsgCode, outputTableName, tags, columnsToKeep
+            if (pointsNodes) {
+                info "The points have been built."
+            } else {
+                warn "Cannot extract any point."
+                return
+            }
+            [outputTableName: outputTableName]
         }
-        if(epsgCode == -1){
-            error "Invalid EPSG code : $epsgCode"
-            return
-        }
-        info "Start points transformation"
-        info "Indexing osm tables..."
-        buildIndexes datasource, osmTablesPrefix
-        def pointsNodes = extractNodesAsPoints datasource, osmTablesPrefix, epsgCode, outputTableName, tags, columnsToKeep
-        if (pointsNodes) {
-            info "The points have been built."
-        } else {
-            warn "Cannot extract any point."
-            return
-        }
-        [outputTableName: outputTableName]
     }
 }
 
@@ -103,13 +105,15 @@ create {
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-create {
-    title "Transform all OSM features as lines"
-    id "toLines"
-    inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags : [], columnsToKeep:[]
-    outputs outputTableName: String
-    run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
-        return toPolygonOrLine(LINES, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep)
+def toLines () {
+    create {
+        title "Transform all OSM features as lines"
+        id "toLines"
+        inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags: [], columnsToKeep: []
+        outputs outputTableName: String
+        run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
+            return toPolygonOrLine(LINES, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep)
+        }
     }
 }
 
@@ -125,13 +129,15 @@ create {
  * @author Erwan Bocher CNRS LAB-STICC
  * @author Elisabeth Le Saux UBS LAB-STICC
  */
-create {
-    title "Transform all OSM features as polygons"
-    id "toPolygons"
-    inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags: [], columnsToKeep: []
-    outputs outputTableName: String
-    run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
-        return toPolygonOrLine(POLYGONS, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep)
+def toPolygons () {
+    create {
+        title "Transform all OSM features as polygons"
+        id "toPolygons"
+        inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags: [], columnsToKeep: []
+        outputs outputTableName: String
+        run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
+            return toPolygonOrLine(POLYGONS, datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep)
+        }
     }
 }
 
@@ -151,42 +157,43 @@ create {
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-create {
-    title "Transform all OSM ways as polygons"
-    id "extractWaysAsPolygons"
-    inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags: [], columnsToKeep: []
-    outputs outputTableName: String
-    run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
-        if(!datasource){
-            error "Please set a valid database connection"
-            return
-        }
-        if(epsgCode == -1){
-            error "Invalid EPSG code : $epsgCode"
-            return
-        }
-        def outputTableName = postfix "WAYS_POLYGONS"
-        def idWaysPolygons = postfix "ID_WAYS_POLYGONS"
-        def osmTableTag = prefix osmTablesPrefix, "way_tag"
-        def countTagsQuery = getCountTagsQuery(osmTableTag, tags)
-        def columnsSelector = getColumnSelector(osmTableTag, tags, columnsToKeep)
-        def tagsFilter = createWhereFilter(tags)
+def extractWaysAsPolygons () {
+    create {
+        title "Transform all OSM ways as polygons"
+        id "extractWaysAsPolygons"
+        inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags: [], columnsToKeep: []
+        outputs outputTableName: String
+        run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
+            if (!datasource) {
+                error "Please set a valid database connection"
+                return
+            }
+            if (epsgCode == -1) {
+                error "Invalid EPSG code : $epsgCode"
+                return
+            }
+            def outputTableName = postfix "WAYS_POLYGONS"
+            def idWaysPolygons = postfix "ID_WAYS_POLYGONS"
+            def osmTableTag = prefix osmTablesPrefix, "way_tag"
+            def countTagsQuery = getCountTagsQuery(osmTableTag, tags)
+            def columnsSelector = getColumnSelector(osmTableTag, tags, columnsToKeep)
+            def tagsFilter = createWhereFilter(tags)
 
-        if (datasource.firstRow(countTagsQuery).count <= 0) {
-            warn "No keys or values found to extract ways. An empty table will be returned."
-            datasource """ 
+            if (datasource.firstRow(countTagsQuery).count <= 0) {
+                warn "No keys or values found to extract ways. An empty table will be returned."
+                datasource """ 
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
             """
-            return [outputTableName: outputTableName]
-        }
+                return [outputTableName: outputTableName]
+            }
 
-        info "Build way polygons"
-        def waysPolygonTmp = postfix "WAYS_POLYGONS_TMP"
-        datasource "DROP TABLE IF EXISTS $waysPolygonTmp;"
+            info "Build way polygons"
+            def waysPolygonTmp = postfix "WAYS_POLYGONS_TMP"
+            datasource "DROP TABLE IF EXISTS $waysPolygonTmp;"
 
-        if(tagsFilter){
-            datasource """
+            if (tagsFilter) {
+                datasource """
                     DROP TABLE IF EXISTS $idWaysPolygons;
                     CREATE TABLE $idWaysPolygons AS
                         SELECT DISTINCT id_way
@@ -194,26 +201,26 @@ create {
                         WHERE $tagsFilter;
                     CREATE INDEX ON $idWaysPolygons(id_way);
             """
-        }
-        else{
-            idWaysPolygons = osmTableTag
-        }
+            } else {
+                idWaysPolygons = osmTableTag
+            }
 
-        if(columnsToKeep){
-            if(datasource.firstRow("""
+            if (columnsToKeep) {
+                if (datasource.firstRow("""
                     SELECT count(*) AS count 
                     FROM $idWaysPolygons AS a, ${osmTablesPrefix}_WAY_TAG AS b 
                     WHERE a.ID_WAY = b.ID_WAY AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')
             """)[0] < 1) {
-                info "Any columns to keep. Cannot create any geometry polygons. An empty table will be returned."
-                datasource """
+                    info "Any columns to keep. Cannot create any geometry polygons. An empty table will be returned."
+                    datasource """
                         DROP TABLE IF EXISTS $outputTableName;
                         CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
                 """
-                return [outputTableName: outputTableName]
-            }}
+                    return [outputTableName: outputTableName]
+                }
+            }
 
-        datasource """
+            datasource """
                 CREATE TABLE $waysPolygonTmp AS
                     SELECT ST_TRANSFORM(ST_SETSRID(ST_MAKEPOLYGON(ST_MAKELINE(the_geom)), 4326), $epsgCode) AS the_geom, id_way
                     FROM(
@@ -234,18 +241,19 @@ create {
                 CREATE INDEX ON $waysPolygonTmp(id_way);
         """
 
-        datasource """
+            datasource """
                 DROP TABLE IF EXISTS $outputTableName; 
                 CREATE TABLE $outputTableName AS 
-                    SELECT 'w'||a.id_way AS id, a.the_geom ${createTagList(datasource,columnsSelector)} 
+                    SELECT 'w'||a.id_way AS id, a.the_geom ${createTagList(datasource, columnsSelector)} 
                     FROM $waysPolygonTmp AS a, $osmTableTag b
                     WHERE a.id_way=b.id_way
                     GROUP BY a.id_way;
         """
 
-        datasource "DROP TABLE IF EXISTS $waysPolygonTmp;"
+            datasource "DROP TABLE IF EXISTS $waysPolygonTmp;"
 
-        [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
     }
 }
 
@@ -264,45 +272,45 @@ create {
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-create {
-    title "Transform all OSM ways as polygons"
-    id "extractRelationsAsPolygons"
-    inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags :[], columnsToKeep: []
-    outputs outputTableName: String
-    run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
-        if(!datasource){
-            error "Please set a valid database connection"
-            return
-        }
-        if(epsgCode == -1){
-            error "Invalid EPSG code : $epsgCode"
-            return
-        }
-        def outputTableName = postfix "RELATION_POLYGONS"
-        def osmTableTag = prefix osmTablesPrefix, "relation_tag"
-        def countTagsQuery = getCountTagsQuery(osmTableTag, tags)
-        def columnsSelector = getColumnSelector(osmTableTag, tags, columnsToKeep)
-        def tagsFilter = createWhereFilter(tags)
+def extractRelationsAsPolygons () {
+    create {
+        title "Transform all OSM ways as polygons"
+        id "extractRelationsAsPolygons"
+        inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags: [], columnsToKeep: []
+        outputs outputTableName: String
+        run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
+            if (!datasource) {
+                error "Please set a valid database connection"
+                return
+            }
+            if (epsgCode == -1) {
+                error "Invalid EPSG code : $epsgCode"
+                return
+            }
+            def outputTableName = postfix "RELATION_POLYGONS"
+            def osmTableTag = prefix osmTablesPrefix, "relation_tag"
+            def countTagsQuery = getCountTagsQuery(osmTableTag, tags)
+            def columnsSelector = getColumnSelector(osmTableTag, tags, columnsToKeep)
+            def tagsFilter = createWhereFilter(tags)
 
-        if (datasource.firstRow(countTagsQuery).count <= 0) {
-            warn "No keys or values found in the relations. An empty table will be returned."
-            datasource """
+            if (datasource.firstRow(countTagsQuery).count <= 0) {
+                warn "No keys or values found in the relations. An empty table will be returned."
+                datasource """
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
             """
-            return [outputTableName: outputTableName]
-        }
-        info "Build outer polygons"
-        def relationsPolygonsOuter = postfix "RELATIONS_POLYGONS_OUTER"
-        def relationFilteredKeys = postfix "RELATION_FILTERED_KEYS"
-        def outer_condition
-        def inner_condition
-        if(!tagsFilter){
-            outer_condition = "WHERE w.id_way = br.id_way AND br.role='outer'"
-            inner_condition = "WHERE w.id_way = br.id_way AND br.role='inner'"
-        }
-        else{
-            datasource """
+                return [outputTableName: outputTableName]
+            }
+            info "Build outer polygons"
+            def relationsPolygonsOuter = postfix "RELATIONS_POLYGONS_OUTER"
+            def relationFilteredKeys = postfix "RELATION_FILTERED_KEYS"
+            def outer_condition
+            def inner_condition
+            if (!tagsFilter) {
+                outer_condition = "WHERE w.id_way = br.id_way AND br.role='outer'"
+                inner_condition = "WHERE w.id_way = br.id_way AND br.role='inner'"
+            } else {
+                datasource """
                     DROP TABLE IF EXISTS $relationFilteredKeys;
                     CREATE TABLE $relationFilteredKeys AS 
                         SELECT DISTINCT id_relation
@@ -311,33 +319,34 @@ create {
                     CREATE INDEX ON $relationFilteredKeys(id_relation);
             """
 
-            if(columnsToKeep){
-                if(datasource.firstRow("""
+                if (columnsToKeep) {
+                    if (datasource.firstRow("""
                         SELECT count(*) AS count 
                         FROM $relationFilteredKeys AS a, ${osmTablesPrefix}_RELATION_TAG AS b 
                         WHERE a.ID_RELATION = b.ID_RELATION AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')
-                """)[0]<1){
-                    info "Any columns to keep. Cannot create any geometry polygons. An empty table will be returned."
-                    datasource """
+                """)[0] < 1) {
+                        info "Any columns to keep. Cannot create any geometry polygons. An empty table will be returned."
+                        datasource """
                             DROP TABLE IF EXISTS $outputTableName;
                             CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
                     """
-                    return [outputTableName: outputTableName]
-                }}
+                        return [outputTableName: outputTableName]
+                    }
+                }
 
-            outer_condition = """, $relationFilteredKeys g 
+                outer_condition = """, $relationFilteredKeys g 
                     WHERE br.id_relation=g.id_relation
                     AND w.id_way = br.id_way
                     AND br.role='outer'
             """
-            inner_condition = """, $relationFilteredKeys g
+                inner_condition = """, $relationFilteredKeys g
                     WHERE br.id_relation=g.id_relation
                     AND w.id_way = br.id_way
                     AND br.role='inner'
             """
-        }
+            }
 
-        datasource """
+            datasource """
                 DROP TABLE IF EXISTS $relationsPolygonsOuter;
                 CREATE TABLE $relationsPolygonsOuter AS 
                 SELECT ST_LINEMERGE(ST_ACCUM(the_geom)) as the_geom, id_relation 
@@ -356,9 +365,9 @@ create {
                 GROUP BY id_relation;
         """
 
-        info "Build inner polygons"
-        def relationsPolygonsInner = postfix "RELATIONS_POLYGONS_INNER"
-        datasource """
+            info "Build inner polygons"
+            def relationsPolygonsInner = postfix "RELATIONS_POLYGONS_INNER"
+            datasource """
                 DROP TABLE IF EXISTS $relationsPolygonsInner;
                 CREATE TABLE $relationsPolygonsInner AS 
                 SELECT ST_LINEMERGE(ST_ACCUM(the_geom)) the_geom, id_relation 
@@ -377,9 +386,9 @@ create {
                 GROUP BY id_relation;
         """
 
-        info "Explode outer polygons"
-        def relationsPolygonsOuterExploded = postfix "RELATIONS_POLYGONS_OUTER_EXPLODED"
-        datasource """
+            info "Explode outer polygons"
+            def relationsPolygonsOuterExploded = postfix "RELATIONS_POLYGONS_OUTER_EXPLODED"
+            datasource """
                 DROP TABLE IF EXISTS $relationsPolygonsOuterExploded;
                 CREATE TABLE $relationsPolygonsOuterExploded AS 
                     SELECT ST_MAKEPOLYGON(the_geom) AS the_geom, id_relation 
@@ -388,9 +397,9 @@ create {
                     AND ST_NPoints(the_geom)>=4;
         """
 
-        info "Explode inner polygons"
-        def relationsPolygonsInnerExploded = postfix "RELATIONS_POLYGONS_INNER_EXPLODED"
-        datasource """
+            info "Explode inner polygons"
+            def relationsPolygonsInnerExploded = postfix "RELATIONS_POLYGONS_INNER_EXPLODED"
+            datasource """
                 DROP TABLE IF EXISTS $relationsPolygonsInnerExploded;
                 CREATE TABLE $relationsPolygonsInnerExploded AS 
                     SELECT the_geom AS the_geom, id_relation 
@@ -399,9 +408,9 @@ create {
                     AND ST_NPoints(the_geom)>=4; 
         """
 
-        info "Build all polygon relations"
-        def relationsMpHoles = postfix "RELATIONS_MP_HOLES"
-        datasource """
+            info "Build all polygon relations"
+            def relationsMpHoles = postfix "RELATIONS_MP_HOLES"
+            datasource """
                 CREATE INDEX ON $relationsPolygonsOuterExploded USING RTREE (the_geom);
                 CREATE INDEX ON $relationsPolygonsInnerExploded USING RTREE (the_geom);
                 CREATE INDEX ON $relationsPolygonsOuterExploded(id_relation);
@@ -425,16 +434,16 @@ create {
                 CREATE INDEX ON $relationsMpHoles(id_relation);
         """
 
-        datasource """
+            datasource """
                 DROP TABLE IF EXISTS $outputTableName;     
                 CREATE TABLE $outputTableName AS 
-                    SELECT 'r'||a.id_relation AS id, a.the_geom ${createTagList(datasource,columnsSelector)}
+                    SELECT 'r'||a.id_relation AS id, a.the_geom ${createTagList(datasource, columnsSelector)}
                     FROM $relationsMpHoles AS a, ${osmTablesPrefix}_relation_tag  b 
                     WHERE a.id_relation=b.id_relation 
                     GROUP BY a.the_geom, a.id_relation;
         """
 
-        datasource """
+            datasource """
                 DROP TABLE IF EXISTS    $relationsPolygonsOuter, 
                                         $relationsPolygonsInner,
                                         $relationsPolygonsOuterExploded, 
@@ -442,7 +451,8 @@ create {
                                         $relationsMpHoles, 
                                         $relationFilteredKeys;
         """
-        [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
     }
 }
 
@@ -462,43 +472,43 @@ create {
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Lesaux (UBS LAB-STICC)
  */
-create {
-    title "Transform all OSM ways as lines"
-    id "extractWaysAsLines"
-    inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags: [], columnsToKeep: []
-    outputs outputTableName: String
-    run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
-        if(!datasource){
-            error "Please set a valid database connection"
-            return
-        }
-        if(epsgCode == -1){
-            error "Invalid EPSG code : $epsgCode"
-            return
-        }
-        def outputTableName = postfix "WAYS_LINES"
-        def idWaysTable = postfix "ID_WAYS"
-        def osmTableTag = prefix osmTablesPrefix, "way_tag"
-        def countTagsQuery = getCountTagsQuery(osmTableTag, tags)
-        def columnsSelector = getColumnSelector(osmTableTag, tags, columnsToKeep)
-        def tagsFilter = createWhereFilter(tags)
+def extractWaysAsLines () {
+    create {
+        title "Transform all OSM ways as lines"
+        id "extractWaysAsLines"
+        inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags: [], columnsToKeep: []
+        outputs outputTableName: String
+        run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
+            if (!datasource) {
+                error "Please set a valid database connection"
+                return
+            }
+            if (epsgCode == -1) {
+                error "Invalid EPSG code : $epsgCode"
+                return
+            }
+            def outputTableName = postfix "WAYS_LINES"
+            def idWaysTable = postfix "ID_WAYS"
+            def osmTableTag = prefix osmTablesPrefix, "way_tag"
+            def countTagsQuery = getCountTagsQuery(osmTableTag, tags)
+            def columnsSelector = getColumnSelector(osmTableTag, tags, columnsToKeep)
+            def tagsFilter = createWhereFilter(tags)
 
-        if (datasource.firstRow(countTagsQuery).count <= 0) {
-            info "No keys or values found in the ways. An empty table will be returned."
-            datasource """ 
+            if (datasource.firstRow(countTagsQuery).count <= 0) {
+                info "No keys or values found in the ways. An empty table will be returned."
+                datasource """ 
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
             """
-            return [outputTableName: outputTableName]
-        }
-        info "Build ways as lines"
-        def waysLinesTmp = postfix "WAYS_LINES_TMP"
+                return [outputTableName: outputTableName]
+            }
+            info "Build ways as lines"
+            def waysLinesTmp = postfix "WAYS_LINES_TMP"
 
-        if(!tagsFilter){
-            idWaysTable = prefix osmTablesPrefix, "way_tag"
-        }
-        else{
-            datasource """
+            if (!tagsFilter) {
+                idWaysTable = prefix osmTablesPrefix, "way_tag"
+            } else {
+                datasource """
                     DROP TABLE IF EXISTS $idWaysTable;
                     CREATE TABLE $idWaysTable AS
                         SELECT DISTINCT id_way
@@ -506,24 +516,25 @@ create {
                         WHERE $tagsFilter;
                     CREATE INDEX ON $idWaysTable(id_way);
             """
-        }
+            }
 
-        if(columnsToKeep){
-            if(datasource.firstRow("""
+            if (columnsToKeep) {
+                if (datasource.firstRow("""
                     SELECT count(*) AS count 
                     FROM $idWaysTable AS a, ${osmTablesPrefix}_WAY_TAG AS b 
                     WHERE a.ID_WAY = b.ID_WAY AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')
-            """)[0] < 1){
-                info "Any columns to keep. Cannot create any geometry lines. An empty table will be returned."
-                datasource """
+            """)[0] < 1) {
+                    info "Any columns to keep. Cannot create any geometry lines. An empty table will be returned."
+                    datasource """
                         DROP TABLE IF EXISTS $outputTableName;
                         CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
                 """
-                return [outputTableName: outputTableName]
-            }}
+                    return [outputTableName: outputTableName]
+                }
+            }
 
 
-        datasource """
+            datasource """
                 DROP TABLE IF EXISTS $waysLinesTmp; 
                 CREATE TABLE  $waysLinesTmp AS 
                     SELECT id_way,ST_TRANSFORM(ST_SETSRID(ST_MAKELINE(THE_GEOM), 4326), $epsgCode) the_geom 
@@ -543,16 +554,17 @@ create {
                 CREATE INDEX ON $waysLinesTmp(ID_WAY);
         """
 
-        datasource """
+            datasource """
                 DROP TABLE IF EXISTS $outputTableName;
                 CREATE TABLE $outputTableName AS 
-                    SELECT 'w'||a.id_way AS id, a.the_geom ${createTagList(datasource,columnsSelector)} 
+                    SELECT 'w'||a.id_way AS id, a.the_geom ${createTagList(datasource, columnsSelector)} 
                     FROM $waysLinesTmp AS a, ${osmTablesPrefix}_way_tag b 
                     WHERE a.id_way=b.id_way 
                     GROUP BY a.id_way;
                 DROP TABLE IF EXISTS $waysLinesTmp, $idWaysTable;
         """
-        [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
     }
 }
 
@@ -571,42 +583,42 @@ create {
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Lesaux (UBS LAB-STICC)
  */
-create {
-    title "Transform all OSM ways as lines"
-    id "extractRelationsAsLines"
-    inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags: [], columnsToKeep: []
-    outputs outputTableName: String
-    run { datasource, osmTablesPrefix, epsgCode, tags,columnsToKeep ->
-        if(!datasource){
-            error "Please set a valid database connection"
-            return
-        }
-        if(epsgCode == -1){
-            error "Invalid EPSG code : $epsgCode"
-            return
-        }
-        def outputTableName = postfix "RELATIONS_LINES"
-        def osmTableTag = prefix osmTablesPrefix, "relation_tag"
-        def countTagsQuery = getCountTagsQuery(osmTableTag, tags)
-        def columnsSelector = getColumnSelector(osmTableTag, tags, columnsToKeep)
-        def tagsFilter = createWhereFilter(tags)
+def extractRelationsAsLines() {
+    create {
+        title "Transform all OSM ways as lines"
+        id "extractRelationsAsLines"
+        inputs datasource: JdbcDataSource, osmTablesPrefix: String, epsgCode: 4326, tags: [], columnsToKeep: []
+        outputs outputTableName: String
+        run { datasource, osmTablesPrefix, epsgCode, tags, columnsToKeep ->
+            if (!datasource) {
+                error "Please set a valid database connection"
+                return
+            }
+            if (epsgCode == -1) {
+                error "Invalid EPSG code : $epsgCode"
+                return
+            }
+            def outputTableName = postfix "RELATIONS_LINES"
+            def osmTableTag = prefix osmTablesPrefix, "relation_tag"
+            def countTagsQuery = getCountTagsQuery(osmTableTag, tags)
+            def columnsSelector = getColumnSelector(osmTableTag, tags, columnsToKeep)
+            def tagsFilter = createWhereFilter(tags)
 
-        if (datasource.firstRow(countTagsQuery).count <= 0) {
-            warn "No keys or values found in the relations. An empty table will be returned."
-            datasource """
+            if (datasource.firstRow(countTagsQuery).count <= 0) {
+                warn "No keys or values found in the relations. An empty table will be returned."
+                datasource """
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
             """
-            return [outputTableName: outputTableName]
-        }
-        def relationsLinesTmp = postfix "RELATIONS_LINES_TMP"
-        def relationsFilteredKeys = postfix "RELATION_FILTERED_KEYS"
+                return [outputTableName: outputTableName]
+            }
+            def relationsLinesTmp = postfix "RELATIONS_LINES_TMP"
+            def relationsFilteredKeys = postfix "RELATION_FILTERED_KEYS"
 
-        if(!tagsFilter){
-            relationsFilteredKeys = prefix osmTablesPrefix, "relation"
-        }
-        else{
-            datasource """
+            if (!tagsFilter) {
+                relationsFilteredKeys = prefix osmTablesPrefix, "relation"
+            } else {
+                datasource """
                     DROP TABLE IF EXISTS $relationsFilteredKeys;
                     CREATE TABLE $relationsFilteredKeys AS
                         SELECT DISTINCT id_relation
@@ -614,23 +626,24 @@ create {
                         WHERE $tagsFilter;
                     CREATE INDEX ON $relationsFilteredKeys(id_relation);
             """
-        }
+            }
 
-        if(columnsToKeep){
-            if(datasource.firstRow("""
+            if (columnsToKeep) {
+                if (datasource.firstRow("""
                     SELECT count(*) AS count 
                     FROM $relationsFilteredKeys AS a, ${osmTablesPrefix}_RELATION_TAG AS b 
                     WHERE a.ID_RELATION = b.ID_RELATION AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')
-            """)[0] < 1){
-                info "Any columns to keep. Cannot create any geometry lines. An empty table will be returned."
-                datasource """ 
+            """)[0] < 1) {
+                    info "Any columns to keep. Cannot create any geometry lines. An empty table will be returned."
+                    datasource """ 
                         DROP TABLE IF EXISTS $outputTableName;
                         CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
                 """
-                return [outputTableName: outputTableName]
-            }}
+                    return [outputTableName: outputTableName]
+                }
+            }
 
-        datasource """
+            datasource """
                 DROP TABLE IF EXISTS $relationsLinesTmp;
                 CREATE TABLE $relationsLinesTmp AS
                     SELECT ST_ACCUM(THE_GEOM) AS the_geom, id_relation
@@ -657,15 +670,16 @@ create {
                 CREATE INDEX ON $relationsLinesTmp(id_relation);
         """
 
-        datasource """
+            datasource """
                 DROP TABLE IF EXISTS $outputTableName;
                 CREATE TABLE $outputTableName AS
-                    SELECT 'r'||a.id_relation AS id, a.the_geom ${createTagList(datasource,columnsSelector)}
+                    SELECT 'r'||a.id_relation AS id, a.the_geom ${createTagList(datasource, columnsSelector)}
                     FROM $relationsLinesTmp AS a, ${osmTablesPrefix}_relation_tag  b
                     WHERE a.id_relation=b.id_relation
                     GROUP BY a.id_relation;
                 DROP TABLE IF EXISTS $relationsLinesTmp, $relationsFilteredKeys;
         """
-        [outputTableName: outputTableName]
+            [outputTableName: outputTableName]
+        }
     }
 }

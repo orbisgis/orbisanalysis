@@ -79,7 +79,7 @@ class LoaderTest extends AbstractOSMTest {
     void badFromAreaTest(){
         sampleGetAreaFromPlace()
         sampleOverpassQueryOverride()
-        def fromArea = Tools.Loader.fromArea
+        def fromArea = OSMTools.Loader.fromArea()
         H2GIS ds = RANDOM_DS()
         def geomFacto = new GeometryFactory()
         def polygon = geomFacto.createPolygon([new Coordinate(0, 0),
@@ -93,11 +93,6 @@ class LoaderTest extends AbstractOSMTest {
         assertTrue fromArea.results.isEmpty()
         assertFalse fromArea(datasource: ds, filterArea: "A string")
         assertTrue fromArea.results.isEmpty()
-
-        badLoad()
-        assertFalse fromArea(datasource: ds, filterArea: polygon)
-        badExtract()
-        assertFalse fromArea(datasource: ds, filterArea: polygon)
     }
 
     /**
@@ -107,7 +102,7 @@ class LoaderTest extends AbstractOSMTest {
     void fromAreaNoDistTest(){
         sampleGetAreaFromPlace()
         sampleOverpassQueryOverride()
-        def fromArea = Tools.Loader.fromArea
+        def fromArea = OSMTools.Loader.fromArea()
         H2GIS ds = RANDOM_DS()
         def geomFacto = new GeometryFactory()
         def polygon = geomFacto.createPolygon([new Coordinate(0, 0),
@@ -189,7 +184,7 @@ class LoaderTest extends AbstractOSMTest {
     void fromAreaWithDistTest(){
         sampleGetAreaFromPlace()
         sampleOverpassQueryOverride()
-        def fromArea = Tools.Loader.fromArea
+        def fromArea = OSMTools.Loader.fromArea()
         H2GIS ds = RANDOM_DS()
         def geomFacto = new GeometryFactory()
         def dist = 1000
@@ -270,7 +265,7 @@ class LoaderTest extends AbstractOSMTest {
     void fromPlaceNoDistTest(){
         sampleGetAreaFromPlace()
         sampleOverpassQueryOverride()
-        def fromPlace = Tools.Loader.fromPlace
+        def fromPlace = OSMTools.Loader.fromPlace()
         def placeName = "  The place Name -toFind  "
         def formattedPlaceName = "The_place_Name_toFind_"
         def overpassQuery = "[bbox:48.82,-3.016,48.821,-3.015];\n" +
@@ -319,7 +314,7 @@ class LoaderTest extends AbstractOSMTest {
     void fromPlaceWithDistTest(){
         sampleGetAreaFromPlace()
         sampleOverpassQueryOverride()
-        def fromPlace = Tools.Loader.fromPlace
+        def fromPlace = OSMTools.Loader.fromPlace()
         def placeName = "  The place Name -toFind  "
         def dist = 5
         def formattedPlaceName = "The_place_Name_toFind_"
@@ -368,7 +363,7 @@ class LoaderTest extends AbstractOSMTest {
     void badFromPlaceTest(){
         sampleGetAreaFromPlace()
         sampleOverpassQueryOverride()
-        def fromPlace = Tools.Loader.fromPlace
+        def fromPlace = OSMTools.Loader.fromPlace()
         def placeName = "  The place Name -toFind  "
         def dist = -5
         H2GIS ds = RANDOM_DS()
@@ -383,13 +378,6 @@ class LoaderTest extends AbstractOSMTest {
 
         assertFalse fromPlace(datasource: null, placeName: placeName)
         assertTrue fromPlace.results.isEmpty()
-
-        badLoad()
-        assertFalse fromPlace(datasource: ds, placeName: placeName)
-        //badExtract()
-        assertFalse fromPlace(datasource: ds, placeName: placeName)
-        badGetAreaFromPlace()
-        assertFalse fromPlace(datasource: ds, placeName: placeName)
     }
 
     /**
@@ -398,7 +386,7 @@ class LoaderTest extends AbstractOSMTest {
     @Test
     void extractTest(){
         sampleOverpassQueryOverride()
-        def extract = Tools.Loader.extract
+        def extract = OSMTools.Loader.extract()
         def query = "Overpass test query"
         assertTrue extract([overpassQuery : query])
         assertEquals query, this.query
@@ -414,7 +402,7 @@ class LoaderTest extends AbstractOSMTest {
      */
     @Test
     void badExtractTest(){
-        def extract = Tools.Loader.extract
+        def extract = OSMTools.Loader.extract()
 
         sampleOverpassQueryOverride()
         assertFalse extract([overpassQuery : null])
@@ -431,7 +419,7 @@ class LoaderTest extends AbstractOSMTest {
     @Test
     void badLoadTest(){
         H2GIS ds = RANDOM_DS()
-        def load = Tools.Loader.load
+        def load = OSMTools.Loader.load()
         assertNotNull load
         def url = LoaderTest.getResource("sample.osm")
         assertNotNull url
@@ -470,7 +458,7 @@ class LoaderTest extends AbstractOSMTest {
     @Test
     void loadTest(){
         H2GIS ds = RANDOM_DS()
-        def load = Tools.Loader.load
+        def load = OSMTools.Loader.load()
         assertNotNull load
         def url = LoaderTest.getResource("sample.osm")
         assertNotNull url

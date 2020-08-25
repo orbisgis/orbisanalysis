@@ -36,8 +36,10 @@
  */
 package org.orbisgis.orbisanalysis.osm
 
-import groovy.transform.BaseScript
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
+import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
+import org.orbisgis.orbisanalysis.osm.Loader as LOADER
+import org.orbisgis.orbisanalysis.osm.Transform as TRANSFORM
+import org.orbisgis.orbisanalysis.osm.utils.Utilities as UTILITIES
 /**
  * Main script to access to all processes used to extract, transform and save OSM data as GIS layers.
  *
@@ -46,6 +48,8 @@ import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
  * @author Sylvain PALOMINOS (UBS LAB-STICC 2019)
  */
 
-@BaseScript GroovyProcessManager pm
-
-register([Loader, Transform])
+abstract class OSMTools extends GroovyProcessFactory {
+    def static Loader = new LOADER()
+    def static Transform = new TRANSFORM()
+    def static Utilities = new UTILITIES()
+}

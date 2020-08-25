@@ -41,7 +41,7 @@ import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 
-@BaseScript GroovyProcessFactory pf
+@BaseScript OSMNoise pf
 
 /**
  * Generate traffic data according the type of roads and references available in
@@ -68,37 +68,38 @@ import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
  *
  * @return The name of the road table
  */
-create {
-    title "Compute default traffic data"
-    id "WGAEN_ROAD"
-    inputs datasource: JdbcDataSource, roadTableName: String, outputTablePrefix: "WGAEN_ROAD", trafficFile: ""
-    outputs outputTableName: String
-    run { JdbcDataSource datasource, roadTableName,outputTablePrefix, trafficFile ->
-        info "Create the default traffic data"
-        def outputTableName = postfix "${outputTablePrefix}_ROAD_TRAFFIC"
-        def paramsDefaultFile
-        if (trafficFile) {
-            if (new File(trafficFile).isFile()) {
-                paramsDefaultFile = new FileInputStream(file)
+def WGAEN_ROAD() {
+    create {
+        title "Compute default traffic data"
+        id "WGAEN_ROAD"
+        inputs datasource: JdbcDataSource, roadTableName: String, outputTablePrefix: "WGAEN_ROAD", trafficFile: ""
+        outputs outputTableName: String
+        run { JdbcDataSource datasource, roadTableName, outputTablePrefix, trafficFile ->
+            info "Create the default traffic data"
+            def outputTableName = postfix "${outputTablePrefix}_ROAD_TRAFFIC"
+            def paramsDefaultFile
+            if (trafficFile) {
+                if (new File(trafficFile).isFile()) {
+                    paramsDefaultFile = new FileInputStream(file)
+                } else {
+                    warn "No file named ${file} found. Taking default instead"
+                    paramsDefaultFile = this.class.getResourceAsStream("roadDefaultWGAEN.sql")
+                }
             } else {
-                warn "No file named ${file} found. Taking default instead"
                 paramsDefaultFile = this.class.getResourceAsStream("roadDefaultWGAEN.sql")
             }
-        } else {
-            paramsDefaultFile = this.class.getResourceAsStream("roadDefaultWGAEN.sql")
-        }
-        def trafficTable = postfix "TRAFIC_PROPERTIES"
+            def trafficTable = postfix "TRAFIC_PROPERTIES"
 
-        datasource.executeScript(paramsDefaultFile, [TRAFIC_PROPERTIES : trafficTable])
+            datasource.executeScript(paramsDefaultFile, [TRAFIC_PROPERTIES: trafficTable])
 
-        datasource.execute "CREATE INDEX ON ${trafficTable}(WGAEN_TYPE)"
+            datasource.execute "CREATE INDEX ON ${trafficTable}(WGAEN_TYPE)"
 
-        //Update the max speed
-        datasource.execute """UPDATE ${roadTableName} P SET maxspeed=
+            //Update the max speed
+            datasource.execute """UPDATE ${roadTableName} P SET maxspeed=
                 (SELECT  A.maxspeed FROM ${trafficTable} A WHERE A.WGAEN_TYPE=P.WGAEN_TYPE)
                  WHERE maxspeed IS NULL;"""
 
-        datasource.execute """CREATE TABLE ${outputTableName} as 
+            datasource.execute """CREATE TABLE ${outputTableName} as 
                 SELECT  a.id_road,a.the_geom, a.WGAEN_TYPE, 
                  CASE WHEN a.oneway= 'yes' THEN (t.day_nb_vh*t.day_percent_lv /t.day_nb_hours)/2 ELSE (t.day_nb_vh*t.day_percent_lv /t.day_nb_hours) END as day_lv_hour,
                  CASE WHEN a.oneway= 'yes' THEN (t.day_nb_vh*t.day_percent_hv /t.day_nb_hours)/2 ELSE (t.day_nb_vh*t.day_percent_hv /t.day_nb_hours) END as day_hv_hour,
@@ -114,7 +115,7 @@ create {
                  CASE WHEN a.maxspeed >= 110 THEN 90 ELSE a.maxspeed END AS ev_hv_speed
                  from  ${roadTableName} a, ${trafficTable}  t WHERE a.WGAEN_TYPE=t.WGAEN_TYPE"""
 
-        datasource.execute """COMMENT ON COLUMN ${outputTableName}."WGAEN_TYPE" IS 'Default value road type';
+            datasource.execute """COMMENT ON COLUMN ${outputTableName}."WGAEN_TYPE" IS 'Default value road type';
             COMMENT ON COLUMN ${outputTableName}."DAY_LV_HOUR" IS 'Number of light vehicles per hour for day';
             COMMENT ON COLUMN ${outputTableName}."DAY_HV_HOUR" IS 'Number of heavy vehicles per hour for day';
             COMMENT ON COLUMN ${outputTableName}."DAY_LV_SPEED" IS 'Light vehicles speed for day';
@@ -128,7 +129,7 @@ create {
             COMMENT ON COLUMN ${outputTableName}."EV_LV_SPEED" IS 'Light vehicles speed for evening';
             COMMENT ON COLUMN ${outputTableName}."EV_HV_SPEED" IS 'Number of heavy vehicles per hour for evening';"""
 
-        [outputTableName:outputTableName]
+            [outputTableName: outputTableName]
+        }
     }
 }
-

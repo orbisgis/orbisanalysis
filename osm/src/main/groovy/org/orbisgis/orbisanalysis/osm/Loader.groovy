@@ -37,6 +37,7 @@
 package org.orbisgis.orbisanalysis.osm
 
 import groovy.transform.BaseScript
+import groovy.transform.Field
 import org.h2gis.utilities.GeographyUtilities
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
@@ -49,10 +50,10 @@ import java.util.regex.Pattern
 
 import static org.orbisgis.orbisanalysis.osm.utils.OSMElement.*
 
-@BaseScript GroovyProcessFactory pf
+@BaseScript OSMTools pf
 
 /** Default SRID */
-def DEFAULT_SRID = 4326
+@Field DEFAULT_SRID = 4326
 
 /**
  * This process extracts OSM data file and load it in a database using an area
@@ -68,65 +69,69 @@ def DEFAULT_SRID = 4326
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-create {
-    title "Extract the OSM data using an area"
-    id "fromArea"
-    inputs datasource: JdbcDataSource, filterArea: Object, distance : 0
-    outputs zoneTableName: String, zoneEnvelopeTableName: String, osmTablesPrefix: String, epsg: int
-    run { JdbcDataSource datasource, filterArea, distance ->
-        if (!filterArea) {
-            error( "Filter area not defined")
-            return
-        }
-        def outputZoneTable = postfix "ZONE"
-        def outputZoneEnvelopeTable = postfix "ZONE_ENVELOPE"
-        def osmTablesPrefix = postfix "OSM_DATA"
-        def geom
-        if(filterArea instanceof Envelope ) {
-            geom = new GeometryFactory().toGeometry(filterArea)
-        }
-        else if( filterArea instanceof Polygon ) {
-            geom = filterArea
-        }
-        else{
-            error "The filter area must be an Envelope or a Polygon"
-            return
-        }
+def fromArea() {
+    create {
+        title "Extract the OSM data using an area"
+        id "fromArea"
+        inputs datasource: JdbcDataSource, filterArea: Object, distance: 0
+        outputs zoneTableName: String, zoneEnvelopeTableName: String, osmTablesPrefix: String, epsg: int
+        run { JdbcDataSource datasource, filterArea, distance ->
+            if(!datasource) {
+                error("No datasource provided.")
+                return
+            }
+            if (!filterArea) {
+                error("Filter area not defined")
+                return
+            }
+            def outputZoneTable = postfix "ZONE"
+            def outputZoneEnvelopeTable = postfix "ZONE_ENVELOPE"
+            def osmTablesPrefix = postfix "OSM_DATA"
+            def geom
+            if (filterArea instanceof Envelope) {
+                geom = new GeometryFactory().toGeometry(filterArea)
+            } else if (filterArea instanceof Polygon) {
+                geom = filterArea
+            } else {
+                error "The filter area must be an Envelope or a Polygon"
+                return
+            }
 
-        def epsg = DEFAULT_SRID
-        def env = GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance)
+            def epsg = DEFAULT_SRID
+            def env = GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance)
 
-        //Create table to store the geometry and the envelope of the extracted area
-        datasource """
+            //Create table to store the geometry and the envelope of the extracted area
+            datasource """
                 CREATE TABLE $outputZoneTable (the_geom GEOMETRY(POLYGON, $epsg));
                 INSERT INTO $outputZoneTable VALUES (ST_GEOMFROMTEXT('${geom}', $epsg));
         """
 
-        def geometryFactory = new GeometryFactory()
-        def geomEnv = geometryFactory.toGeometry(env)
+            def geometryFactory = new GeometryFactory()
+            def geomEnv = geometryFactory.toGeometry(env)
 
-        datasource.execute "CREATE TABLE $outputZoneEnvelopeTable (the_geom GEOMETRY(POLYGON, $epsg));" +
-                "INSERT INTO $outputZoneEnvelopeTable VALUES " +
+            datasource.execute "CREATE TABLE $outputZoneEnvelopeTable (the_geom GEOMETRY(POLYGON, $epsg));" +
+                    "INSERT INTO $outputZoneEnvelopeTable VALUES " +
                     "(ST_GEOMFROMTEXT('$geomEnv',$epsg));"
 
-        def query = Utilities.buildOSMQuery(geomEnv, [], NODE, WAY, RELATION)
-        def extract = this.extract
-        if (extract(overpassQuery: query)) {
-            info "Downloading OSM data from the area $filterArea"
-            def load = this.load
-            if (load(datasource     : datasource,
-                    osmTablesPrefix : osmTablesPrefix,
-                    osmFilePath     : extract.results.outputFilePath)) {
-                info "Loading OSM data from the area $filterArea"
-                return [zoneTableName         : outputZoneTable,
-                        zoneEnvelopeTableName : outputZoneEnvelopeTable,
-                        osmTablesPrefix       : osmTablesPrefix,
-                        epsg                  : epsg]
+            def query = Utilities.buildOSMQuery(geomEnv, [], NODE, WAY, RELATION)
+            def extract = extract()
+            if (extract(overpassQuery: query)) {
+                info "Downloading OSM data from the area $filterArea"
+                def load = load()
+                if (load(datasource: datasource,
+                        osmTablesPrefix: osmTablesPrefix,
+                        osmFilePath: extract.results.outputFilePath)) {
+                    info "Loading OSM data from the area $filterArea"
+                    return [zoneTableName        : outputZoneTable,
+                            zoneEnvelopeTableName: outputZoneEnvelopeTable,
+                            osmTablesPrefix      : osmTablesPrefix,
+                            epsg                 : epsg]
+                } else {
+                    error "Cannot load the OSM data from the area $filterArea"
+                }
             } else {
-                error "Cannot load the OSM data from the area $filterArea"
+                error "Cannot download OSM data from the area $filterArea"
             }
-        } else {
-            error "Cannot download OSM data from the area $filterArea"
         }
     }
 }
@@ -145,60 +150,70 @@ create {
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-create {
-    title "Extract the OSM data using a place name"
-    id "fromPlace"
-    inputs datasource: JdbcDataSource, placeName: String, distance: 0
-    outputs zoneTableName: String, zoneEnvelopeTableName: String, osmTablesPrefix: String
-    run { JdbcDataSource datasource, placeName, distance ->
-        def formatedPlaceName = placeName.trim().replaceAll("([\\s|,|\\-|])+", "_")
-        def outputZoneTable = postfix "ZONE_$formatedPlaceName"
-        def outputZoneEnvelopeTable = postfix "ZONE_ENVELOPE_$formatedPlaceName"
-        def osmTablesPrefix = postfix "OSM_DATA_$formatedPlaceName"
-        def epsg = DEFAULT_SRID
+def fromPlace() {
+    create {
+        title "Extract the OSM data using a place name"
+        id "fromPlace"
+        inputs datasource: JdbcDataSource, placeName: String, distance: 0
+        outputs zoneTableName: String, zoneEnvelopeTableName: String, osmTablesPrefix: String
+        run { JdbcDataSource datasource, placeName, distance ->
+            if(!placeName) {
+                error("Cannot find an area from a void place name.")
+                return
+            }
+            if(!datasource) {
+                error("No datasource provided.")
+                return
+            }
+            def formatedPlaceName = placeName.trim().replaceAll("([\\s|,|\\-|])+", "_")
+            def outputZoneTable = postfix "ZONE_$formatedPlaceName"
+            def outputZoneEnvelopeTable = postfix "ZONE_ENVELOPE_$formatedPlaceName"
+            def osmTablesPrefix = postfix "OSM_DATA_$formatedPlaceName"
+            def epsg = DEFAULT_SRID
 
-        def geom = Utilities.getAreaFromPlace(placeName);
-        if (!geom) {
-            error("Cannot find an area from the place name $placeName")
-            return
-        }
-        if(distance < 0) {
-            error("Cannot use a negative distance")
-            return
-        }
-        def env = GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance)
+            def geom = Utilities.getAreaFromPlace(placeName);
+            if (!geom) {
+                error("Cannot find an area from the place name $placeName")
+                return
+            }
+            if (distance < 0) {
+                error("Cannot use a negative distance")
+                return
+            }
+            def env = GeographyUtilities.expandEnvelopeByMeters(geom.getEnvelopeInternal(), distance)
 
-        //Create table to store the geometry and the envelope of the extracted area
-        datasource """
+            //Create table to store the geometry and the envelope of the extracted area
+            datasource """
                 CREATE TABLE $outputZoneTable (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
                 INSERT INTO $outputZoneTable VALUES (ST_GEOMFROMTEXT('${geom}', $epsg), '$placeName');
         """
 
-        def geometryFactory = new GeometryFactory()
-        def geomEnv = geometryFactory.toGeometry(env)
-        datasource """
+            def geometryFactory = new GeometryFactory()
+            def geomEnv = geometryFactory.toGeometry(env)
+            datasource """
                 CREATE TABLE $outputZoneEnvelopeTable (the_geom GEOMETRY(POLYGON, $epsg), ID_ZONE VARCHAR);
                 INSERT INTO $outputZoneEnvelopeTable VALUES (ST_GEOMFROMTEXT('$geomEnv',$epsg), '$placeName');
         """
 
-        def query = Utilities.buildOSMQuery(geomEnv, [], NODE, WAY, RELATION)
-        def extract = this.extract
-        if (extract(overpassQuery: query)) {
-            info "Downloading OSM data from the place $placeName"
-            def load = this.load
-            if (load(datasource: datasource,
-                    osmTablesPrefix: osmTablesPrefix,
-                    osmFilePath: extract.results.outputFilePath)) {
-                info "Loading OSM data from the place $placeName"
-                return [zoneTableName        : outputZoneTable,
-                        zoneEnvelopeTableName: outputZoneEnvelopeTable,
-                        osmTablesPrefix      : osmTablesPrefix]
-            } else {
-                error "Cannot load the OSM data from the place $placeName"
-            }
+            def query = Utilities.buildOSMQuery(geomEnv, [], NODE, WAY, RELATION)
+            def extract = extract()
+            if (extract(overpassQuery: query)) {
+                info "Downloading OSM data from the place $placeName"
+                def load = load()
+                if (load(datasource: datasource,
+                        osmTablesPrefix: osmTablesPrefix,
+                        osmFilePath: extract.results.outputFilePath)) {
+                    info "Loading OSM data from the place $placeName"
+                    return [zoneTableName        : outputZoneTable,
+                            zoneEnvelopeTableName: outputZoneEnvelopeTable,
+                            osmTablesPrefix      : osmTablesPrefix]
+                } else {
+                    error "Cannot load the OSM data from the place $placeName"
+                }
 
-        } else {
-            error "Cannot download OSM data from the place $placeName"
+            } else {
+                error "Cannot download OSM data from the place $placeName"
+            }
         }
     }
 }
@@ -211,22 +226,24 @@ create {
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-create {
-    title "Extract the OSM data using the overpass api and save the result in an XML file"
-    id "extract"
-    inputs overpassQuery: String
-    outputs outputFilePath: String
-    run { overpassQuery ->
-        info "Extract the OSM data"
-        def tmpOSMFile = File.createTempFile("extract_osm", ".osm")
-        def osmFilePath = tmpOSMFile.absolutePath
-        if (overpassQuery && Utilities.executeOverPassQuery(overpassQuery, tmpOSMFile)) {
-            info "The OSM file has been downloaded at $osmFilePath."
-        } else {
-            error "Cannot extract the OSM data for the query $overpassQuery"
-            return
+def extract() {
+    create {
+        title "Extract the OSM data using the overpass api and save the result in an XML file"
+        id "extract"
+        inputs overpassQuery: String
+        outputs outputFilePath: String
+        run { overpassQuery ->
+            info "Extract the OSM data"
+            def tmpOSMFile = File.createTempFile("extract_osm", ".osm")
+            def osmFilePath = tmpOSMFile.absolutePath
+            if (overpassQuery && Utilities.executeOverPassQuery(overpassQuery, tmpOSMFile)) {
+                info "The OSM file has been downloaded at $osmFilePath."
+            } else {
+                error "Cannot extract the OSM data for the query $overpassQuery"
+                return
+            }
+            [outputFilePath: osmFilePath]
         }
-        [outputFilePath: osmFilePath]
     }
 }
 
@@ -242,38 +259,39 @@ create {
  * @author Erwan Bocher (CNRS LAB-STICC)
  * @author Elisabeth Le Saux (UBS LAB-STICC)
  */
-create {
-    title "Load an OSM file to the current database"
-    id "load"
-    inputs datasource: JdbcDataSource, osmTablesPrefix: String, osmFilePath: String
-    outputs datasource: JdbcDataSource
-    run { JdbcDataSource datasource, osmTablesPrefix, osmFilePath ->
-        if(!datasource) {
-            error "Please set a valid database connection."
-            return
-        }
+def load() {
+    create {
+        title "Load an OSM file to the current database"
+        id "load"
+        inputs datasource: JdbcDataSource, osmTablesPrefix: String, osmFilePath: String
+        outputs datasource: JdbcDataSource
+        run { JdbcDataSource datasource, osmTablesPrefix, osmFilePath ->
+            if (!datasource) {
+                error "Please set a valid database connection."
+                return
+            }
 
-        if(!osmTablesPrefix ||
-                !Pattern.compile('^[a-zA-Z0-9_]*$').matcher(osmTablesPrefix).matches()) {
-            error "Please set a valid table prefix."
-            return
-        }
+            if (!osmTablesPrefix ||
+                    !Pattern.compile('^[a-zA-Z0-9_]*$').matcher(osmTablesPrefix).matches()) {
+                error "Please set a valid table prefix."
+                return
+            }
 
-        if(!osmFilePath){
-            error "Please set a valid osm file path."
-            return
-        }
-        def osmFile = new File(osmFilePath)
-        if (!osmFile.exists()) {
-            error "The input OSM file does not exist."
-            return
-        }
+            if (!osmFilePath) {
+                error "Please set a valid osm file path."
+                return
+            }
+            def osmFile = new File(osmFilePath)
+            if (!osmFile.exists()) {
+                error "The input OSM file does not exist."
+                return
+            }
 
-        info "Load the OSM file in the database."
-        datasource.load(osmFile, osmTablesPrefix, true)
-        info "The input OSM file has been loaded in the database."
+            info "Load the OSM file in the database."
+            datasource.load(osmFile, osmTablesPrefix, true)
+            info "The input OSM file has been loaded in the database."
 
-        [datasource: datasource]
+            [datasource: datasource]
+        }
     }
 }
-

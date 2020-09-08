@@ -202,7 +202,13 @@ def extractWaysAsPolygons () {
                     CREATE INDEX ON $idWaysPolygons(id_way);
             """
             } else {
-                idWaysPolygons = osmTableTag
+                datasource """
+                    DROP TABLE IF EXISTS $idWaysPolygons;
+                    CREATE TABLE $idWaysPolygons AS
+                        SELECT DISTINCT id_way
+                        FROM $osmTableTag;
+                    CREATE INDEX ON $idWaysPolygons(id_way);
+            """
             }
 
             if (columnsToKeep) {
@@ -250,7 +256,10 @@ def extractWaysAsPolygons () {
                     GROUP BY a.id_way;
         """
 
-            datasource "DROP TABLE IF EXISTS $waysPolygonTmp;"
+            datasource """
+                DROP TABLE IF EXISTS $waysPolygonTmp;
+                DROP TABLE IF EXISTS $idWaysPolygons;
+        """
 
             [outputTableName: outputTableName]
         }

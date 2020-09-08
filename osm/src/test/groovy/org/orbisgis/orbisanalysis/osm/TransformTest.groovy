@@ -337,7 +337,7 @@ class TransformTest extends AbstractOSMTest {
     @Test
     void extractWaysAsPolygonsTest(){
         def extractWaysAsPolygons = OSMTools.Transform.extractWaysAsPolygons()
-        H2GIS ds = RANDOM_DS()
+        H2GIS ds = H2GIS.open('./target/osmdb;AUTO_SERVER=TRUE')
         def prefix = "OSM_"+uuid()
         def epsgCode = 2453
         def tags = [building:"house"]

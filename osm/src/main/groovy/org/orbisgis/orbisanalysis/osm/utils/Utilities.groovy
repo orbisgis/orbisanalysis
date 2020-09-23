@@ -42,9 +42,6 @@ import org.locationtech.jts.geom.*
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.slf4j.LoggerFactory
 
-import java.nio.charset.StandardCharsets
-import java.security.MessageDigest
-
 import static java.nio.charset.StandardCharsets.UTF_8
 
 class Utilities {
@@ -62,7 +59,6 @@ class Utilities {
     /** {@link Closure} logging with ERROR level the given {@link Object} {@link String} representation. */
     static def error(def obj) { LOGGER.error(obj.toString()) }
 
-    static MessageDigest digest ;
 
     /**
      * Return the area of a city name as a geometry.

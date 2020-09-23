@@ -42,6 +42,9 @@ import org.locationtech.jts.geom.*
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.slf4j.LoggerFactory
 
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
+
 import static java.nio.charset.StandardCharsets.UTF_8
 
 class Utilities {
@@ -58,6 +61,8 @@ class Utilities {
     static def warn(def obj) { LOGGER.warn(obj.toString()) }
     /** {@link Closure} logging with ERROR level the given {@link Object} {@link String} representation. */
     static def error(def obj) { LOGGER.error(obj.toString()) }
+
+    static MessageDigest digest ;
 
     /**
      * Return the area of a city name as a geometry.
@@ -572,6 +577,35 @@ class Utilities {
     /** {@link Closure} converting and UTF-8 {@link String} into an {@link URL}. */
     static def utf8ToUrl = { utf8 -> URLEncoder.encode(utf8, UTF_8.toString()) }
 
+
+    /**
+     * Method to execute an Overpass query and save the result in a file
+     *
+     * @param query the Overpass query
+     * @param outputOSMFile the output file
+     *
+     * @return True if the query has been successfully executed, false otherwise.
+     *
+     * @author Erwan Bocher (CNRS LAB-STICC)
+     * @author Elisabeth Lesaux (UBS LAB-STICC)
+     */
+    static boolean executeOverPassQuery(URL queryUrl, def outputOSMFile) {
+        def connection = queryUrl.openConnection() as HttpURLConnection
+        info queryUrl
+        connection.requestMethod = GET
+        info "Executing query... $queryUrl"
+        //Save the result in a file
+        if (connection.responseCode == 200) {
+            info "Downloading the OSM data from overpass api in ${outputOSMFile}"
+            outputOSMFile << connection.inputStream
+            return true
+        }
+        else {
+            error "Cannot execute the query.\n${getServerStatus()}"
+            return false
+        }
+    }
+
     /**
      * Method to execute an Overpass query and save the result in a file
      *
@@ -592,7 +626,6 @@ class Utilities {
             error "The output file should not be null or empty."
             return false
         }
-        outputOSMFile.delete()
         def queryUrl = new URL(OVERPASS_BASE_URL + utf8ToUrl(query))
         def connection = queryUrl.openConnection() as HttpURLConnection
 
@@ -612,4 +645,5 @@ class Utilities {
             return false
         }
     }
+
 }

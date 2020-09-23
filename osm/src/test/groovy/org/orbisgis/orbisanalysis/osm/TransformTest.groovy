@@ -42,6 +42,8 @@ import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.orbisgis.orbisanalysis.osm.utils.OSMElement
+import org.orbisgis.orbisanalysis.osm.utils.Utilities
+import org.orbisgis.orbisanalysis.osm.Loader
 
 import static org.junit.jupiter.api.Assertions.*
 
@@ -652,6 +654,31 @@ class TransformTest extends AbstractOSMTest {
         assertTrue ds.getTable(extractRelationsAsLines.results.outputTableName).isEmpty()
     }
 
+    /**
+     * Use to test the online transform
+     */
+    @Disabled
+    @Test
+    void transformOnLine() {
+        H2GIS h2GIS = RANDOM_DS()
+        Geometry geom = Utilities.getAreaFromPlace("Saint Jean La Poterie");
+        def query = Utilities.buildOSMQuery(geom.getEnvelopeInternal(), [], OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
+        def extract = OSMTools.Loader.extract()
+        if (!query.isEmpty()) {
+            if (extract.execute(overpassQuery: query)) {
+                def prefix = "OSM_FILE_${OSMTools.Utilities.uuid()}"
+                def load = OSMTools.Loader.load()
+                if (load(datasource: h2GIS, osmTablesPrefix: prefix, osmFilePath:extract.results.outputFilePath)) {
+                    def tags = ['building']
+                    def transform = OSMTools.Transform.toPolygons()
+                    transform.execute(datasource: h2GIS, osmTablesPrefix: prefix, tags: tags)
+                    assertNotNull(transform.results.outputTableName)
+                    assertTrue(h2GIS.getTable(transform.results.outputTableName).getRowCount()>0)
+                }
+            }
+        }
+    }
+
 
     /**
      * It uses for test purpose
@@ -660,16 +687,16 @@ class TransformTest extends AbstractOSMTest {
     @Test
     void dev() {
         H2GIS h2GIS = RANDOM_DS()
-        Geometry geom = Utilities.getAreaFromPlace("Agadir");
+        Geometry geom = Utilities.getAreaFromPlace("Redon");
         def query = Utilities.buildOSMQuery(geom.getEnvelopeInternal(), [], OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
-        def extract = Loader.extract()
+        def extract = OSMTools.Loader.extract()
         if (!query.isEmpty()) {
             if (extract.execute(overpassQuery: query)) {
-                def prefix = "OSM_FILE_${OSMTools.uuid}"
-                def load = Loader.load()
+                def prefix = "OSM_FILE_${OSMTools.Utilities.uuid()}"
+                def load = OSMTools.Loader.load()
                 if (load(datasource: h2GIS, osmTablesPrefix: prefix, osmFilePath:extract.results.outputFilePath)) {
                     def tags = ['building']
-                    def transform = Transform.toPolygons
+                    def transform = OSMTools.Transform.toPolygons()
                     transform.execute(datasource: h2GIS, osmTablesPrefix: prefix, tags: tags)
                     assertNotNull(transform.results.outputTableName)
                     h2GIS.getTable(transform.results.outputTableName).save("/tmp/${transform.results.outputTableName}.shp")

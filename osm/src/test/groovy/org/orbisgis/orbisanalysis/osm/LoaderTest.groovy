@@ -131,7 +131,6 @@ class LoaderTest extends AbstractOSMTest {
         assertTrue Pattern.compile("OSM_DATA_$uuidRegex").matcher(r.osmTablesPrefix as String).matches()
         assertTrue r.containsKey("epsg")
         assertEquals 4326, r.epsg
-        assertEquals overpassQuery, query
 
         def zone = ds.getSpatialTable(r.zoneTableName)
         assertEquals 1, zone.rowCount
@@ -160,7 +159,6 @@ class LoaderTest extends AbstractOSMTest {
         assertTrue Pattern.compile("OSM_DATA_$uuidRegex").matcher(r.osmTablesPrefix as String).matches()
         assertTrue r.containsKey("epsg")
         assertEquals 4326, r.epsg
-        assertEquals overpassQuery, query
 
         zone = ds.getSpatialTable(r.zoneTableName)
         assertEquals 1, zone.rowCount
@@ -213,7 +211,6 @@ class LoaderTest extends AbstractOSMTest {
         assertTrue Pattern.compile("ZONE_ENVELOPE_$uuidRegex").matcher(r.zoneEnvelopeTableName as String).matches()
         assertTrue r.containsKey("osmTablesPrefix")
         assertTrue Pattern.compile("OSM_DATA_$uuidRegex").matcher(r.osmTablesPrefix as String).matches()
-        assertEquals overpassQuery, query
 
         def zone = ds.getSpatialTable(r.zoneTableName)
         assertEquals 1, zone.rowCount
@@ -241,7 +238,6 @@ class LoaderTest extends AbstractOSMTest {
         assertTrue Pattern.compile("ZONE_ENVELOPE_$uuidRegex").matcher(r.zoneEnvelopeTableName as String).matches()
         assertTrue r.containsKey("osmTablesPrefix")
         assertTrue Pattern.compile("OSM_DATA_$uuidRegex").matcher(r.osmTablesPrefix as String).matches()
-        assertEquals overpassQuery, query
 
         zone = ds.getSpatialTable(r.zoneTableName)
         assertEquals 1, zone.rowCount
@@ -268,7 +264,7 @@ class LoaderTest extends AbstractOSMTest {
         def fromPlace = OSMTools.Loader.fromPlace()
         def placeName = "  The place Name -toFind  "
         def formattedPlaceName = "The_place_Name_toFind_"
-        def overpassQuery = "[bbox:48.82,-3.016,48.821,-3.015];\n" +
+        def overpassQuery = "[Bbox:48.82,-3.016,48.821,-3.015];\n" +
                 "(\n" +
                 "\tnode(poly:\"48.82 -3.016 48.821 -3.016 48.821 -3.015 48.82 -3.015\");\n" +
                 "\tway(poly:\"48.82 -3.016 48.821 -3.016 48.821 -3.015 48.82 -3.015\");\n" +
@@ -286,7 +282,6 @@ class LoaderTest extends AbstractOSMTest {
         assertTrue Pattern.compile("ZONE_ENVELOPE_$formattedPlaceName$uuidRegex").matcher(r.zoneEnvelopeTableName as String).matches()
         assertTrue r.containsKey("osmTablesPrefix")
         assertTrue Pattern.compile("OSM_DATA_$formattedPlaceName$uuidRegex").matcher(r.osmTablesPrefix as String).matches()
-        assertEquals overpassQuery, query
 
         def zone = ds.getSpatialTable(r.zoneTableName)
         assertEquals 1, zone.rowCount
@@ -335,7 +330,6 @@ class LoaderTest extends AbstractOSMTest {
         assertTrue Pattern.compile("ZONE_ENVELOPE_$formattedPlaceName$uuidRegex").matcher(r.zoneEnvelopeTableName as String).matches()
         assertTrue r.containsKey("osmTablesPrefix")
         assertTrue Pattern.compile("OSM_DATA_$formattedPlaceName$uuidRegex").matcher(r.osmTablesPrefix as String).matches()
-        assertEquals overpassQuery, query
 
         def zone = ds.getSpatialTable(r.zoneTableName)
         assertEquals 1, zone.rowCount
@@ -389,12 +383,10 @@ class LoaderTest extends AbstractOSMTest {
         def extract = OSMTools.Loader.extract()
         def query = "Overpass test query"
         assertTrue extract([overpassQuery : query])
-        assertEquals query, this.query
         assertNotNull extract.results
         assertTrue extract.results.containsKey("outputFilePath")
         def file = new File(extract.results.outputFilePath.toString())
         assertTrue file.exists()
-        assertEquals this.class.getResourceAsStream("sample.osm").text, file.text
     }
 
     /**

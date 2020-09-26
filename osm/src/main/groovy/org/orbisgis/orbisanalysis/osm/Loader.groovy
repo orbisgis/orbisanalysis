@@ -44,7 +44,6 @@ import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.orbisanalysis.osm.utils.Utilities
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 
 import java.util.regex.Pattern
 
@@ -234,13 +233,39 @@ def extract() {
         outputs outputFilePath: String
         run { overpassQuery ->
             info "Extract the OSM data"
-            def tmpOSMFile = File.createTempFile("extract_osm", ".osm")
-            def osmFilePath = tmpOSMFile.absolutePath
-            if (overpassQuery && Utilities.executeOverPassQuery(overpassQuery, tmpOSMFile)) {
-                info "The OSM file has been downloaded at $osmFilePath."
-            } else {
-                error "Cannot extract the OSM data for the query $overpassQuery"
+            if(!overpassQuery){
+                error "The query should not be null or empty."
                 return
+            }
+            def bboxUrl = Utilities.utf8ToUrl(overpassQuery);
+            //hash the query to cache it
+            def queryHash = bboxUrl.digest('SHA-256')
+            def outputOSMFile=new File(System.getProperty("java.io.tmpdir")+File.separator+"${queryHash}.osm")
+            def osmFilePath = outputOSMFile.absolutePath
+            if(outputOSMFile.exists()){
+                if(outputOSMFile.length()==0){
+                    outputOSMFile.delete()
+                    if(outputOSMFile.createNewFile()) {
+                        if ( Utilities.executeOverPassQuery(overpassQuery, outputOSMFile)) {
+                            info "The OSM file has been downloaded at ${osmFilePath}."
+                        } else {
+                            error "Cannot extract the OSM data for the query $overpassQuery"
+                            return
+                        }
+                    }
+                }
+                else {
+                    info "\nThe cached OSM file ${osmFilePath} will be re-used for the query :  \n$overpassQuery."
+                }
+            }
+            else{
+                if(outputOSMFile.createNewFile()){
+                if (Utilities.executeOverPassQuery(overpassQuery, outputOSMFile)) {
+                    info "The OSM file has been downloaded at ${osmFilePath}."
+                } else {
+                    error "Cannot extract the OSM data for the query $overpassQuery"
+                    return
+                }}
             }
             [outputFilePath: osmFilePath]
         }

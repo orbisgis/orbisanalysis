@@ -306,6 +306,36 @@ class UtilitiesTest extends AbstractOSMTest {
 
     /**
      * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#buildOSMQuery(org.locationtech.jts.geom.Envelope, java.lang.Object, org.orbisgis.orbisanalysis.osm.utils.OSMElement[])}
+     * method.
+     */
+    @Test
+    void buildOSMQueryAllDataFromEnvelopeTest(){
+        def enveloppe = new Envelope(0.0, 2.3, 7.6, 8.9)
+        assertEquals "[bbox:7.6,0.0,8.9,2.3];\n" +
+                "((\n" +
+                "\tnode[\"building\"];\n" +
+                "\tnode[\"water\"];\n" +
+                "\tway[\"building\"];\n" +
+                "\tway[\"water\"];\n" +
+                ");\n" +
+                ">;);\n" +
+                "out;", Utilities.buildOSMQueryWithAllData(enveloppe, ["building", "water"], OSMElement.NODE, OSMElement.WAY)
+        assertEquals "[bbox:7.6,0.0,8.9,2.3];\n" +
+                "((\n" +
+                ");\n" +
+                ">;);\n" +
+                "out;", Utilities.buildOSMQueryWithAllData(enveloppe, ["building", "water"])
+        assertEquals "[bbox:7.6,0.0,8.9,2.3];\n" +
+                "((\n" +
+                "\tnode;\n" +
+                "\tway;\n" +
+                ");\n" +
+                ">;);\n" +
+                "out;", Utilities.buildOSMQueryWithAllData(enveloppe, [], OSMElement.NODE, OSMElement.WAY)
+    }
+
+    /**
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#buildOSMQuery(org.locationtech.jts.geom.Envelope, java.lang.Object, org.orbisgis.orbisanalysis.osm.utils.OSMElement[])}
      * method with bad data.
      */
     @Test

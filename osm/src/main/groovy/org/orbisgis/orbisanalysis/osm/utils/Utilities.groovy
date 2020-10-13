@@ -309,6 +309,38 @@ class Utilities {
     }
 
     /**
+     * Method to build a valid OSM query with a bbox to
+     * download all the osm data concerning
+     *
+     * @author Erwan Bocher (CNRS LAB-STICC)
+     * @author Elisabeth Le Saux (UBS LAB-STICC)
+     *
+     * @param envelope The envelope to filter.
+     * @param keys A list of OSM keys.
+     * @param osmElement A list of OSM elements to build the query (node, way, relation).
+     *
+     * @return A string representation of the OSM query.
+     */
+    static String buildOSMQueryWithAllData(Envelope envelope, def keys, OSMElement... osmElement) {
+        if (!envelope) {
+            error "Cannot create the overpass query from the bbox $envelope."
+            return null
+        }
+        def query = "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()},${envelope.getMaxX()}];\n((\n"
+        osmElement.each { i ->
+            if (keys == null || keys.isEmpty()) {
+                query += "\t${i.toString().toLowerCase()};\n"
+            } else {
+                keys.each {
+                    query += "\t${i.toString().toLowerCase()}[\"${it.toLowerCase()}\"];\n"
+                }
+            }
+        }
+        query += ");\n>;);\nout;"
+        return query
+    }
+
+    /**
      * Method to build a valid and optimized OSM query
      *
      * @author Erwan Bocher (CNRS LAB-STICC)

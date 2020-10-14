@@ -570,8 +570,18 @@ class Utilities {
      * @return A {@link OverpassStatus} instance.
      */
     static def getServerStatus()  {
-        def connection = new URL(OVERPASS_STATUS_URL).openConnection() as HttpURLConnection
+        final String proxyHost = System.getProperty("http.proxyHost");
+        final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
+        def connection
+        if (proxyHost != null) {
+            def proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost,proxyPort ));
+            connection = new URL(OVERPASS_STATUS_URL).openConnection(proxy) as HttpURLConnection
+        } else {
+            connection = new URL(OVERPASS_STATUS_URL).openConnection() as HttpURLConnection
+        }
         connection.requestMethod = GET
+        connection.connect()
+
         if (connection.responseCode == 200) {
             def content = connection.inputStream.text
             return new OverpassStatus(content)
@@ -676,11 +686,18 @@ class Utilities {
             return false
         }
         def queryUrl = new URL(OVERPASS_BASE_URL + utf8ToUrl(query))
-        def connection = queryUrl.openConnection() as HttpURLConnection
-
+        final String proxyHost = System.getProperty("http.proxyHost");
+        final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
+        def connection
+        if (proxyHost != null) {
+            def proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost,proxyPort ));
+            connection = queryUrl.openConnection(proxy) as HttpURLConnection
+        } else {
+            connection = queryUrl.openConnection() as HttpURLConnection
+        }
         info queryUrl
-
         connection.requestMethod = GET
+        connection.connect()
 
         info "Executing query... $query"
         //Save the result in a file

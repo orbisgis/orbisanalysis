@@ -217,6 +217,7 @@ class Utilities {
             connection = url.openConnection()
         }
         connection.requestMethod = "GET"
+        connection.connect()
 
         info url
         info "Executing query... $query"
@@ -639,6 +640,8 @@ class Utilities {
         }
         info queryUrl
         connection.requestMethod = GET
+        connection.connect()
+
         info "Executing query... $queryUrl"
         //Save the result in a file
         if (connection.responseCode == 200) {

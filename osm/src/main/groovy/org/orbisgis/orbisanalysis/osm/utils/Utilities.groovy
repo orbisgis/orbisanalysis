@@ -41,6 +41,7 @@ import org.cts.util.UTMUtils
 import org.locationtech.jts.geom.*
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.slf4j.LoggerFactory
+import java.net.*;
 
 import static java.nio.charset.StandardCharsets.UTF_8
 
@@ -205,7 +206,16 @@ class Utilities {
         def request = "&limit=5&format=geojson&polygon_geojson=1"
 
         URL url = new URL(apiUrl + Utilities.utf8ToUrl(query) + request)
-        def connection = url.openConnection()
+        final String proxyHost = System.getProperty("http.proxyHost");
+        final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
+        
+        def connection
+        if (proxyHost != null) {
+            def proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost,proxyPort ));
+            connection = url.openConnection(proxy) as HttpURLConnection
+        } else {
+            connection = url.openConnection()
+        }
         connection.requestMethod = "GET"
 
         info url
@@ -618,7 +628,15 @@ class Utilities {
      * @author Elisabeth Lesaux (UBS LAB-STICC)
      */
     static boolean executeOverPassQuery(URL queryUrl, def outputOSMFile) {
-        def connection = queryUrl.openConnection() as HttpURLConnection
+        final String proxyHost = System.getProperty("http.proxyHost");
+        final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
+        def connection
+        if (proxyHost != null) {
+            def proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost,proxyPort ));
+            connection = queryUrl.openConnection(proxy) as HttpURLConnection
+        } else {
+         connection = queryUrl.openConnection() as HttpURLConnection
+        }
         info queryUrl
         connection.requestMethod = GET
         info "Executing query... $queryUrl"

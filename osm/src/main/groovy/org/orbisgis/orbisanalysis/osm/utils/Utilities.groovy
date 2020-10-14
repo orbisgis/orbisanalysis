@@ -206,7 +206,16 @@ class Utilities {
         def request = "&limit=5&format=geojson&polygon_geojson=1"
 
         URL url = new URL(apiUrl + Utilities.utf8ToUrl(query) + request)
-        def connection = url.openConnection()
+        final String proxyHost = System.getProperty("http.proxyHost");
+        final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
+        
+        def connection
+        if (proxyHost != null) {
+            def proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost,proxyPort ));
+            connection = url.openConnection(proxy) as HttpURLConnection
+        } else {
+            connection = url.openConnection()
+        }
         connection.requestMethod = "GET"
 
         info url

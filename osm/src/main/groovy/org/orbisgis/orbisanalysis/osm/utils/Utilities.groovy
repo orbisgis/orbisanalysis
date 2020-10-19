@@ -202,7 +202,7 @@ class Utilities {
             error "The OSM file should be an instance of File"
             return false
         }
-        def apiUrl = " https://nominatim.openstreetmap.org/search?q="
+        def apiUrl = "http://nominatim.openstreetmap.org/search?q="
         def request = "&limit=5&format=geojson&polygon_geojson=1"
 
         URL url = new URL(apiUrl + Utilities.utf8ToUrl(query) + request)
@@ -561,7 +561,7 @@ class Utilities {
     /** Get method for HTTP request */
     private static def GET = "GET"
     /** Overpass server base URL */
-    static def OVERPASS_BASE_URL = "https://overpass-api.de/api/interpreter?data="
+    static def OVERPASS_BASE_URL = "http://overpass-api.de/api/interpreter?data="
     /** Url of the status of the Overpass server */
     static final OVERPASS_STATUS_URL = "http://overpass-api.de/api/status"
 

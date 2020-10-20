@@ -205,6 +205,7 @@ class Utilities {
         }
         def endPoint = System.getProperty("NOMINATIM_ENPOINT");
         if(!endPoint){
+            /** nominatim server endpoint as defined by WSDL2 definition */
             endPoint="https://nominatim.openstreetmap.org/";
         }
 
@@ -566,7 +567,7 @@ class Utilities {
 
     /** Get method for HTTP request */
     private static def GET = "GET"
-    /** Overpass server base URL */
+    /** Overpass server endpoint as defined by WSDL2 definition */
     static def OVERPASS_ENDPOINT ="https://overpass-api.de/api"
     /** Overpass server base URL */
     static def OVERPASS_BASE_URL = "${OVERPASS_ENDPOINT}/interpreter?data="

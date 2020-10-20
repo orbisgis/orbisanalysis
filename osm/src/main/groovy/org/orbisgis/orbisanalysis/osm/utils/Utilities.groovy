@@ -37,11 +37,11 @@
 package org.orbisgis.orbisanalysis.osm.utils
 
 import groovy.json.JsonSlurper
+import groovy.transform.Field
 import org.cts.util.UTMUtils
 import org.locationtech.jts.geom.*
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.slf4j.LoggerFactory
-import java.net.*;
 
 import static java.nio.charset.StandardCharsets.UTF_8
 
@@ -59,6 +59,7 @@ class Utilities {
     static def warn(def obj) { LOGGER.warn(obj.toString()) }
     /** {@link Closure} logging with ERROR level the given {@link Object} {@link String} representation. */
     static def error(def obj) { LOGGER.error(obj.toString()) }
+
 
 
     /**
@@ -202,7 +203,13 @@ class Utilities {
             error "The OSM file should be an instance of File"
             return false
         }
-        def apiUrl = "http://nominatim.openstreetmap.org/search?q="
+        def endPoint = System.getProperty("NOMINATIM_ENPOINT");
+        if(!endPoint){
+            /** nominatim server endpoint as defined by WSDL2 definition */
+            endPoint="https://nominatim.openstreetmap.org/";
+        }
+
+        def apiUrl = "${endPoint}search?q="
         def request = "&limit=5&format=geojson&polygon_geojson=1"
 
         URL url = new URL(apiUrl + Utilities.utf8ToUrl(query) + request)
@@ -560,10 +567,12 @@ class Utilities {
 
     /** Get method for HTTP request */
     private static def GET = "GET"
+    /** Overpass server endpoint as defined by WSDL2 definition */
+    static def OVERPASS_ENDPOINT ="https://overpass-api.de/api"
     /** Overpass server base URL */
-    static def OVERPASS_BASE_URL = "http://overpass-api.de/api/interpreter?data="
+    static def OVERPASS_BASE_URL = "${OVERPASS_ENDPOINT}/interpreter?data="
     /** Url of the status of the Overpass server */
-    static final OVERPASS_STATUS_URL = "http://overpass-api.de/api/status"
+    static def OVERPASS_STATUS_URL = "${OVERPASS_ENDPOINT}/status"
 
     /**
      * Return the status of the Overpass server.
@@ -573,6 +582,10 @@ class Utilities {
         final String proxyHost = System.getProperty("http.proxyHost");
         final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
         def connection
+        def endPoint = System.getProperty("OVERPASS_ENPOINT");
+        if(endPoint){
+            OVERPASS_STATUS_URL= "${endPoint}/status"
+        }
         if (proxyHost != null) {
             def proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost,proxyPort ));
             connection = new URL(OVERPASS_STATUS_URL).openConnection(proxy) as HttpURLConnection
@@ -684,6 +697,10 @@ class Utilities {
         if(!outputOSMFile){
             error "The output file should not be null or empty."
             return false
+        }
+        def endPoint = System.getProperty("OVERPASS_ENPOINT");
+        if(endPoint){
+            OVERPASS_BASE_URL= "${endPoint}/interpreter?data="
         }
         def queryUrl = new URL(OVERPASS_BASE_URL + utf8ToUrl(query))
         final String proxyHost = System.getProperty("http.proxyHost");

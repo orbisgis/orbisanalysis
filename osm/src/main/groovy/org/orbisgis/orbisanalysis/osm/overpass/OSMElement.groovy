@@ -34,7 +34,7 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.orbisgis.orbisanalysis.osm.utils;
+package org.orbisgis.orbisanalysis.osm.overpass
 
 /**
  * List of OSM elements.

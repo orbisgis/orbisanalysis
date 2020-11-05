@@ -37,6 +37,7 @@
 package org.orbisgis.orbisanalysis.osm.utils
 
 import groovy.json.JsonSlurper
+import groovy.transform.Field
 import org.cts.util.UTMUtils
 import org.locationtech.jts.geom.*
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
@@ -58,6 +59,7 @@ class Utilities {
     static def warn(def obj) { LOGGER.warn(obj.toString()) }
     /** {@link Closure} logging with ERROR level the given {@link Object} {@link String} representation. */
     static def error(def obj) { LOGGER.error(obj.toString()) }
+
 
 
     /**
@@ -201,12 +203,28 @@ class Utilities {
             error "The OSM file should be an instance of File"
             return false
         }
-        def apiUrl = " https://nominatim.openstreetmap.org/search?q="
+        def endPoint = System.getProperty("NOMINATIM_ENPOINT");
+        if(!endPoint){
+            /** nominatim server endpoint as defined by WSDL2 definition */
+            endPoint="https://nominatim.openstreetmap.org/";
+        }
+
+        def apiUrl = "${endPoint}search?q="
         def request = "&limit=5&format=geojson&polygon_geojson=1"
 
         URL url = new URL(apiUrl + Utilities.utf8ToUrl(query) + request)
-        def connection = url.openConnection()
+        final String proxyHost = System.getProperty("http.proxyHost");
+        final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
+        
+        def connection
+        if (proxyHost != null) {
+            def proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost,proxyPort ));
+            connection = url.openConnection(proxy) as HttpURLConnection
+        } else {
+            connection = url.openConnection()
+        }
         connection.requestMethod = "GET"
+        connection.connect()
 
         info url
         info "Executing query... $query"
@@ -305,6 +323,38 @@ class Utilities {
             }
         }
         query += ");\n(._;>;);\nout;"
+        return query
+    }
+
+    /**
+     * Method to build a valid OSM query with a bbox to
+     * download all the osm data concerning
+     *
+     * @author Erwan Bocher (CNRS LAB-STICC)
+     * @author Elisabeth Le Saux (UBS LAB-STICC)
+     *
+     * @param envelope The envelope to filter.
+     * @param keys A list of OSM keys.
+     * @param osmElement A list of OSM elements to build the query (node, way, relation).
+     *
+     * @return A string representation of the OSM query.
+     */
+    static String buildOSMQueryWithAllData(Envelope envelope, def keys, OSMElement... osmElement) {
+        if (!envelope) {
+            error "Cannot create the overpass query from the bbox $envelope."
+            return null
+        }
+        def query = "[bbox:${envelope.getMinY()},${envelope.getMinX()},${envelope.getMaxY()},${envelope.getMaxX()}];\n((\n"
+        osmElement.each { i ->
+            if (keys == null || keys.isEmpty()) {
+                query += "\t${i.toString().toLowerCase()};\n"
+            } else {
+                keys.each {
+                    query += "\t${i.toString().toLowerCase()}[\"${it.toLowerCase()}\"];\n"
+                }
+            }
+        }
+        query += ");\n>;);\nout;"
         return query
     }
 
@@ -517,18 +567,34 @@ class Utilities {
 
     /** Get method for HTTP request */
     private static def GET = "GET"
+    /** Overpass server endpoint as defined by WSDL2 definition */
+    static def OVERPASS_ENDPOINT ="https://overpass-api.de/api"
     /** Overpass server base URL */
-    static def OVERPASS_BASE_URL = "https://overpass-api.de/api/interpreter?data="
+    static def OVERPASS_BASE_URL = "${OVERPASS_ENDPOINT}/interpreter?data="
     /** Url of the status of the Overpass server */
-    static final OVERPASS_STATUS_URL = "http://overpass-api.de/api/status"
+    static def OVERPASS_STATUS_URL = "${OVERPASS_ENDPOINT}/status"
 
     /**
      * Return the status of the Overpass server.
      * @return A {@link OverpassStatus} instance.
      */
     static def getServerStatus()  {
-        def connection = new URL(OVERPASS_STATUS_URL).openConnection() as HttpURLConnection
+        final String proxyHost = System.getProperty("http.proxyHost");
+        final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
+        def connection
+        def endPoint = System.getProperty("OVERPASS_ENPOINT");
+        if(endPoint){
+            OVERPASS_STATUS_URL= "${endPoint}/status"
+        }
+        if (proxyHost != null) {
+            def proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost,proxyPort ));
+            connection = new URL(OVERPASS_STATUS_URL).openConnection(proxy) as HttpURLConnection
+        } else {
+            connection = new URL(OVERPASS_STATUS_URL).openConnection() as HttpURLConnection
+        }
         connection.requestMethod = GET
+        connection.connect()
+
         if (connection.responseCode == 200) {
             def content = connection.inputStream.text
             return new OverpassStatus(content)
@@ -586,9 +652,19 @@ class Utilities {
      * @author Elisabeth Lesaux (UBS LAB-STICC)
      */
     static boolean executeOverPassQuery(URL queryUrl, def outputOSMFile) {
-        def connection = queryUrl.openConnection() as HttpURLConnection
+        final String proxyHost = System.getProperty("http.proxyHost");
+        final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
+        def connection
+        if (proxyHost != null) {
+            def proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost,proxyPort ));
+            connection = queryUrl.openConnection(proxy) as HttpURLConnection
+        } else {
+         connection = queryUrl.openConnection() as HttpURLConnection
+        }
         info queryUrl
         connection.requestMethod = GET
+        connection.connect()
+
         info "Executing query... $queryUrl"
         //Save the result in a file
         if (connection.responseCode == 200) {
@@ -622,12 +698,23 @@ class Utilities {
             error "The output file should not be null or empty."
             return false
         }
+        def endPoint = System.getProperty("OVERPASS_ENPOINT");
+        if(endPoint){
+            OVERPASS_BASE_URL= "${endPoint}/interpreter?data="
+        }
         def queryUrl = new URL(OVERPASS_BASE_URL + utf8ToUrl(query))
-        def connection = queryUrl.openConnection() as HttpURLConnection
-
+        final String proxyHost = System.getProperty("http.proxyHost");
+        final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
+        def connection
+        if (proxyHost != null) {
+            def proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost,proxyPort ));
+            connection = queryUrl.openConnection(proxy) as HttpURLConnection
+        } else {
+            connection = queryUrl.openConnection() as HttpURLConnection
+        }
         info queryUrl
-
         connection.requestMethod = GET
+        connection.connect()
 
         info "Executing query... $query"
         //Save the result in a file

@@ -34,7 +34,7 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.orbisgis.orbisanalysis.osm.utils
+package org.orbisgis.orbisanalysis.osm.overpass
 
 import org.junit.jupiter.api.*
 import org.slf4j.Logger
@@ -47,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals
 import static org.junit.jupiter.api.Assertions.assertTrue
 
 /**
- * Test class dedicated to the {@link OverpassStatus} class.
+ * Test class dedicated to the {@link org.orbisgis.orbisanalysis.osm.overpass.OverpassStatus} class.
  *
  * @author Sylvain PALOMINOS (UBS LAB-STICC 2019)
  */

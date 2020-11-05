@@ -34,48 +34,55 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.orbisgis.orbisanalysis.osm.utils
+package org.orbisgis.orbisanalysis.osm.overpass
+
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+import org.orbisgis.orbisanalysis.osm.overpass.Slot
 
 import java.text.SimpleDateFormat
 import java.time.ZoneId
 
+import static org.junit.jupiter.api.Assertions.assertEquals
+
 /**
- * Locked slot of the Overpass server which is free after a wait time.
+ * Test class for {@link Utilities}
  *
- * @author Sylvain PALOMINOS (Lab-STICC UBS 2019)
+ * @author Erwan Bocher (CNRS)
+ * @author Sylvain PALOMINOS (UBS LAB-STICC 2019)
  */
-class Slot {
+class SlotTest {
 
-    /** String used to parse the slot {@link String} representation */
-    private static final SLOT_AVAILABLE_AFTER = "Slot available after: "
-    /** String used to parse the slot {@link String} representation */
-    private static final IN = ", in "
-    /** String used to parse the slot {@link String} representation */
-    private static final SECONDS = " seconds."
+    private static format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+    private static local = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
 
-    /** {@link SimpleDateFormat} used to parse dates. */
-    private format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
-    private local = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
-
-    /** {@link Date} when the slot will be available. */
-    Date availibility
-    /** Time in seconds to wait until the slot is available.*/
-    long waitSeconds
-
-    /**
-     * Main constructor.
-     * @param text {@link String} representation of the slot.
-     */
-    Slot(String text){
+    @BeforeAll
+    static void beforeAll(){
         format.setTimeZone(TimeZone.getTimeZone("Etc/GMT+0"))
         local.setTimeZone(TimeZone.getTimeZone(ZoneId.systemDefault()))
-        def values = (text - SLOT_AVAILABLE_AFTER - SECONDS).split(IN)
-        availibility = format.parse(values[0])
-        waitSeconds = Long.decode(values[1])
     }
 
-    @Override
-    String toString(){
-        return "$SLOT_AVAILABLE_AFTER${local.format(availibility)}$IN$waitSeconds$SECONDS"
+    /**
+     * Test the {@link org.orbisgis.orbisanalysis.osm.overpass.Slot#Slot(java.lang.String)} method.
+     */
+    @Test
+    void slotTest(){
+        def date = "2019-10-11T13:31:39Z"
+        def slot = new Slot("Slot available after: $date, in 3 seconds.")
+        assertEquals 3, slot.waitSeconds
+        assertEquals format.parse(date), slot.availibility
+        slot = new Slot("Slot available after: $date, in 3 seconds.".toString())
+        assertEquals 3, slot.waitSeconds
+        assertEquals format.parse(date), slot.availibility
+    }
+
+    /**
+     * Test the {@link Slot#toString()} method.
+     */
+    @Test
+    void toStringTest(){
+        def date = "2019-10-11T13:31:39Z"
+        def slot = new Slot("Slot available after: $date, in 3 seconds.")
+        assertEquals "Slot available after: ${local.format(format.parse(date))}, in 3 seconds.".toString(), slot.toString()
     }
 }

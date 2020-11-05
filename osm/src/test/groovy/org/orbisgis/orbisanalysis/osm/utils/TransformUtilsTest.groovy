@@ -36,7 +36,6 @@
  */
 package org.orbisgis.orbisanalysis.osm.utils
 
-import org.h2.jdbc.JdbcSQLSyntaxErrorException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

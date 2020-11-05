@@ -48,8 +48,6 @@ import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 
 import java.util.regex.Pattern
 
-import static org.orbisgis.orbisanalysis.osm.utils.OSMElement.*
-
 @BaseScript OSMTools pf
 
 /** Default SRID */
@@ -171,7 +169,7 @@ def fromPlace() {
             def osmTablesPrefix = postfix "OSM_DATA_$formatedPlaceName"
             def epsg = DEFAULT_SRID
 
-            def geom = NominatimUtils.getArea(placeName);
+            def geom = NominatimUtils.getPlace(placeName);
             if (!geom) {
                 error("Cannot find an area from the place name $placeName")
                 return

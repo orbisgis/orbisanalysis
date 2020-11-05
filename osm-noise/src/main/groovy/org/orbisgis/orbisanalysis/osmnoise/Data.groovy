@@ -44,13 +44,10 @@ import org.locationtech.jts.geom.Geometry
 import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.orbisanalysis.osm.OSMTools
-import org.orbisgis.orbisanalysis.osm.OSMTools as Tools
 import org.orbisgis.orbisanalysis.osm.utils.NominatimUtils
 import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
-import org.orbisgis.orbisdata.processmanager.process.GroovyProcessManager
 
 @BaseScript OSMNoise pf
 
@@ -351,7 +348,7 @@ def download()
                 error "Please set a valid database connection"
                 return
             }
-            Geometry geom = NominatimUtils.getArea(placeName);
+            Geometry geom = NominatimUtils.getPlace(placeName);
 
             if (geom == null) {
                 error("Cannot find an area from the place name ${placeName}")

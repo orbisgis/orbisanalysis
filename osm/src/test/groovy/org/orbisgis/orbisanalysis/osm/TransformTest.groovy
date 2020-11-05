@@ -42,9 +42,7 @@ import org.orbisgis.orbisanalysis.osm.utils.NominatimUtils
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.orbisgis.orbisanalysis.osm.utils.OSMElement
 import org.orbisgis.orbisanalysis.osm.utils.Utilities
-import org.orbisgis.orbisanalysis.osm.Loader
 
 import static org.junit.jupiter.api.Assertions.*
 
@@ -662,7 +660,7 @@ class TransformTest extends AbstractOSMTest {
     @Test
     void transformOnLine() {
         H2GIS h2GIS = RANDOM_DS()
-        Geometry geom = NominatimUtils.getArea("Saint Jean La Poterie");
+        Geometry geom = NominatimUtils.getPlace("Saint Jean La Poterie");
         def query = Utilities.buildOSMQuery(geom.getEnvelopeInternal(), [], OSMElement.NODE, OSMElement.WAY, OSMElement.RELATION)
         def extract = OSMTools.Loader.extract()
         if (!query.isEmpty()) {

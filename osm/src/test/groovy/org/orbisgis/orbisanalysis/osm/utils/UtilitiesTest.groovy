@@ -548,8 +548,8 @@ class UtilitiesTest extends AbstractOSMTest {
     @Disabled
     void getAreaTest(){
         def pattern = Pattern.compile("^POLYGON \\(\\((?>-?\\d+(?>\\.\\d+)? -?\\d+(?>\\.\\d+)?(?>, )?)*\\)\\)\$")
-        assertTrue pattern.matcher(NominatimUtils.getArea("Paimpol").toString()).matches()
-        assertTrue pattern.matcher(NominatimUtils.getArea("Boston").toString()).matches()
+        assertTrue pattern.matcher(NominatimUtils.getPlace("Paimpol").toString()).matches()
+        assertTrue pattern.matcher(NominatimUtils.getPlace("Boston").toString()).matches()
     }
 
     /**
@@ -558,7 +558,7 @@ class UtilitiesTest extends AbstractOSMTest {
     @Test
     @Disabled
     void badGetAreaTest() {
-        assertNull NominatimUtils.getArea(null)
+        assertNull NominatimUtils.getPlace(null)
     }
 
     /**

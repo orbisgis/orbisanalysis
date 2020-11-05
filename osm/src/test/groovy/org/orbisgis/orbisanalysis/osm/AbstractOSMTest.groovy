@@ -79,7 +79,7 @@ abstract class AbstractOSMTest {
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
     private static def executeOverPassQuery
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
-    private static def getArea
+    private static def getPlace
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
     private static def executeNominatimQuery
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
@@ -94,7 +94,7 @@ abstract class AbstractOSMTest {
     void beforeEach(){
         //Store the modified object
         executeOverPassQuery = Utilities.&executeOverPassQuery
-        getArea = NominatimUtils.&getArea
+        getPlace = NominatimUtils.&getPlace
         executeNominatimQuery = NominatimUtils.&executeNominatimQuery
         extract = OSMTools.Loader.extract()
         load = OSMTools.Loader.load()
@@ -107,7 +107,7 @@ abstract class AbstractOSMTest {
     void afterEach(){
         //Restore the modified object
         Utilities.metaClass.static.executeOverPassQuery = executeOverPassQuery
-        NominatimUtils.metaClass.static.getArea = getArea
+        NominatimUtils.metaClass.static.getArea = getPlace
         NominatimUtils.metaClass.static.executeNominatimQuery = executeNominatimQuery
         OSMTools.Loader.metaClass.extract = extract
         OSMTools.Loader.metaClass.load = load

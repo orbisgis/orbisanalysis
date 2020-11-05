@@ -45,6 +45,7 @@ import org.locationtech.jts.geom.MultiPolygon
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.orbisanalysis.osm.OSMTools
 import org.orbisgis.orbisanalysis.osm.OSMTools as Tools
+import org.orbisgis.orbisanalysis.osm.utils.NominatimUtils
 import org.orbisgis.orbisdata.datamanager.api.dataset.ISpatialTable
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
@@ -350,7 +351,7 @@ def download()
                 error "Please set a valid database connection"
                 return
             }
-            Geometry geom = OSMTools.Utilities.getAreaFromPlace(placeName);
+            Geometry geom = NominatimUtils.getArea(placeName);
 
             if (geom == null) {
                 error("Cannot find an area from the place name ${placeName}")

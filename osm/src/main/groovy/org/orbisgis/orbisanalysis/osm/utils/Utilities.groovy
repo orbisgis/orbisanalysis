@@ -40,6 +40,8 @@ import groovy.json.JsonSlurper
 import groovy.transform.Field
 import org.cts.util.UTMUtils
 import org.locationtech.jts.geom.*
+import org.orbisgis.orbisanalysis.osm.overpass.OSMElement
+import org.orbisgis.orbisanalysis.osm.overpass.OverpassStatus
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.slf4j.LoggerFactory
 
@@ -60,72 +62,6 @@ class Utilities {
     /** {@link Closure} logging with ERROR level the given {@link Object} {@link String} representation. */
     static def error(def obj) { LOGGER.error(obj.toString()) }
 
-
-
-    /**
-     * Return the area of a city name as a geometry.
-     *
-     * @author Erwan Bocher (CNRS LAB-STICC)
-     * @author Elisabeth Le Saux (UBS LAB-STICC)
-     *
-     * @param placeName The nominatim place name.
-     *
-     * @return a New geometry.
-     */
-    static Geometry getAreaFromPlace(def placeName) {
-        def area
-        if (!placeName) {
-            error "The place name should not be null or empty."
-            return null
-        }
-        def outputOSMFile = File.createTempFile("nominatim_osm", ".geojson")
-        if (!executeNominatimQuery(placeName, outputOSMFile)) {
-            if (!outputOSMFile.delete()) {
-                warn "Unable to delete the file '$outputOSMFile'."
-            }
-            warn "Unable to execute the Nominatim query."
-            return null
-        }
-
-        def jsonRoot = new JsonSlurper().parse(outputOSMFile)
-        if (jsonRoot == null) {
-            error "Cannot find any data from the place $placeName."
-            return null
-        }
-
-        if (jsonRoot.features.size() == 0) {
-            error "Cannot find any features from the place $placeName."
-            if (!outputOSMFile.delete()) {
-                warn "Unable to delete the file '$outputOSMFile'."
-            }
-            return null
-        }
-
-        GeometryFactory geometryFactory = new GeometryFactory()
-
-        area = null
-        jsonRoot.features.find() { feature ->
-            if (feature.geometry != null) {
-                if (feature.geometry.type.equalsIgnoreCase("polygon")) {
-                    area = parsePolygon(feature.geometry.coordinates, geometryFactory)
-                } else if (feature.geometry.type.equalsIgnoreCase("multipolygon")) {
-                    def mp = feature.geometry.coordinates.collect { it ->
-                        parsePolygon(it, geometryFactory)
-                    }.toArray(new Polygon[0])
-                    area = geometryFactory.createMultiPolygon(mp)
-                } else {
-                    return false
-                }
-                area.setSRID(4326)
-                return true
-            }
-            return false
-        }
-        if (!outputOSMFile.delete()) {
-            warn "Unable to delete the file '$outputOSMFile'."
-        }
-        return area
-    }
 
     /**
      * Parse geojson coordinates to create a polygon.
@@ -181,64 +117,6 @@ class Utilities {
             }
         }.findAll { it != null }.toArray(new Coordinate[0])
     }
-
-    /**
-     * Method to execute an Nominatim query and save the result in a file.
-     *
-     * @author Erwan Bocher (CNRS LAB-STICC)
-     * @author Elisabeth Le Saux (UBS LAB-STICC)
-     *
-     * @param query The Nominatim query.
-     * @param outputNominatimFile The output file.
-     *
-     * @return True if the file has been downloaded, false otherwise.
-     *
-     */
-    static boolean executeNominatimQuery(def query, def outputOSMFile) {
-        if (!query) {
-            error "The Nominatim query should not be null."
-            return false
-        }
-        if (!(outputOSMFile instanceof File)) {
-            error "The OSM file should be an instance of File"
-            return false
-        }
-        def endPoint = System.getProperty("NOMINATIM_ENPOINT");
-        if(!endPoint){
-            /** nominatim server endpoint as defined by WSDL2 definition */
-            endPoint="https://nominatim.openstreetmap.org/";
-        }
-
-        def apiUrl = "${endPoint}search?q="
-        def request = "&limit=5&format=geojson&polygon_geojson=1"
-
-        URL url = new URL(apiUrl + Utilities.utf8ToUrl(query) + request)
-        final String proxyHost = System.getProperty("http.proxyHost");
-        final int proxyPort = Integer.parseInt(System.getProperty("http.proxyPort", "80"));
-        
-        def connection
-        if (proxyHost != null) {
-            def proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHost,proxyPort ));
-            connection = url.openConnection(proxy) as HttpURLConnection
-        } else {
-            connection = url.openConnection()
-        }
-        connection.requestMethod = "GET"
-        connection.connect()
-
-        info url
-        info "Executing query... $query"
-        //Save the result in a file
-        if (connection.responseCode == 200) {
-            info "Downloading the Nominatim data."
-            outputOSMFile << connection.inputStream
-            return true
-        } else {
-            error "Cannot execute the Nominatim query."
-            return false
-        }
-    }
-
     /**
      * Extract the OSM bbox signature from a Geometry.
      * e.g. (bbox:"50.7 7.1 50.7 7.12 50.71 7.11")
@@ -476,36 +354,6 @@ class Utilities {
 
         }
         error("Invalid latitude longitude values")
-    }
-
-    /**
-     * This method is used to build a geometry following the Nominatim bbox signature
-     * Nominatim API returns a boundingbox property of the form:
-     * south Latitude, north Latitude, west Longitude, east Longitude
-     *  south : float -> southern latitude of bounding box
-     *  west : float  -> western longitude of bounding box
-     *  north : float -> northern latitude of bounding box
-     *  east : float  -> eastern longitude of bounding box
-     *
-     * @author Erwan Bocher (CNRS LAB-STICC)
-     *
-     * @param bbox 4 values
-     * @return a JTS polygon
-     */
-    //TODO why not merging methods
-    static Geometry geometryFromNominatim(def bbox) {
-        if (!bbox) {
-            error "The latitude and longitude values cannot be null or empty"
-            return null
-        }
-        if (!(bbox instanceof Collection) && !bbox.class.isArray()) {
-            error "The latitude and longitude values must be set as an array"
-            return null
-        }
-        if (bbox.size == 4) {
-            return buildGeometry([bbox[1], bbox[0], bbox[3], bbox[2]]);
-        }
-        error("The bbox must be defined with 4 values")
     }
 
     /**

@@ -39,6 +39,7 @@ package org.orbisgis.orbisanalysis.osm
 import org.locationtech.jts.geom.Coordinate
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.io.WKTReader
+import org.orbisgis.orbisanalysis.osm.utils.NominatimUtils
 import org.orbisgis.orbisanalysis.osm.utils.Utilities
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
@@ -78,7 +79,7 @@ abstract class AbstractOSMTest {
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
     private static def executeOverPassQuery
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
-    private static def getAreaFromPlace
+    private static def getArea
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
     private static def executeNominatimQuery
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
@@ -93,8 +94,8 @@ abstract class AbstractOSMTest {
     void beforeEach(){
         //Store the modified object
         executeOverPassQuery = Utilities.&executeOverPassQuery
-        getAreaFromPlace = Utilities.&getAreaFromPlace
-        executeNominatimQuery = Utilities.&executeNominatimQuery
+        getArea = NominatimUtils.&getArea
+        executeNominatimQuery = NominatimUtils.&executeNominatimQuery
         extract = OSMTools.Loader.extract()
         load = OSMTools.Loader.load()
     }
@@ -106,8 +107,8 @@ abstract class AbstractOSMTest {
     void afterEach(){
         //Restore the modified object
         Utilities.metaClass.static.executeOverPassQuery = executeOverPassQuery
-        Utilities.metaClass.static.getAreaFromPlace = getAreaFromPlace
-        Utilities.metaClass.static.executeNominatimQuery = executeNominatimQuery
+        NominatimUtils.metaClass.static.getArea = getArea
+        NominatimUtils.metaClass.static.executeNominatimQuery = executeNominatimQuery
         OSMTools.Loader.metaClass.extract = extract
         OSMTools.Loader.metaClass.load = load
     }
@@ -116,7 +117,7 @@ abstract class AbstractOSMTest {
      * Override the 'executeNominatimQuery' methods to avoid the call to the server
      */
     protected static void sampleExecuteNominatimPolygonQueryOverride(){
-        Utilities.metaClass.static.executeNominatimQuery = {query, outputOSMFile ->
+        NominatimUtils.metaClass.static.executeNominatimQuery = {query, outputOSMFile ->
             AbstractOSMTest.query = query
             outputOSMFile << LoaderTest.getResourceAsStream("nominatimSamplePolygon.geojson").text
             return true
@@ -127,7 +128,7 @@ abstract class AbstractOSMTest {
      * Override the 'executeNominatimQuery' methods to avoid the call to the server
      */
     protected static void sampleExecuteNominatimMultipolygonQueryOverride(){
-        Utilities.metaClass.static.executeNominatimQuery = {query, outputOSMFile ->
+        NominatimUtils.metaClass.static.executeNominatimQuery = {query, outputOSMFile ->
             AbstractOSMTest.query = query
             outputOSMFile << LoaderTest.getResourceAsStream("nominatimSampleMultipolygon.geojson").text
             return true
@@ -138,7 +139,7 @@ abstract class AbstractOSMTest {
      * Override the 'executeNominatimQuery' methods to avoid the call to the server
      */
     protected static void badExecuteNominatimQueryOverride(){
-        Utilities.metaClass.static.executeNominatimQuery = {query, outputOSMFile ->
+        NominatimUtils.metaClass.static.executeNominatimQuery = {query, outputOSMFile ->
             return false
         }
     }
@@ -165,10 +166,10 @@ abstract class AbstractOSMTest {
     }
 
     /**
-     * Override the 'getAreaFromPlace' methods to avoid the call to the server
+     * Override the 'getArea' methods to avoid the call to the server
      */
-    protected static void sampleGetAreaFromPlace(){
-        Utilities.metaClass.static.getAreaFromPlace = {placeName ->
+    protected static void sampleGetArea(){
+        NominatimUtils.metaClass.static.getArea = {placeName ->
             def coordinates = [new Coordinate(-3.016, 48.82),
                                new Coordinate(-3.016, 48.821),
                                new Coordinate(-3.015 ,48.821),
@@ -181,10 +182,10 @@ abstract class AbstractOSMTest {
     }
 
     /**
-     * Override the 'getAreaFromPlace' methods to avoid the call to the server
+     * Override the 'getArea' methods to avoid the call to the server
      */
-    protected static void badGetAreaFromPlace(){
-        Utilities.metaClass.getAreaFromPlace = {placeName -> }
+    protected static void badGetArea(){
+        NominatimUtils.metaClass.getArea = {placeName -> }
     }
 
     /**

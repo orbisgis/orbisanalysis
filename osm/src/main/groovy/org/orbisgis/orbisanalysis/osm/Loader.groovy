@@ -42,6 +42,7 @@ import org.h2gis.utilities.GeographyUtilities
 import org.locationtech.jts.geom.Envelope
 import org.locationtech.jts.geom.GeometryFactory
 import org.locationtech.jts.geom.Polygon
+import org.orbisgis.orbisanalysis.osm.utils.NominatimUtils
 import org.orbisgis.orbisanalysis.osm.utils.Utilities
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 
@@ -170,7 +171,7 @@ def fromPlace() {
             def osmTablesPrefix = postfix "OSM_DATA_$formatedPlaceName"
             def epsg = DEFAULT_SRID
 
-            def geom = Utilities.getAreaFromPlace(placeName);
+            def geom = NominatimUtils.getArea(placeName);
             if (!geom) {
                 error("Cannot find an area from the place name $placeName")
                 return

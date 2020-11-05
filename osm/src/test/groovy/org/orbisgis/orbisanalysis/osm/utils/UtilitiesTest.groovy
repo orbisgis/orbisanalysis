@@ -66,7 +66,7 @@ class UtilitiesTest extends AbstractOSMTest {
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
     private static def executeOverPassQuery
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
-    private static def getAreaFromPlace
+    private static def getArea
     /** Used to store method pointer in order to replace it for the tests to avoid call to Overpass servers. */
     private static def executeNominatimQuery
 
@@ -192,7 +192,7 @@ class UtilitiesTest extends AbstractOSMTest {
     void getExecuteNominatimQueryTest(){
         def path = RANDOM_PATH()
         def file = new File(path)
-        assertTrue Utilities.executeNominatimQuery("vannes", file)
+        assertTrue NominatimUtils.executeNominatimQuery("vannes", file)
         assertTrue file.exists()
         assertFalse file.text.isEmpty()
     }
@@ -204,9 +204,9 @@ class UtilitiesTest extends AbstractOSMTest {
     @Disabled
     void badGetExecuteNominatimQueryTest(){
         def file = new File(RANDOM_PATH())
-        assertFalse Utilities.executeNominatimQuery(null, file)
-        assertFalse Utilities.executeNominatimQuery("", file)
-        assertFalse Utilities.executeNominatimQuery("query", file.getAbsolutePath())
+        assertFalse NominatimUtils.executeNominatimQuery(null, file)
+        assertFalse NominatimUtils.executeNominatimQuery("", file)
+        assertFalse NominatimUtils.executeNominatimQuery("query", file.getAbsolutePath())
     }
 
     /**
@@ -458,23 +458,23 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#geometryFromNominatim(java.lang.Object)} method.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.NominatimUtils#geometryFromNominatim(java.lang.Object)} method.
      */
     @Test
     void geometryFromNominatimTest(){
         assertEquals("POLYGON ((-3.29109 48.72223, -3.29109 48.83535, -2.80357 48.83535, -2.80357 48.72223, -3.29109 48.72223))",
-                Utilities.geometryFromNominatim([48.83535, -3.29109, 48.72223, -2.80357]).toString())
+                NominatimUtils.geometryFromNominatim([48.83535, -3.29109, 48.72223, -2.80357]).toString())
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#geometryFromNominatim(java.lang.Object)} method with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.NominatimUtils#geometryFromNominatim(java.lang.Object)} method with bad data.
      */
     @Test
     void badGeometryFromNominatimTest(){
-        assertNull Utilities.geometryFromNominatim([-3.29109, 48.83535, -2.80357])
-        assertNull Utilities.geometryFromNominatim(null)
-        assertNull Utilities.geometryFromNominatim()
-        assertNull Utilities.geometryFromNominatim(new GeometryFactory())
+        assertNull NominatimUtils.geometryFromNominatim([-3.29109, 48.83535, -2.80357])
+        assertNull NominatimUtils.geometryFromNominatim(null)
+        assertNull NominatimUtils.geometryFromNominatim()
+        assertNull NominatimUtils.geometryFromNominatim(new GeometryFactory())
     }
 
     /**
@@ -542,23 +542,23 @@ class UtilitiesTest extends AbstractOSMTest {
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#getAreaFromPlace(java.lang.Object)} method.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.NominatimUtils#getArea(java.lang.Object)} method.
      */
     @Test
     @Disabled
-    void getAreaFromPlaceTest(){
+    void getAreaTest(){
         def pattern = Pattern.compile("^POLYGON \\(\\((?>-?\\d+(?>\\.\\d+)? -?\\d+(?>\\.\\d+)?(?>, )?)*\\)\\)\$")
-        assertTrue pattern.matcher(Utilities.getAreaFromPlace("Paimpol").toString()).matches()
-        assertTrue pattern.matcher(Utilities.getAreaFromPlace("Boston").toString()).matches()
+        assertTrue pattern.matcher(NominatimUtils.getArea("Paimpol").toString()).matches()
+        assertTrue pattern.matcher(NominatimUtils.getArea("Boston").toString()).matches()
     }
 
     /**
-     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.Utilities#getAreaFromPlace(java.lang.Object)} method with bad data.
+     * Test the {@link org.orbisgis.orbisanalysis.osm.utils.NominatimUtils#getArea(java.lang.Object)} method with bad data.
      */
     @Test
     @Disabled
-    void badGetAreaFromPlaceTest() {
-        assertNull Utilities.getAreaFromPlace(null)
+    void badGetAreaTest() {
+        assertNull NominatimUtils.getArea(null)
     }
 
     /**

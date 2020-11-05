@@ -34,7 +34,7 @@
  * or contact directly:
  * info_at_ orbisgis.org
  */
-package org.orbisgis.orbisanalysis.osm.overpass
+package org.orbisgis.orbisanalysis.osm.utils
 
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -44,7 +44,6 @@ import org.locationtech.jts.geom.LineString
 import org.locationtech.jts.geom.MultiLineString
 import org.locationtech.jts.geom.Polygon
 import org.orbisgis.orbisanalysis.osm.AbstractOSMTest
-import org.orbisgis.orbisanalysis.osm.utils.TransformUtils
 import org.orbisgis.orbisdata.datamanager.jdbc.h2gis.H2GIS
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -964,7 +963,7 @@ class TransformUtilsTest extends AbstractOSMTest {
         createData(ds, prefix)
 
         //Test line
-        def result = TransformUtils.toPolygonOrLine(lineType, ds.getConnection(), prefix, epsgCode, tags, columnsToKeep)
+        def result = TransformUtils.toPolygonOrLine(lineType, ds, prefix, epsgCode, tags, columnsToKeep)
         assertNotNull result
         assertTrue result.containsKey("outputTableName")
         assertNotNull result.outputTableName

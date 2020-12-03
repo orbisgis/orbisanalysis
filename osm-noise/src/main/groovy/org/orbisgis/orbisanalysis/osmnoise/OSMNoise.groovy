@@ -40,6 +40,7 @@ package org.orbisgis.orbisanalysis.osmnoise
 import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.orbisgis.orbisanalysis.osmnoise.Data as DATA
 import org.orbisgis.orbisanalysis.osmnoise.Traffic as TRAFFIC
+import org.slf4j.LoggerFactory
 
 /**
  * Main script to access to all processes used to extract, transform and prepare OSM data
@@ -50,4 +51,9 @@ import org.orbisgis.orbisanalysis.osmnoise.Traffic as TRAFFIC
 abstract class OSMNoise extends GroovyProcessFactory {
     def static Data = new DATA()
     def static Traffic = new TRAFFIC()
+
+    public static def logger = LoggerFactory.getLogger(OSMNoise.class)
+    static def info = { obj -> logger.info(obj.toString()) }
+    static def warn = { obj -> logger.warn(obj.toString()) }
+    static def error = { obj -> logger.error(obj.toString()) }
 }

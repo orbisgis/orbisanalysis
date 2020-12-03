@@ -40,6 +40,8 @@ import org.orbisgis.orbisdata.processmanager.process.GroovyProcessFactory
 import org.orbisgis.orbisanalysis.osm.Loader as LOADER
 import org.orbisgis.orbisanalysis.osm.Transform as TRANSFORM
 import org.orbisgis.orbisanalysis.osm.utils.Utilities as UTILITIES
+import org.slf4j.LoggerFactory
+
 /**
  * Main script to access to all processes used to extract, transform and save OSM data as GIS layers.
  *
@@ -52,4 +54,9 @@ abstract class OSMTools extends GroovyProcessFactory {
     def static Loader = new LOADER()
     def static Transform = new TRANSFORM()
     def static Utilities = new UTILITIES()
+
+    public static def logger = LoggerFactory.getLogger(OSMTools.class)
+    static def info = { obj -> logger.info(obj.toString()) }
+    static def warn = { obj -> logger.warn(obj.toString()) }
+    static def error = { obj -> logger.error(obj.toString()) }
 }

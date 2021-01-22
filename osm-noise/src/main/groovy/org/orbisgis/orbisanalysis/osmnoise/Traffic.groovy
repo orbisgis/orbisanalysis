@@ -36,6 +36,7 @@
  */
 package org.orbisgis.orbisanalysis.osmnoise
 
+import groovy.sql.Sql
 import groovy.transform.BaseScript
 import org.orbisgis.orbisdata.datamanager.jdbc.JdbcDataSource
 import org.orbisgis.orbisdata.processmanager.api.IProcess
@@ -101,16 +102,16 @@ def WGAEN_ROAD() {
 
             datasource.execute """CREATE TABLE ${outputTableName} as 
                 SELECT  a.id_road,a.the_geom, a.WGAEN_TYPE, 
-                 CASE WHEN a.oneway= 'yes' THEN (t.day_nb_vh*t.day_percent_lv /t.day_nb_hours)/2 ELSE (t.day_nb_vh*t.day_percent_lv /t.day_nb_hours) END as day_lv_hour,
-                 CASE WHEN a.oneway= 'yes' THEN (t.day_nb_vh*t.day_percent_hv /t.day_nb_hours)/2 ELSE (t.day_nb_vh*t.day_percent_hv /t.day_nb_hours) END as day_hv_hour,
+                 CASE WHEN a.oneway= TRUE THEN (t.day_nb_vh*t.day_percent_lv /t.day_nb_hours)/2 ELSE (t.day_nb_vh*t.day_percent_lv /t.day_nb_hours) END as day_lv_hour,
+                 CASE WHEN a.oneway= TRUE THEN (t.day_nb_vh*t.day_percent_hv /t.day_nb_hours)/2 ELSE (t.day_nb_vh*t.day_percent_hv /t.day_nb_hours) END as day_hv_hour,
                  a.maxspeed as day_lv_speed,
                  CASE WHEN a.maxspeed >= 110 THEN 90 ELSE a.maxspeed END AS day_hv_speed,
-                 CASE WHEN a.oneway= 'yes' THEN (t.night_nb_vh*t.night_percent_lv /t.night_nb_hours)/2 ELSE (t.night_nb_vh*t.night_percent_lv /t.night_nb_hours) END as night_lv_hour,
-                 CASE WHEN a.oneway= 'yes' THEN (t.night_nb_vh*t.night_percent_hv /t.night_nb_hours)/2 ELSE (t.night_nb_vh*t.night_percent_hv /t.night_nb_hours) END as night_hv_hour,
+                 CASE WHEN a.oneway= TRUE THEN (t.night_nb_vh*t.night_percent_lv /t.night_nb_hours)/2 ELSE (t.night_nb_vh*t.night_percent_lv /t.night_nb_hours) END as night_lv_hour,
+                 CASE WHEN a.oneway= TRUE THEN (t.night_nb_vh*t.night_percent_hv /t.night_nb_hours)/2 ELSE (t.night_nb_vh*t.night_percent_hv /t.night_nb_hours) END as night_hv_hour,
                  a.maxspeed as night_lv_speed,
                  CASE WHEN a.maxspeed >= 110 THEN 90 ELSE a.maxspeed END AS night_hv_speed,
-                 CASE WHEN a.oneway= 'yes' THEN (t.ev_nb_vh*t.ev_percent_lv /t.ev_nb_hours)/2 ELSE (t.ev_nb_vh*t.ev_percent_lv /t.ev_nb_hours) END as ev_lv_hour,
-                 CASE WHEN a.oneway= 'yes' THEN (t.ev_nb_vh*t.ev_percent_hv /t.ev_nb_hours)/2 ELSE (t.ev_nb_vh*t.ev_percent_hv /t.ev_nb_hours) END as ev_hv_hour,
+                 CASE WHEN a.oneway= TRUE THEN (t.ev_nb_vh*t.ev_percent_lv /t.ev_nb_hours)/2 ELSE (t.ev_nb_vh*t.ev_percent_lv /t.ev_nb_hours) END as ev_lv_hour,
+                 CASE WHEN a.oneway= TRUE THEN (t.ev_nb_vh*t.ev_percent_hv /t.ev_nb_hours)/2 ELSE (t.ev_nb_vh*t.ev_percent_hv /t.ev_nb_hours) END as ev_hv_hour,
                  a.maxspeed as ev_lv_speed,
                  CASE WHEN a.maxspeed >= 110 THEN 90 ELSE a.maxspeed END AS ev_hv_speed
                  from  ${roadTableName} a, ${trafficTable}  t WHERE a.WGAEN_TYPE=t.WGAEN_TYPE"""

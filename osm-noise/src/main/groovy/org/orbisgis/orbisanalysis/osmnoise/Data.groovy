@@ -210,11 +210,10 @@ def createBuildingLayer()
                                 for (int i = 0; i < geom.getNumGeometries(); i++) {
                                     Geometry subGeom = geom.getGeometryN(i)
                                     if (subGeom instanceof Polygon) {
-                                        stmt.addBatch """insert into ${outputTableName} values(ST_GEOMFROMTEXT('${
-                                            subGeom
-                                        }',$epsg), null, '${row.id}',${formatedHeight.heightWall},${
-                                            formatedHeight.heightRoof
-                                        },${formatedHeight.nbLevels},'${type}','${use}',${zIndex})""".toString()
+                                        stmt.addBatch """insert into ${outputTableName} (THE_GEOM, ID_SOURCE, HEIGHT_WALL, 
+                                        HEIGHT_ROOF, NB_LEV, TYPE, MAIN_USE, ZINDEX) values(ST_GEOMFROMTEXT('${subGeom}',$epsg), 
+                                        '${row.id}',${formatedHeight.heightWall},${formatedHeight.heightRoof},
+                                        ${formatedHeight.nbLevels},'${type}','${use}',${zIndex})""".toString()
                                     }
                                 }
                             }
@@ -312,8 +311,9 @@ def createRoadLayer()
                             if (type) {
                                 Geometry geom = row.the_geom
                                 for (int i = 0; i < geom.getNumGeometries(); i++) {
-                                    stmt.addBatch """insert into $outputTableName values(ST_GEOMFROMTEXT('${
-                                        geom.getGeometryN(i)}',$epsg), null, '${row.id}','${type}', '${
+                                    stmt.addBatch """insert into $outputTableName (THE_GEOM, ID_SOURCE, WGAEN_TYPE, 
+                                        SURFACE, ONEWAY, MAXSPEED, ZINDEX) values(ST_GEOMFROMTEXT('${
+                                        geom.getGeometryN(i)}',$epsg), '${row.id}','${type}', '${
                                         surface}',${oneway},${maxspeed}, ${zIndex})""".toString()
                                 }
                             }

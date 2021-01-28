@@ -255,7 +255,7 @@ def extract() {
                     }
                 }
                 else {
-                    info "\nThe cached OSM file ${osmFilePath} will be re-used for the query :  \n$overpassQuery."
+                    debug "\nThe cached OSM file ${osmFilePath} will be re-used for the query :  \n$overpassQuery."
                 }
             }
             else{

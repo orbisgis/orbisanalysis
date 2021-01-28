@@ -161,7 +161,7 @@ def createBuildingLayer()
             def hThresholdLev2 = parametersMap.get("hThresholdLev2")
             if (transform(datasource: datasource, osmTablesPrefix: osmTablesPrefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
                 def inputTableName = transform.results.outputTableName
-                info "Formating building layer"
+                debug "Formating building layer"
                 def outputTableName = postfix "${outputTablePrefix}_BUILDING"
                 datasource.execute """ DROP TABLE if exists ${outputTableName};
                         CREATE TABLE ${outputTableName} (THE_GEOM GEOMETRY(POLYGON, $epsg), id_build serial, ID_SOURCE VARCHAR, HEIGHT_WALL FLOAT, HEIGHT_ROOF FLOAT,
@@ -262,7 +262,7 @@ def createRoadLayer()
             def columnsToKeep = parametersMap.get("columns")
             if (transform(datasource: datasource, osmTablesPrefix: osmTablesPrefix, epsgCode: epsg, tags: tags, columnsToKeep: columnsToKeep)) {
                 def inputTableName = transform.results.outputTableName
-                info('Formating road layer')
+                debug('Formating road layer')
                 def outputTableName = postfix "${outputTablePrefix}_ROAD"
                 datasource.execute """drop table if exists $outputTableName;
                         CREATE TABLE $outputTableName (THE_GEOM GEOMETRY(GEOMETRY, $epsg), id_road serial, ID_SOURCE VARCHAR, WGAEN_TYPE VARCHAR,

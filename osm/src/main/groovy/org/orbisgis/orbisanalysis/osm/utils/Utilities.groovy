@@ -59,6 +59,8 @@ class Utilities {
     static def warn(def obj) { LOGGER.warn(obj.toString()) }
     /** {@link Closure} logging with ERROR level the given {@link Object} {@link String} representation. */
     static def error(def obj) { LOGGER.error(obj.toString()) }
+    /** {@link Closure} logging with DEBUG level the given {@link Object} {@link String} representation. */
+    static def debug(def obj) { LOGGER.debug(obj.toString()) }
 
 
 

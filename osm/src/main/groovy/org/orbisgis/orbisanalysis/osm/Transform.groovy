@@ -77,7 +77,7 @@ def toPoints () {
                 return
             }
             info "Start points transformation"
-            info "Indexing osm tables..."
+            debug "Indexing osm tables..."
             buildIndexes datasource, osmTablesPrefix
             def pointsNodes = extractNodesAsPoints datasource, osmTablesPrefix, epsgCode, outputTableName, tags, columnsToKeep
             if (pointsNodes) {
@@ -217,7 +217,7 @@ def extractWaysAsPolygons () {
                     FROM $idWaysPolygons AS a, ${osmTablesPrefix}_WAY_TAG AS b 
                     WHERE a.ID_WAY = b.ID_WAY AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')
             """)[0] < 1) {
-                    info "Any columns to keep. Cannot create any geometry polygons. An empty table will be returned."
+                    debug "Any columns to keep. Cannot create any geometry polygons. An empty table will be returned."
                     datasource """
                         DROP TABLE IF EXISTS $outputTableName;
                         CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
@@ -334,7 +334,7 @@ def extractRelationsAsPolygons () {
                         FROM $relationFilteredKeys AS a, ${osmTablesPrefix}_RELATION_TAG AS b 
                         WHERE a.ID_RELATION = b.ID_RELATION AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')
                 """)[0] < 1) {
-                        info "Any columns to keep. Cannot create any geometry polygons. An empty table will be returned."
+                        debug "Any columns to keep. Cannot create any geometry polygons. An empty table will be returned."
                         datasource """
                             DROP TABLE IF EXISTS $outputTableName;
                             CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
@@ -395,7 +395,7 @@ def extractRelationsAsPolygons () {
                 GROUP BY id_relation;
         """
 
-            info "Explode outer polygons"
+            debug "Explode outer polygons"
             def relationsPolygonsOuterExploded = postfix "RELATIONS_POLYGONS_OUTER_EXPLODED"
             datasource """
                 DROP TABLE IF EXISTS $relationsPolygonsOuterExploded;
@@ -406,7 +406,7 @@ def extractRelationsAsPolygons () {
                     AND ST_NPoints(the_geom)>=4;
         """
 
-            info "Explode inner polygons"
+            debug "Explode inner polygons"
             def relationsPolygonsInnerExploded = postfix "RELATIONS_POLYGONS_INNER_EXPLODED"
             datasource """
                 DROP TABLE IF EXISTS $relationsPolygonsInnerExploded;
@@ -417,7 +417,7 @@ def extractRelationsAsPolygons () {
                     AND ST_NPoints(the_geom)>=4; 
         """
 
-            info "Build all polygon relations"
+            debug "Build all polygon relations"
             def relationsMpHoles = postfix "RELATIONS_MP_HOLES"
             datasource """
                 CREATE INDEX ON $relationsPolygonsOuterExploded USING RTREE (the_geom);
@@ -504,14 +504,14 @@ def extractWaysAsLines () {
             def tagsFilter = createWhereFilter(tags)
 
             if (datasource.firstRow(countTagsQuery).count <= 0) {
-                info "No keys or values found in the ways. An empty table will be returned."
+                debug "No keys or values found in the ways. An empty table will be returned."
                 datasource """ 
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
             """
                 return [outputTableName: outputTableName]
             }
-            info "Build ways as lines"
+            debug "Build ways as lines"
             def waysLinesTmp = postfix "WAYS_LINES_TMP"
 
             if (!tagsFilter) {
@@ -533,7 +533,7 @@ def extractWaysAsLines () {
                     FROM $idWaysTable AS a, ${osmTablesPrefix}_WAY_TAG AS b 
                     WHERE a.ID_WAY = b.ID_WAY AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')
             """)[0] < 1) {
-                    info "Any columns to keep. Cannot create any geometry lines. An empty table will be returned."
+                    debug "Any columns to keep. Cannot create any geometry lines. An empty table will be returned."
                     datasource """
                         DROP TABLE IF EXISTS $outputTableName;
                         CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
@@ -643,7 +643,7 @@ def extractRelationsAsLines() {
                     FROM $relationsFilteredKeys AS a, ${osmTablesPrefix}_RELATION_TAG AS b 
                     WHERE a.ID_RELATION = b.ID_RELATION AND b.TAG_KEY IN ('${columnsToKeep.join("','")}')
             """)[0] < 1) {
-                    info "Any columns to keep. Cannot create any geometry lines. An empty table will be returned."
+                    debug "Any columns to keep. Cannot create any geometry lines. An empty table will be returned."
                     datasource """ 
                         DROP TABLE IF EXISTS $outputTableName;
                         CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));

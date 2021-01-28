@@ -60,6 +60,8 @@ class TransformUtils {
     static def warn = { obj -> LOGGER.warn(obj.toString()) }
     /** {@link Closure} logging with ERROR level the given {@link Object} {@link String} representation. */
     static def error = { obj -> LOGGER.error(obj.toString()) }
+    /** {@link Closure} logging with DEBUG level the given {@link Object} {@link String} representation. */
+    static def debug = { obj -> LOGGER.debug(obj.toString()) }
 
     /**
      * Merge arrays into one.
@@ -127,7 +129,7 @@ class TransformUtils {
         //Start the transformation
         def outputTableName = "OSM_${type.name()}_" + uuid()
         info "Start ${type.name().toLowerCase()} transformation"
-        info "Indexing osm tables..."
+        debug "Indexing osm tables..."
         buildIndexes(datasource, osmTablesPrefix)
 
         waysProcess(datasource: datasource,
@@ -271,7 +273,7 @@ class TransformUtils {
         def tagsFilter = createWhereFilter(tags)
 
         if (datasource.firstRow(countTagsQuery).count <= 0) {
-            info "No keys or values found in the nodes. An empty table will be returned."
+            debug "No keys or values found in the nodes. An empty table will be returned."
             datasource.execute """
                     DROP TABLE IF EXISTS $outputNodesPoints;
                     CREATE TABLE $outputNodesPoints (the_geom GEOMETRY(POINT,4326));

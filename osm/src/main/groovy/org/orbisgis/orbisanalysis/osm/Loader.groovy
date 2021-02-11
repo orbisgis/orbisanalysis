@@ -249,6 +249,7 @@ def extract() {
                         if ( Utilities.executeOverPassQuery(overpassQuery, outputOSMFile)) {
                             info "The OSM file has been downloaded at ${osmFilePath}."
                         } else {
+                            outputOSMFile.delete()
                             error "Cannot extract the OSM data for the query $overpassQuery"
                             return
                         }
@@ -263,6 +264,7 @@ def extract() {
                 if (Utilities.executeOverPassQuery(overpassQuery, outputOSMFile)) {
                     info "The OSM file has been downloaded at ${osmFilePath}."
                 } else {
+                    outputOSMFile.delete()
                     error "Cannot extract the OSM data for the query $overpassQuery"
                     return
                 }}

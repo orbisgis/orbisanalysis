@@ -52,9 +52,15 @@ abstract class OSMNoise extends GroovyProcessFactory {
     def static Data = new DATA()
     def static Traffic = new TRAFFIC()
 
+
     public static def logger = LoggerFactory.getLogger(OSMNoise.class)
     static def info = { obj -> logger.info(obj.toString()) }
     static def warn = { obj -> logger.warn(obj.toString()) }
     static def error = { obj -> logger.error(obj.toString()) }
     static def debug = { obj -> logger.debug(obj.toString()) }
+
+    /** {@link Closure} returning a {@link String} prefix/suffix build from a random {@link UUID} with '-' replaced by '_'. */
+    static def getUuid() { UUID.randomUUID().toString().replaceAll("-", "_") }
+
+    static def uuid() { getUuid() }
 }

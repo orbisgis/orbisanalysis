@@ -75,7 +75,7 @@ def WGAEN_ROAD() {
         id "WGAEN_ROAD"
         inputs datasource: JdbcDataSource, roadTableName: String, outputTablePrefix: "WGAEN_ROAD", trafficFile: ""
         outputs outputTableName: String
-        run { JdbcDataSource datasource, roadTableName, outputTablePrefix, trafficFile ->
+        run {  datasource, roadTableName, outputTablePrefix, trafficFile ->
             info "Create the default traffic data"
             def outputTableName = postfix "${outputTablePrefix}_ROAD_TRAFFIC"
             def paramsDefaultFile

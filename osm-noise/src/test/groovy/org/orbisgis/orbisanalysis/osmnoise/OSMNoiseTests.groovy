@@ -68,9 +68,10 @@ class OSMNoiseTests {
     @Disabled
     @Test
     void GISLayersTestFromApi() {
+        def placeName = "Lorient"
         def h2GIS = H2GIS.open('./target/OSMNoise;AUTO_SERVER=TRUE')
         def process = OSMNoise.Data.GISLayers()
-        assertTrue process.execute(datasource: h2GIS, placeName: "Saint Jean La Poterie")
+        assertTrue process.execute(datasource: h2GIS, placeName: placeName)
         assertTrue(h2GIS.hasTable(process.results.zoneTableName))
         ISpatialTable zoneTable = h2GIS.getSpatialTable(process.results.zoneTableName)
         assertTrue(zoneTable.rowCount==1)
@@ -79,12 +80,17 @@ class OSMNoiseTests {
         assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.buildingTableName} where HEIGHT_WALL is null").count==0
         assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.buildingTableName} where HEIGHT_ROOF is null").count==0
 
-        assertTrue(h2GIS.hasTable(process.results.roadTableName))
-        def ouputTable = h2GIS.getSpatialTable(process.results.roadTableName)
+        def roadTableName = process.results.roadTableName
+        assertTrue(h2GIS.hasTable(roadTableName))
+        def ouputTable = h2GIS.getSpatialTable(roadTableName)
         assertTrue(ouputTable.rowCount>1)
-        assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.roadTableName} where WGAEN_TYPE is null").count==0
-        assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.roadTableName} where ONEWAY is null").count==0
-        assertTrue h2GIS.firstRow("select count(*) as count from ${process.results.roadTableName} where MAXSPEED is null").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${roadTableName} where WGAEN_TYPE is null").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${roadTableName} where ONEWAY is null").count==0
+        assertTrue h2GIS.firstRow("select count(*) as count from ${roadTableName} where MAXSPEED is null").count==0
+
+        process = OSMNoise.Traffic.WGAEN_ROAD()
+        process.execute(datasource: h2GIS,roadTableName: roadTableName)
+        h2GIS.save(process.results.outputTableName, "./target/${placeName}_traffic.shp", true)
 
     }
 

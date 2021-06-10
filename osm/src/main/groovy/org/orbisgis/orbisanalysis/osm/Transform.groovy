@@ -180,7 +180,7 @@ def extractWaysAsPolygons () {
             def tagsFilter = createWhereFilter(tags)
 
             if (datasource.firstRow(countTagsQuery).count <= 0) {
-                warn "No keys or values found to extract ways. An empty table will be returned."
+                debug "No keys or values found to extract ways. An empty table will be returned."
                 datasource """ 
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
@@ -303,7 +303,7 @@ def extractRelationsAsPolygons () {
             def tagsFilter = createWhereFilter(tags)
 
             if (datasource.firstRow(countTagsQuery).count <= 0) {
-                warn "No keys or values found in the relations. An empty table will be returned."
+                debug "No keys or values found in the relations. An empty table will be returned."
                 datasource """
                     DROP TABLE IF EXISTS $outputTableName;
                     CREATE TABLE $outputTableName (the_geom GEOMETRY(GEOMETRY,$epsgCode));
